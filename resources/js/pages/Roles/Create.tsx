@@ -1,6 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -9,23 +10,31 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Create({ permissions }) {
-    const { data, setData, errors, post } = useForm({
+interface CreateRoleProps {
+    permissions: string[];
+}
+export default function Create({ permissions }: CreateRoleProps) {
+    const { data, setData, errors, post } = useForm<{
+        name: string;
+        permissions: string[];
+    }>({
         name: '',
         permissions: [],
     });
 
-    function submit(e: any) {
+    function submit(e: React.FormEvent) {
         e.preventDefault();
         post(route('roles.store'));
     }
 
     function handleCheckboxChange(permissionName: any, checked: boolean): void {
-        if(checked){
-            setData("permissions",[...data.permissions, permissionName]);
-        }
-        else{
-            setData("permissions", data.permissions.filter(name=> name!== permissionName));
+        if (checked) {
+            setData('permissions', [...data.permissions, permissionName]);
+        } else {
+            setData(
+                'permissions',
+                data.permissions.filter((name) => name !== permissionName),
+            );
         }
     }
 
@@ -41,7 +50,7 @@ export default function Create({ permissions }) {
                     {/*//* *********Input Name*********  */}
                     <div className="grid gap-2">
                         <label
-                            for="name"
+                            htmlFor="name"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Name:
@@ -60,7 +69,7 @@ export default function Create({ permissions }) {
                     {/*//* *********Input Name*********  */}
                     <div className="grid gap-2">
                         <label
-                            for="permissions"
+                            htmlFor="permissions"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Permissions:
@@ -70,7 +79,7 @@ export default function Create({ permissions }) {
                                 <input
                                     type="checkbox"
                                     value={permission}
-                                    onChange={(e) => handleCheckboxChange(permission,e.target.checked)}
+                                    onChange={(e) => handleCheckboxChange(permission, e.target.checked)}
                                     id={permission}
                                     className="form-checkbox h-5 w-5 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
                                 />

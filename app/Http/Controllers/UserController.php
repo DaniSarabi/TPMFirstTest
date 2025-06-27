@@ -60,10 +60,14 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(User $user)
     {
-        //
-        return Inertia::render("Users/Show", ["user" => User::find($id)]);
+        return Inertia::render('Users/Show', [
+            'user' => $user,
+            // This is the new line.
+            // getRoleNames() is a helper from the Spatie package that returns an array of role names.
+            'roles' => $user->getRoleNames(),
+        ]);
     }
 
     /**

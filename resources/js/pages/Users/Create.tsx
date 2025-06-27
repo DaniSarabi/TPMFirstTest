@@ -2,6 +2,9 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 
+interface CreateUserProps {
+    roles: string[];
+}
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'User Create',
@@ -9,20 +12,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Create({ roles }) {
-    const { data, setData, errors, post } = useForm({
+export default function Create({ roles }: CreateUserProps) {
+    const { data, setData, errors, post } = useForm<{
+        name: string;
+        email: string;
+        password: string;
+        roles: string[];
+    }>({
         name: '',
         email: '',
         password: '',
         roles: [],
     });
 
-    function submit(e) {
+    function submit(e: React.FormEvent) {
         e.preventDefault();
         post(route('users.store'));
     }
 
-    function handleCheckboxChange(roleName , checked) {
+    function handleCheckboxChange(roleName: string, checked: boolean) {
         if (checked) {
             setData('roles', [...data.roles, roleName]);
         } else {
@@ -45,7 +53,7 @@ export default function Create({ roles }) {
                     {/*//* *********Input Name*********  */}
                     <div className="grid gap-2">
                         <label
-                            for="name"
+                            htmlFor="name"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Name:
@@ -65,7 +73,7 @@ export default function Create({ roles }) {
 
                     <div className="grid gap-2">
                         <label
-                            for="email"
+                            htmlFor="email"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Email:
@@ -86,7 +94,7 @@ export default function Create({ roles }) {
 
                     <div className="grid gap-2">
                         <label
-                            for="password"
+                            htmlFor="password"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Password:
@@ -107,7 +115,7 @@ export default function Create({ roles }) {
 
                     <div className="grid gap-2">
                         <label
-                            for="roles"
+                            htmlFor="roles"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Roles:

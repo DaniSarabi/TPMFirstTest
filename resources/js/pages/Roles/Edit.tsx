@@ -1,6 +1,18 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import React from 'react';
+
+interface Role{
+    id: number;
+    name: string;
+}
+
+interface EditRolePageProps {
+    role: Role;
+    rolePermissions: string[];
+    permissions: string[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -9,18 +21,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Edit({role,rolePermissions, permissions }) {
+export default function Edit({role,rolePermissions, permissions }:EditRolePageProps ) {
     const { data, setData, errors, put } = useForm({
         name: role.name || "",
         permissions: rolePermissions || [],
     });
 
-    function submit(e: any) {
+    function submit(e: React.FormEvent) {
         e.preventDefault();
         put(route('roles.update', role.id));
     }
 
-    function handleCheckboxChange(permissionName: any, checked: boolean): void {
+    function handleCheckboxChange(permissionName: string, checked: boolean): void {
         if(checked){
             setData("permissions",[...data.permissions, permissionName]);
         }
@@ -41,7 +53,7 @@ export default function Edit({role,rolePermissions, permissions }) {
                     {/*//* *********Input Name*********  */}
                     <div className="grid gap-2">
                         <label
-                            for="name"
+                            htmlFor="name"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Name:
@@ -60,7 +72,7 @@ export default function Edit({role,rolePermissions, permissions }) {
                     {/*//* *********Input Check Permissions*********  */}
                     <div className="grid gap-2">
                         <label
-                            for="permissions"
+                            htmlFor="permissions"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Permissions:

@@ -1,6 +1,19 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import React from 'react';
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+interface EditUserProps {
+    user: User;
+    userRoles: string[];
+    roles: string[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -9,16 +22,20 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Edit({ user, userRoles, roles }) {
-
-    const { data, setData, errors, put } = useForm({
-        name: user.name || "",
-        email: user.email || "",
-        password: "",
+export default function Edit({ user, userRoles, roles }: EditUserProps) {
+    
+    const { data, setData, errors, put } = useForm<{
+        name: string;
+        email: string;
+        password: string; // Password can be empty, so it's a string
+        roles: string[];
+    }>({
+        name: user.name || '',
+        email: user.email || '',
+        password: '',
         roles: userRoles || [],
     });
-
-    function handleCheckboxChange(roleName, checked) {
+    function handleCheckboxChange(roleName: string, checked: boolean) {
         if (checked) {
             setData('roles', [...data.roles, roleName]);
         } else {
@@ -29,7 +46,7 @@ export default function Edit({ user, userRoles, roles }) {
         }
     }
 
-    function submit(e) {
+    function submit(e: React.FormEvent) {
         e.preventDefault();
         put(route('users.update', user.id));
     }
@@ -46,7 +63,7 @@ export default function Edit({ user, userRoles, roles }) {
                     {/*//* *********Input Name*********  */}
                     <div className="grid gap-2">
                         <label
-                            for="name"
+                            htmlFor="name"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Name:
@@ -66,7 +83,7 @@ export default function Edit({ user, userRoles, roles }) {
 
                     <div className="grid gap-2">
                         <label
-                            for="email"
+                            htmlFor="email"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Email:
@@ -76,7 +93,7 @@ export default function Edit({ user, userRoles, roles }) {
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
                             name="email"
-                            type='email'
+                            type="email"
                             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             placeholder="Enter your email"
                         />
@@ -87,7 +104,7 @@ export default function Edit({ user, userRoles, roles }) {
 
                     <div className="grid gap-2">
                         <label
-                            for="password"
+                            htmlFor="password"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Password:
@@ -97,7 +114,7 @@ export default function Edit({ user, userRoles, roles }) {
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
                             name="password"
-                            type='password'
+                            type="password"
                             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             placeholder="Enter your password"
                         />
@@ -107,7 +124,7 @@ export default function Edit({ user, userRoles, roles }) {
 
                     <div className="grid gap-2">
                         <label
-                            for="roles"
+                            htmlFor="roles"
                             className="text-sm leading-none font-medium select-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50"
                         >
                             Roles:

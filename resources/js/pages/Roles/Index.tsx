@@ -1,7 +1,22 @@
 import AppLayout from '@/layouts/app-layout';
-import { can } from '@/lib/can';
+import { useCan } from '@/lib/useCan';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+
+interface Permission {
+    id: number;
+    name: string;
+}
+
+interface Role {
+    id: number;
+    name: string;
+    permissions: Permission[];
+}
+
+interface ShowRolePageProps {
+    roles: Role[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -10,8 +25,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Index({ roles }) {
-    function handleDelete(id) {
+export default function Index({ roles }: ShowRolePageProps) {
+    function handleDelete(id: number) {
         if (confirm('Are you sure you want to delete this role?')) {
             router.delete(route('roles.destroy', id));
         }
@@ -21,7 +36,7 @@ export default function Index({ roles }) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Roles" />
             <div className="p-6">
-                {can('roles.create') && (
+                {useCan('roles.create') && (
                     <Link href={route('roles.create')} className="btn px-3 py-2 btn-md btn-primary">
                         Create
                         {/* //TODO: Pass the create logic to a modal > example: https://flowbite.com/blocks/application/crud/ */}
@@ -47,14 +62,14 @@ export default function Index({ roles }) {
                         </thead>
                         <tbody>
                             {roles.map(({ id, name, permissions }) => (
-                                <tr className="border-b border-gray-200 odd:bg-white even:bg-gray-50 dark:border-gray-700 odd:dark:bg-gray-900 even:dark:bg-gray-800">
+                                <tr key={id} className="border-b border-gray-200 odd:bg-white even:bg-gray-50 dark:border-gray-700 odd:dark:bg-gray-900 even:dark:bg-gray-800">
                                     <td className="px-6 py-2 font-medium text-gray-900 dark:text-white">{id}</td>
                                     <td className="px-6 py-2 text-gray-600 dark:text-gray-300">{name}</td>
                                     {/* {//* ************** BADGES **************} */}
                                     <td className="px-6 py-2 text-gray-600 dark:text-gray-300">
                                         {permissions.map((permission) => (
                                             <span
-                                                key="1"
+                                                key={permission.id}
                                                 className="mr-1 rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300"
                                             >
                                                 {permission.name}
@@ -67,12 +82,12 @@ export default function Index({ roles }) {
                                             Show
                                         </Link>
 
-                                        {can('roles.edit') && (
+                                        {useCan('roles.edit') && (
                                             <Link href={route('roles.edit', id)} className="btn px-3 py-2 btn-md btn-primary">
                                                 Edit
                                             </Link>
                                         )}
-                                        {can('roles.delete') && <button onClick={() => handleDelete(id)} className="btn px-3 py-2 btn-md btn-secondary">
+                                        {useCan('roles.delete') && <button onClick={() => handleDelete(id)} className="btn px-3 py-2 btn-md btn-secondary">
                                             Delete
                                         </button>}
                                     </td>

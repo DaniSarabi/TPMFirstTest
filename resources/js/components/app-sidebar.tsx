@@ -23,6 +23,10 @@ const mainNavItems: NavItem[] = [
         href: '/product',
         icon: Bolt,
     },
+    {
+        title: 'Test',
+        href: '/TestTablePage',
+    }
 ];
 
 const footerNavItems: NavItem[] = [

@@ -66,7 +66,7 @@ export default function Create({ permissions }: CreateRoleProps) {
                         {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
                     </div>
 
-                    {/*//* *********Input Name*********  */}
+                    {/*//* *********Input permissions*********  */}
                     <div className="grid gap-2">
                         <label
                             htmlFor="permissions"

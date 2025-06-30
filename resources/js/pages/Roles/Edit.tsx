@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -48,7 +49,7 @@ export default function Edit({role,rolePermissions, permissions }:EditRolePagePr
                 <Link href={route('roles.index')} className="btn px-3 py-2 btn-md btn-primary">
                     Back
                 </Link>
-
+                <Button>Hola</Button>
                 <form onSubmit={submit} className="mx-auto mt-4 max-w-md space-y-6">
                     {/*//* *********Input Name*********  */}
                     <div className="grid gap-2">

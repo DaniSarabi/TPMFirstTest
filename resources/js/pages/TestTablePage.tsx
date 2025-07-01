@@ -1,7 +1,7 @@
 
 import { DataTable } from '@/components/data-table';
 import AppLayout from '@/layouts/app-layout';
-import { User, data } from '@/lib/data';
+import { data } from '@/lib/data';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { columns } from './columns';

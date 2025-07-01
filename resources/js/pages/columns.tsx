@@ -55,8 +55,9 @@ export const columns: ColumnDef<User>[] = [
     header: 'Age',
     cell: (info) => {
       const age = String(info.getValue()); // Gets the age value, e.g., 35
-      return;
-      <span className="rounded bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300">{age}</span>;
+      return (
+        <span className="rounded bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300">{age}</span>
+      );
     },
   },
   {
@@ -73,7 +74,17 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: 'comments',
     header: 'Comments',
-  },
+    // Add a custom cell renderer to control the styling
+    cell: ({ row }) => {
+        const comments = row.getValue("comments") as string;
+        return (
+            // This div will control the width and truncation
+            <div className="max-w-[300px] truncate" title={comments}>
+                {comments}
+            </div>
+        );
+    },
+},
   {
     id: 'actions',
     cell: ({ row }) => {

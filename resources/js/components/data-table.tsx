@@ -19,6 +19,7 @@ import { Settings2 } from 'lucide-react';
 import * as React from 'react';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableViewOptions } from './data-table-view-options';
+import { DataTableSearch } from './data-table-search';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -55,19 +56,17 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     <div>
       <div className="flex items-center py-4">
         {/* //* Filtrar - busqueda */}
-        <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('email')?.setFilterValue(event.target.value)}
-          className="max-w-sm"
-        />
-
-        {/* //* Visivilidad */}
+        <DataTableSearch
+          table={table}
+          filterColumnId="firstName" // Cambia esto al ID de la columna que deseas filtrar
+          placeholder="Filter email..."
+          />
+        {/* //* Visibilidad */}
         <DataTableViewOptions table={table}/>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className='shadow-sm sticky top-0 z-10 bg-background'>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -100,6 +99,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
+        {/* //* Paginacion*/ }
         <DataTablePagination table={table} />
       </div>
     </div>

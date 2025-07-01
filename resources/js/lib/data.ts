@@ -15,7 +15,7 @@ const createUser = (numUser: number) => {
       lastName: faker.person.lastName(),
       age: faker.number.int({ min: 18, max: 90 }),
       email: faker.internet.email(),
-      comments: faker.lorem.sentences(1),
+      comments: faker.lorem.sentences(3),
     });
   }
   return users;

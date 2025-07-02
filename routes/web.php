@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\MachineController;
+use App\Http\Controllers\SubsystemController;
+use App\Http\Controllers\InspectionPointController;
 
 
 Route::get('/', function () {
@@ -20,7 +23,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('TestTablePage');
     })->name('TestTablePage');
 
-    
+    Route::resource('machines', MachineController::class);
+    Route::post('/machines/{machine}/subsystems', [SubsystemController::class, 'store'])->name('subsystems.store');
+    Route::post('/inspection-points', [InspectionPointController::class, 'store'])->name('inspection-points.store');
+
+    //Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');
+
     //* ***************************** Users Routes *****************************
     Route::resource("users", UserController::class)
         ->only(["create", "store"])

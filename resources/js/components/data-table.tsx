@@ -1,40 +1,54 @@
 'use client';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   ColumnDef,
   ColumnFiltersState,
+  ExpandedState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  Row,
   SortingState,
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table';
-import { Settings2 } from 'lucide-react';
 import * as React from 'react';
 import { DataTablePagination } from './data-table-pagination';
-import { DataTableViewOptions } from './data-table-view-options';
 import { DataTableSearch } from './data-table-search';
+import { DataTableViewOptions } from './data-table-view-options';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  filterColumnId: string; // Optional prop to specify which column to filter
+  filterPlaceholder: string; // Optional prop to specify the placeholder text for the filter input
+  toolbarAction?: React.ReactNode; // Optional prop for additional toolbar actions
+  renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement; // Optional prop for rendering subcomponents in expandable rows
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  filterColumnId,
+  filterPlaceholder,
+  toolbarAction,
+  renderSubComponent,
+}: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
   const table = useReactTable({
     data,
     columns,
+    onExpandedChange: setExpanded,
+    getExpandedRowModel: getExpandedRowModel(),
+    getRowCanExpand: () => true, // Allow all rows to be expandable
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -49,24 +63,29 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       columnFilters,
       columnVisibility,
       rowSelection,
+      expanded,
     },
   });
 
   return (
     <div>
-      <div className="flex items-center py-4">
+      <div className="flex items-center justify-between py-4">
         {/* //* Filtrar - busqueda */}
         <DataTableSearch
           table={table}
-          filterColumnId="firstName" // Cambia esto al ID de la columna que deseas filtrar
-          placeholder="Filter email..."
-          />
-        {/* //* Visibilidad */}
-        <DataTableViewOptions table={table}/>
+          filterColumnId={filterColumnId} // Cambia esto al ID de la columna que deseas filtrar
+          placeholder={filterPlaceholder}
+        />
+        <div className="flex items-center justify-end space-x-2">
+          {/* //*boton opcional */}
+          {toolbarAction}
+          {/* //* Visibilidad */}
+          <DataTableViewOptions table={table} />
+        </div>
       </div>
-      <div className="rounded-md border overflow-auto">
+      <div className="overflow-auto rounded-md border">
         <Table>
-          <TableHeader className='shadow-sm sticky top-0 z-10 bg-background'>
+          <TableHeader className="bg-background sticky top-0 z-10 shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -82,11 +101,20 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
+                // --- ACTION 5: Render the main row and the expanded sub-row ---
+                <React.Fragment key={row.id}>
+                  <TableRow data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    ))}
+                  </TableRow>
+                  {/* If the row is expanded and a sub-component renderer is provided, render it */}
+                  {row.getIsExpanded() && renderSubComponent && (
+                    <TableRow>
+                      <TableCell colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <TableRow>
@@ -99,7 +127,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
-        {/* //* Paginacion*/ }
+        {/* //* Paginacion*/}
         <DataTablePagination table={table} />
       </div>
     </div>

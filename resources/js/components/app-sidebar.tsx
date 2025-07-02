@@ -18,11 +18,7 @@ const mainNavItems: NavItem[] = [
         href: '/machines',
         icon: Bolt,
     },
-    {
-        title: 'Product',
-        href: '/product',
-        icon: Bolt,
-    },
+  
     {
         title: 'Test',
         href: '/TestTablePage',
@@ -30,16 +26,6 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
     {
         title: 'Users',
         href: '/users',

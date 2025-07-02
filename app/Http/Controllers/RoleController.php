@@ -103,10 +103,11 @@ class RoleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Role $role)
     {
-        //
-        Role::destroy($id);
-        return to_route("roles.index");
+        $role->delete();
+
+        // Redirect the user back to the index page with a success message.
+        return to_route('roles.index')->with('success', 'Role deleted successfully.');
     }
 }

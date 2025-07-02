@@ -28,7 +28,7 @@ export default function TestTable() {
       <div className="p-6">
         
         <div>
-          <DataTable columns={columns} data={data} />
+          <DataTable columns={columns} data={data} filterColumnId='email' filterPlaceholder='Filter by email...' />
         </div>
 
 

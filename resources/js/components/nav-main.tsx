@@ -9,13 +9,18 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => (
+                    // The SidebarMenuItem is a standard list item again
                     <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
-                            <Link href={item.href} prefetch>
+                        {/* --- ACTION: Wrap the button with the Link component --- */}
+                        {/* The Link component will handle the navigation */}
+                        <Link href={item.href} prefetch>
+                            {/* --- ACTION: Tell the button to render as a 'div' --- */}
+                            {/* This prevents conflicting button/link behavior */}
+                            <SidebarMenuButton  isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
                                 {item.icon && <item.icon />}
                                 <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
+                            </SidebarMenuButton>
+                        </Link>
                     </SidebarMenuItem>
                 ))}
             </SidebarMenu>

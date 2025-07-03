@@ -23,7 +23,7 @@ export function DataTableSearch<TData>({
             onChange={(event) =>
                 table.getColumn(filterColumnId)?.setFilterValue(event.target.value)
             }
-            className="h-8 w-[150px] lg:w-[250px]"
+            className="h-8 w-[150px] lg:w-[250px] shadow-2xl placeholder-gray-500"
         />
     );
 }

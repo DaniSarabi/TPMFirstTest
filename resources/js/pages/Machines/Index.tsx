@@ -64,7 +64,7 @@ export default function Index({ machines }: IndexPageProps) {
 
   // Define the "Create Machine" button to pass to the toolbar
   const toolbarAction = can.create ? (
-    <Button variant="secondary" className="text-white" size="lg" onClick={() => setWizardIsOpen(true)}>
+    <Button variant="default" className="" size="lg" onClick={() => setWizardIsOpen(true)}>
       <PlusCircle className="h-4 w-4" />
       Create Machine
     </Button>
@@ -92,6 +92,7 @@ export default function Index({ machines }: IndexPageProps) {
           filterPlaceholder="Filter by machine name..."
           toolbarAction={toolbarAction}
           renderSubComponent={renderSubComponent}
+          rowClassName='h-15'
         />
         <ConfirmDeleteDialog
           isOpen={dialogIsOpen}

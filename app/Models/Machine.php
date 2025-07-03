@@ -22,6 +22,7 @@ class Machine extends Model
         'name',
         'description',
         'created_by',
+        'status',
     ];
 
     /**

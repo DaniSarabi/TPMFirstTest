@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { text } from "stream/consumers"
 
 interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -27,13 +28,13 @@ export function DataTableColumnHeader<TData, TValue>({
   }
 
   return (
-    <div className={cn("flex items-center gap-2" , className)}>
+    <div className={cn("flex items-center gap-2 ", className)}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground  -ml-3 h-8"
+            className="data-[state=open]:bg-primary data-[state=open]:text-accent-foreground  text-base -ml-3 h-8"
           >
             <span>{title}</span>
             {column.getIsSorted() === "desc" ? (

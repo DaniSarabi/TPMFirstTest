@@ -16,13 +16,12 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        // It's a good practice to reset the permission cache before seeding
+        // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // --- 1. Define Permissions ---
         // Add all your application's permissions to this array.
-        // You can add more sections as your TPM project grows.
-        $permissions = [
+        $all_permissions = [
             // User Permissions
             'users.view',
             'users.create',
@@ -42,36 +41,56 @@ class PermissionSeeder extends Seeder
             'machines.delete',
         ];
 
-        // --- 2. Create Permissions if they don't exist ---
-        foreach ($permissions as $permissionName) {
-            Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
+        // Create permissions if they don't exist
+        foreach ($all_permissions as $permissionName) {
+            Permission::firstOrCreate(['name' => $permissionName]);
         }
+        $this->command->info('All permissions created successfully.');
+
+        // --- 2. Create Roles ---
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $managerRole = Role::firstOrCreate(['name' => 'manager']);
+        $userRole = Role::firstOrCreate(['name' => 'user']);
+        $this->command->info('Roles created successfully.');
+
+        // --- 3. Define Permissions for Each Role ---
+        $manager_permissions = [
+            'users.view', 'users.create',
+            'roles.view', 'roles.create',
+            'machines.view', 'machines.create',
+        ];
+
+        $user_permissions = [
+            'users.view',
+            'roles.view',
+            'machines.view',
+        ];
+
+        // --- 4. Assign Permissions to Roles ---
+        $adminRole->syncPermissions($all_permissions);
+        $managerRole->syncPermissions($manager_permissions);
+        $userRole->syncPermissions($user_permissions);
+        $this->command->info('Permissions assigned to roles successfully.');
+
+        // --- 5. Create Users and Assign Roles ---
+        // Admin User
+        User::firstOrCreate(
+            ['email' => 'admin@tpm.com'],
+            ['name' => 'Admin User', 'password' => Hash::make('password')]
+        )->assignRole($adminRole);
+
+        // Manager User
+        User::firstOrCreate(
+            ['email' => 'manager@tpm.com'],
+            ['name' => 'Manager User', 'password' => Hash::make('password')]
+        )->assignRole($managerRole);
+
+        // Standard User
+        User::firstOrCreate(
+            ['email' => 'user@tpm.com'],
+            ['name' => 'Standard User', 'password' => Hash::make('password')]
+        )->assignRole($userRole);
         
-        $this->command->info('Permissions created successfully.');
-
-        // --- 3. Create the Admin Role and assign all permissions ---
-        // Use firstOrCreate to find the role or create it if it doesn't exist
-        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        
-        // Get all permissions and assign them to the admin role
-        $allPermissions = Permission::pluck('name')->all();
-        $adminRole->syncPermissions($allPermissions);
-
-        $this->command->info('Admin role created and permissions assigned.');
-
-        // --- 4. Create the Admin User ---
-        // Use firstOrCreate to prevent creating the user if they already exist
-        $adminUser = User::firstOrCreate(
-            ['email' => 'admin@tpm.com'], // Find user by email
-            [
-                'name' => 'Admin User', // Data to use if creating a new user
-                'password' => Hash::make('password'), // Hash the password
-            ]
-        );
-
-        // --- 5. Assign the Admin Role to the User ---
-        $adminUser->assignRole($adminRole);
-
-        $this->command->info('Admin user created and assigned the admin role.');
+        $this->command->info('Users created and roles assigned successfully.');
     }
 }

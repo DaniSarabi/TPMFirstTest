@@ -40,7 +40,7 @@ export default function Index({ users }: IndexPageProps) {
   // This variable will hold the "Create User" button if the user has permission,
   // otherwise it will be null.
   const toolbarAction = can.create ? (
-    <Button asChild variant="secondary" className='text-white' size="lg">
+    <Button asChild variant="default" className='' size="lg">
       {/* 2. Add flex utilities to the Link to align and space its content */}
       <Link href={route('users.create')} className="flex items-center gap-2">
         <PlusCircle className="h-4 w-4" /> {/* 3. Add the icon... */}
@@ -56,7 +56,6 @@ export default function Index({ users }: IndexPageProps) {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Users</h1>
         </div>
-
         {/* Render the DataTable component */}
         <DataTable columns={columns} data={users} filterColumnId="email" filterPlaceholder="Filter by email..." toolbarAction={toolbarAction} />
       </div>

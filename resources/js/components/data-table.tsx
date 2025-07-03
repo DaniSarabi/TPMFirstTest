@@ -28,6 +28,7 @@ interface DataTableProps<TData, TValue> {
   filterPlaceholder: string; // Optional prop to specify the placeholder text for the filter input
   toolbarAction?: React.ReactNode; // Optional prop for additional toolbar actions
   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement; // Optional prop for rendering subcomponents in expandable rows
+  rowClassName?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -37,6 +38,7 @@ export function DataTable<TData, TValue>({
   filterPlaceholder,
   toolbarAction,
   renderSubComponent,
+  rowClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -87,12 +89,16 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="overflow-auto rounded-md border">
         <Table>
-          <TableHeader className="bg-background sticky top-0 z-10 shadow-sm">
+          <TableHeader className="bg-background sticky top-0 z-10 shadow-md font-bold">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow 
+              className='h-15'
+              key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                    className='text-base'
+                    key={header.id}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
@@ -103,9 +109,15 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                // --- ACTION 5: Render the main row and the expanded sub-row ---
+                //  Render the main row and the expanded sub-row ---
                 <React.Fragment key={row.id}>
-                  <TableRow data-state={row.getIsSelected() && 'selected'} className={cn(row.getIsExpanded() && 'bg-gray-200')}>
+                  <TableRow 
+                  data-state={row.getIsSelected() && 'selected'} 
+                  className={
+                    cn(
+                      row.getIsExpanded() && 'bg-gray-200',
+                      rowClassName
+                      )}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}

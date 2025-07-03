@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import loginImg from '../../../../public/home.png';
 
 // Define the shape of the form data
 type LoginForm = {
@@ -23,7 +24,7 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword }: LoginProps) {
-    // --- The form logic remains the same ---
+    // --- Your existing Inertia form logic remains unchanged ---
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
         password: '',
@@ -38,14 +39,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     };
 
     return (
-        // --- ACTION 1: Use the AuthLayout to center the new card design ---
-        <AuthLayout title='' description=''>
+        <div >
             <Head title="Log in" />
 
-            <Card className="w-full max-w-md overflow-hidden p-0">
-                <CardContent className="p-0">
-                    {/* --- ACTION 2: The form now uses the new design --- */}
-                    <form className="p-6 md:p-8" onSubmit={submit}>
+            {/* --- ACTION 1: Use the new Card-based layout --- */}
+            <Card className="w-full max-w-4xl">
+                <CardContent className="grid p-0 md:grid-cols-2">
+                    {/* --- ACTION 2: Connect your form logic to the new design --- */}
+                    <form className="p-6 md:p-8 flex flex-col justify-center" onSubmit={submit}>
                         <div className="flex flex-col gap-6">
                             <div className="flex flex-col items-center text-center">
                                 <h1 className="text-2xl font-bold">Welcome Back</h1>
@@ -59,7 +60,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     <Input
                                         id="email"
                                         type="email"
-                                        placeholder="m@example.com"
+                                        placeholder="email@example.com"
                                         autoFocus
                                         required
                                         value={data.email}
@@ -70,6 +71,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 <div className="grid gap-2">
                                     <div className="flex items-center">
                                         <Label htmlFor="password">Password</Label>
+                                        {/* Use your existing logic for the "Forgot Password" link */}
                                         {canResetPassword && (
                                             <TextLink href={route('password.request')} className="ml-auto text-sm">
                                                 Forgot your password?
@@ -93,16 +95,26 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             
                             <div className="text-center text-sm">
                                 Don&apos;t have an account?{' '}
+                                {/* Use your existing TextLink for the "Sign up" link */}
                                 <TextLink href={route('register')}>
                                     Sign up
                                 </TextLink>
                             </div>
                         </div>
                     </form>
+                    {/* --- ACTION 3: Keep the image column --- */}
+                    <div className="bg-muted relative hidden md:block">
+                        <img
+                            src={loginImg}
+                            alt="TPM application visual"
+                            className="absolute inset-0 h-full w-full object-cover"
+                            //onError={(e) => (e.currentTarget.src = 'https://placehold.co/1080x1920/e2e8f0/e2e8f0?text=Image')}
+                        />
+                    </div>
                 </CardContent>
             </Card>
 
             {status && <div className="mt-4 text-center text-sm font-medium text-green-600">{status}</div>}
-        </AuthLayout>
+        </div>
     );
 }

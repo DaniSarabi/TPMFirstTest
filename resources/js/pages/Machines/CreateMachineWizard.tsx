@@ -171,8 +171,6 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
       await axios.post(route('inspection-points.store'), {
         inspection_points: inspectionPoints,
       });
-      // --- ACTION: Move handleClose() inside the try block ---
-      // This ensures the modal only closes after a successful API call.
       handleClose();
     } catch (error: any) {
       if (error.response && error.response.status === 422) {
@@ -206,7 +204,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
     switch (step) {
       case 1:
         return (
-          <form id="machine-form" onSubmit={handleSaveMachine} className="grid gap-4 py-4">
+          <form id="machine-form" onSubmit={handleSaveMachine} className="grid gap-4 py-4" autoComplete='off'>
             <div className="space-y-2">
               <Label htmlFor="name">Machine Name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />

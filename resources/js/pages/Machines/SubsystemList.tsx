@@ -18,7 +18,7 @@ export function SubsystemList({ machine }: SubsystemListProps) {
     <div className="bg-muted/50 p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold">Subsystems for: {machine.name}</h3>
-        <Button variant="secondary" size="sm" className="flex items-center gap-2 text-white">
+        <Button variant="secondary" size="sm" className="flex items-center gap-2 ">
           <Plus className="h-4 w-4" />
           Add New Subsystem
         </Button>

@@ -39,7 +39,7 @@ export default function Index({ roles }: ShowRolePageProps) {
   // This variable will hold the "Create User" button if the user has permission,
   // otherwise it will be null.
   const toolbarAction = can.create ? (
-    <Button asChild variant="secondary" className="text-white" size="lg">
+    <Button asChild variant="default" className="" size="lg">
       {/* 2. Add flex utilities to the Link to align and space its content */}
       <Link href={route('roles.create')} className="flex items-center gap-2">
         <PlusCircle className="h-4 w-4" /> {/* 3. Add the icon... */}
@@ -51,13 +51,10 @@ export default function Index({ roles }: ShowRolePageProps) {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Roles" />
-      <div className="p-6">
-        {useCan('roles.create') && (
-          <Link href={route('roles.create')} className="btn btn-md btn-primary px-3 py-2">
-            Create
-            {/* //TODO: Pass the create logic to a modal > example: https://flowbite.com/blocks/application/crud/ */}
-          </Link>
-        )}
+      <div className="space-y-4 p-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Roles</h1>
+        </div>
         {/* Render the DataTable component */}
         <DataTable columns={columns} data={roles} filterColumnId="name" filterPlaceholder="Filter by name..." toolbarAction={toolbarAction} />
       </div>

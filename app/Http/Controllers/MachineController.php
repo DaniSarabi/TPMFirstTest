@@ -18,7 +18,7 @@ class MachineController extends Controller
          // Fetch all machines from the database.
         // We use `with` to eager-load the subsystems and their inspection points.
         // This is very efficient and prevents many small database queries.
-        $machines = Machine::with('subsystems.inspectionPoints')->get();
+        $machines = Machine::with('subsystems.inspectionPoints')->latest()->get();
 
         // Render the React component and pass the machines data as a prop.
         return Inertia::render('Machines/Index', [

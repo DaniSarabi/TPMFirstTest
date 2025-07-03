@@ -44,14 +44,14 @@ class PermissionSeeder extends Seeder
 
         // --- 2. Create Permissions if they don't exist ---
         foreach ($permissions as $permissionName) {
-            Permission::firstOrCreate(['name' => $permissionName]);
+            Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
         }
         
         $this->command->info('Permissions created successfully.');
 
         // --- 3. Create the Admin Role and assign all permissions ---
         // Use firstOrCreate to find the role or create it if it doesn't exist
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         
         // Get all permissions and assign them to the admin role
         $allPermissions = Permission::pluck('name')->all();

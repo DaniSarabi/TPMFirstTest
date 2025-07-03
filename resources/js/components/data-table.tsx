@@ -1,5 +1,6 @@
 'use client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils'; // Import the cn utility
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -49,6 +50,7 @@ export function DataTable<TData, TValue>({
     onExpandedChange: setExpanded,
     getExpandedRowModel: getExpandedRowModel(),
     getRowCanExpand: () => true, // Allow all rows to be expandable
+    //enableMultiRowExpansion: false,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -103,7 +105,7 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 // --- ACTION 5: Render the main row and the expanded sub-row ---
                 <React.Fragment key={row.id}>
-                  <TableRow data-state={row.getIsSelected() && 'selected'}>
+                  <TableRow data-state={row.getIsSelected() && 'selected'} className={cn(row.getIsExpanded() && 'bg-gray-200')}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
@@ -111,7 +113,14 @@ export function DataTable<TData, TValue>({
                   {/* If the row is expanded and a sub-component renderer is provided, render it */}
                   {row.getIsExpanded() && renderSubComponent && (
                     <TableRow>
-                      <TableCell colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</TableCell>
+                      <TableCell
+                       colSpan={row.getVisibleCells().length}
+                       >
+                        <div className='overflow-hidden animate-in fade-in-0 slide-in-from-top-1 duration-300'>
+                          {renderSubComponent({ row })}
+                          </div>
+
+                      </TableCell>
                     </TableRow>
                   )}
                 </React.Fragment>

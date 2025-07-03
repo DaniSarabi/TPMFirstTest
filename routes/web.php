@@ -10,7 +10,7 @@ use App\Http\Controllers\InspectionPointController;
 
 
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return Inertia::render('login');
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {

@@ -1,6 +1,7 @@
 'use client';
 
 import { DataTableColumnHeader } from '@/components/data-table-column-header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -40,7 +41,7 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
     cell: ({ row }) => {
       // Check if the row can be expanded (i.e., if it has subsystems)
       return row.getCanExpand() ? (
-        <Button variant="ghost" size="icon" onClick={row.getToggleExpandedHandler()} className="h-8 w-8 p-0 bg-accent">
+        <Button variant="ghost" size="icon" onClick={row.getToggleExpandedHandler()} className="h-8 w-8 p-0 bg-accent/30">
           {row.getIsExpanded() ? <ChevronDown className="h-4 w-4 " /> : <ChevronRight className="h-4 w-4" />}
         </Button>
       ) : null;
@@ -73,7 +74,7 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
         New: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
       }[status];
 
-      return <span className={cn('rounded px-3 py-1 text-sm ', statusColor)}>{status}</span>;
+      return <Badge className={cn('', statusColor)}>{status}</Badge>;
     },
   },
   {

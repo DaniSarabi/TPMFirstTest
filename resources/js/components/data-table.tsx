@@ -115,7 +115,7 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && 'selected'} 
                   className={
                     cn(
-                      row.getIsExpanded() && 'bg-gray-200',
+                      row.getIsExpanded() && 'bg-accent/50',
                       rowClassName
                       )}>
                     {row.getVisibleCells().map((cell) => (

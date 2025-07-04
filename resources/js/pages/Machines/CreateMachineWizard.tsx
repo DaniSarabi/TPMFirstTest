@@ -33,10 +33,10 @@ const WizardProgressBar = ({ currentStep }: { currentStep: number }) => {
         return (
           <li
             key={stepNumber}
-            className={`flex items-center md:w-full ${isCompleted ? 'text-blue-600 dark:text-blue-500' : ''} ${index < steps.length - 1 ? "after:border-1 after:mx-6 after:hidden after:h-1 after:w-full after:border-b after:border-gray-200 sm:after:inline-block sm:after:content-[''] xl:after:mx-10 dark:after:border-gray-700" : ''}`}
+            className={`flex items-center md:w-full ${isCompleted ? 'text-primary font-bold' : ''} ${index < steps.length - 1 ? "after:border-1 after:mx-6 after:hidden after:h-1 after:w-full after:border-b after:border-gray-200 sm:after:inline-block sm:after:content-[''] xl:after:mx-10 dark:after:border-gray-700" : ''}`}
           >
             <span
-              className={`flex items-center after:mx-2 after:text-gray-200 after:content-['/'] sm:after:hidden dark:after:text-gray-500 ${isCurrent ? 'font-bold' : ''}`}
+              className={`flex items-center after:mx-2 after:text-primary after:content-['/'] sm:after:hidden dark:after:text-gray-500 ${isCurrent ? 'font-bold' : ''}`}
             >
               {isCompleted ? (
                 <svg

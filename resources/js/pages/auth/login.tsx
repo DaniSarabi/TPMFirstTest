@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/auth-layout';
+//import AuthLayout from '@/layouts/auth-layout';
 import loginImg from '../../../../public/home.png';
 
 // Define the shape of the form data

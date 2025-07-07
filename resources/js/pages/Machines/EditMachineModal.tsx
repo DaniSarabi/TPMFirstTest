@@ -70,7 +70,7 @@ export function EditMachineModal({ machine, isOpen, onOpenChange }: EditMachineM
         <form id="edit-machine-form" onSubmit={submit} className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">Machine Name</Label>
-            <Input id="edit-name" name="name" autoComplete="off" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+            <Input id="edit-name" name="name" autoComplete="off" value={data.name} onChange={(e) => setData('name', e.target.value)} required  className='hover:bg-accent hover:text-accent-foreground'/>
             <InputError message={errors.name} />
           </div>
           <div className="space-y-2">
@@ -81,27 +81,28 @@ export function EditMachineModal({ machine, isOpen, onOpenChange }: EditMachineM
               autoComplete="off"
               value={data.description}
               onChange={(e) => setData('description', e.target.value)}
+              className='hover:bg-accent hover:text-accent-foreground'
             />
             <InputError message={errors.description} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-status">Status</Label>
             <Select value={data.status} onValueChange={(value) => setData('status', value as MachineStatus)}>
-              <SelectTrigger id="edit-status" name="status">
+              <SelectTrigger id="edit-status" name="status" className='hover:bg-accent hover:text-accent-foreground'>
                 <SelectValue placeholder="Select a status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="In Service">In Service</SelectItem>
-                <SelectItem value="Under Maintenance">Under Maintenance</SelectItem>
-                <SelectItem value="Out of Service">Out of Service</SelectItem>
+              <SelectContent >
+                <SelectItem value="New" className='hover:bg-primary hover:text-primary-foreground'>New</SelectItem>
+                <SelectItem value="In Service" className='hover:bg-primary hover:text-primary-foreground'>In Service</SelectItem>
+                <SelectItem value="Under Maintenance" className='hover:bg-primary hover:text-primary-foreground'>Under Maintenance</SelectItem>
+                <SelectItem value="Out of Service" className='hover:bg-primary hover:text-primary-foreground'>Out of Service</SelectItem>
               </SelectContent>
             </Select>
             <InputError message={errors.status} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-image">Change Machine Image (Optional)</Label>
-            <Input id="edit-image" name="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
+            <Input className='hover:bg-accent hover:text-accent-foreground' id="edit-image" name="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
             <InputError message={errors.image} />
           </div>
         </form>

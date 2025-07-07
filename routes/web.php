@@ -26,6 +26,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('machines', MachineController::class);
     Route::post('/machines/{machine}/subsystems', [SubsystemController::class, 'store'])->name('subsystems.store');
     Route::post('/inspection-points', [InspectionPointController::class, 'store'])->name('inspection-points.store');
+    Route::post('/machines/{machine}/subsystems/add', [SubsystemController::class, 'add'])->name('subsystems.add');
+    Route::put('/subsystems/{subsystem}', [SubsystemController::class, 'update'])->name('subsystems.update');
+    Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy');
+    Route::put('/subsystems/{subsystem}/update-from-page', [SubsystemController::class, 'updateFromPage'])->name('subsystems.updateFromPage');
+    // Route for adding a new inspection point to a specific subsystem
+    Route::post('/subsystems/{subsystem}/inspection-points/add', [InspectionPointController::class, 'add'])->name('inspection-points.add');
+
+    // Route for updating a specific inspection point
+    Route::put('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'update'])->name('inspection-points.update');
+
+    // Route for deleting a specific inspection point
+    Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy');
+
 
     //Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');
 

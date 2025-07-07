@@ -1,7 +1,14 @@
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ChartNoAxesGantt, MoreVertical, Plus } from 'lucide-react';
 import { Machine } from './Columns'; // Import the Machine type from your columns file
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Define the props for this component, it needs the specific machine object
 interface SubsystemListProps {
@@ -18,7 +25,7 @@ export function SubsystemList({ machine }: SubsystemListProps) {
     <div className="bg-muted/50 p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold">Subsystems for: {machine.name}</h3>
-        <Button variant="ghost" size="sm" className="bg-black text-white flex items-center gap-2 ">
+        <Button variant="ghost" size="sm" className="flex items-center gap-2 bg-black text-white">
           <Plus className="h-4 w-4" />
           Add New Subsystem
         </Button>
@@ -33,42 +40,41 @@ export function SubsystemList({ machine }: SubsystemListProps) {
             const inspectionPointsCount = subsystem.inspection_points?.length ?? 0;
 
             return (
-              <div key={subsystem.id} className="bg-background flex items-center justify-between rounded-md p-3 shadow-sm">
+              <div key={subsystem.id} className="flex items-center justify-between rounded-md bg-background p-3 shadow-sm">
                 <div>
                   <p className="font-medium">{subsystem.name}</p>
-                  <p className="text-muted-foreground text-sm">{inspectionPointsCount} inspection points</p>
+                  <p className="text-sm text-muted-foreground">{inspectionPointsCount} inspection points</p>
                 </div>
 
-
                 <div className="flex items-center space-x-2">
-                                    {/* This main action button remains visible */}
-                                    <Button variant="default" size="sm" className=" hidden h-9 md:flex items-center gap-2">
-                                      <ChartNoAxesGantt className="h-4 w-4" />
-                                        Manage Inspection Points
-                                    </Button>
+                  {/* This main action button remains visible */}
+                  <Button variant="default" size="sm" className="hidden h-9 items-center gap-2 md:flex">
+                    <ChartNoAxesGantt className="h-4 w-4" />
+                    Manage Inspection Points
+                  </Button>
 
-                                    {/* The secondary actions are now in a dropdown */}
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">Open menu</span>
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem>Edit Subsystem</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600">Delete Subsystem</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
+                  {/* The secondary actions are now in a dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>Edit Subsystem</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600">Delete Subsystem</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           })
         ) : (
           // Display a message if there are no subsystems
-          <p className="text-muted-foreground py-4 text-center text-sm">No subsystems have been added to this machine yet.</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">No subsystems have been added to this machine yet.</p>
         )}
       </div>
     </div>

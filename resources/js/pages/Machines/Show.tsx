@@ -1,15 +1,19 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, Ticket, Wrench } from 'lucide-react';
 import React from 'react';
-import { Machine } from './Columns'; // Import the Machine type from your columns file
+import { AddSubsystemWizard } from './AddSubsystemWizard';
+import { Machine, Subsystem } from './Columns'; // Import the Machine type from your columns file
 import { EditMachineModal } from './EditMachineModal';
+import { EditSubsystemModal } from './EditSubsystemModal';
+import { SubsystemAccordion } from './SubsystemAccordion';
+import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
 
 // Define the props for the Show page
 interface ShowPageProps {
@@ -26,6 +30,17 @@ interface ShowPageProps {
 
 export default function Show({ machine, uptime, stats }: ShowPageProps) {
   const [editModalIsOpen, setEditModalIsOpen] = React.useState(false);
+
+  const [AddSubsystemWizardIsOpen, setAddSubsystemWizardIsOpen] = React.useState(false);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [subsystemToDelete, setSubsystemToDelete] = React.useState<number | null>(null);
+
+  const [editSubsystemModalIsOpen, setEditSubsystemModalIsOpen] = React.useState(false);
+  const [subsystemToEdit, setSubsystemToEdit] = React.useState<Subsystem | null>(null);
+
+  const [managePointsModalIsOpen, setManagePointsModalIsOpen] = React.useState(false);
+  const [subsystemToManage, setSubsystemToManage] = React.useState<Subsystem | null>(null);
 
   // Define the breadcrumbs for this page, including a link back to the index
   const breadcrumbs: BreadcrumbItem[] = [
@@ -50,6 +65,37 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
     }[status];
   };
 
+  const handleDeleteSubsystem = (id: number) => {
+    setSubsystemToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+  const confirmSubsystemDelete = () => {
+    if (!subsystemToDelete) return;
+    router.delete(route('subsystems.destroy', subsystemToDelete), {
+      preserveScroll: true, // Keep the user on the same page
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        setSubsystemToDelete(null);
+      },
+    });
+  };
+
+  // Function to handle opening the edit modal
+  const handleEditSubsystem = (subsystem: Subsystem) => {
+    setSubsystemToEdit(subsystem);
+    setEditSubsystemModalIsOpen(true);
+  };
+
+  const handleManagePoints = (subsystem: Subsystem) => {
+    setSubsystemToManage(subsystem);
+    setManagePointsModalIsOpen(true);
+  };
+
+  // This function will be called to refresh the page data
+  const handleFinish = () => {
+    router.reload({ only: ['machine'] });
+  };
+
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={`Machine: ${machine.name}`} />
@@ -60,7 +106,7 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
           <div className="grid md:grid-cols-2">
             {/* Left Column: Details */}
             <div className="flex flex-col p-6">
-              <div>
+              <div className="flex flex-col pb-4">
                 <div className="mb-2 flex items-center justify-between">
                   <Badge className={cn('text-sm', getStatusColor(machine.status))}>{machine.status}</Badge>
                   <Button variant="outline" size="icon" onClick={() => setEditModalIsOpen(true)}>
@@ -92,7 +138,7 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
                 </div>
               </div>
 
-              {/* --- ACTION 2: Add the new stats grid --- */}
+              {/*  Add the new stats grid --- */}
               <div className="mt-auto grid grid-cols-2 gap-4 border-t pt-6">
                 <div className="flex items-center gap-3">
                   <Wrench className="h-8 w-8 text-primary" />
@@ -142,55 +188,38 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Subsystems</CardTitle>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <CardTitle>Subsystems for {machine.name}</CardTitle>
+              <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setAddSubsystemWizardIsOpen(true)}>
                 <PlusCircle className="h-4 w-4" />
                 Add Subsystem
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {/* --- ACTION 2: Replaced the simple list with an Accordion --- */}
-            {machine.subsystems.length > 0 ? (
-              <Accordion type="single" collapsible className="w-full">
-                {machine.subsystems.map((subsystem) => (
-                  <AccordionItem key={subsystem.id} value={`item-${subsystem.id}`}>
-                    <AccordionTrigger className="px-4 hover:no-underline">
-                      <div className="flex w-full items-center justify-between">
-                        <div>
-                          <p className="text-left font-semibold">{subsystem.name}</p>
-                          <p className="text-left text-sm text-muted-foreground">{subsystem.inspection_points.length} inspection points</p>
-                        </div>
-                        <div className="mr-4 flex items-center gap-2">
-                          <Button variant="secondary" size="sm">
-                            Manage Points
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="ml-4 border-l-2 p-4 pl-6">
-                      <h4 className="mb-2 font-semibold">Inspection Points:</h4>
-                      <ul className="list-inside list-disc space-y-1 text-muted-foreground">
-                        {subsystem.inspection_points.length > 0 ? (
-                          subsystem.inspection_points.map((point) => <li key={point.id}>{point.name}</li>)
-                        ) : (
-                          <li>No inspection points for this subsystem.</li>
-                        )}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ) : (
-              <p className="py-4 text-center text-sm text-muted-foreground">This machine does not have any subsystems yet.</p>
-            )}
+            <SubsystemAccordion machine={machine} onDelete={handleDeleteSubsystem} onEdit={handleEditSubsystem} onManagePoints={handleManagePoints} />
           </CardContent>
         </Card>
       </div>
       <EditMachineModal machine={machine} isOpen={editModalIsOpen} onOpenChange={setEditModalIsOpen} />
+      <AddSubsystemWizard
+        machineId={machine.id}
+        isOpen={AddSubsystemWizardIsOpen}
+        onOpenChange={setAddSubsystemWizardIsOpen}
+        onFinish={handleFinish}
+      />
+      <ConfirmDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmSubsystemDelete}
+        title="Delete Subsystem"
+        description="This will permanently delete the subsystem and all of its associated inspection points. This action cannot be undone."
+      />
+      <EditSubsystemModal subsystem={subsystemToEdit} isOpen={editSubsystemModalIsOpen} onOpenChange={setEditSubsystemModalIsOpen} />
+      <ManageInspectionPointsModal
+                subsystem={subsystemToManage}
+                isOpen={managePointsModalIsOpen}
+                onOpenChange={setManagePointsModalIsOpen}
+            />
     </AppLayout>
   );
 }

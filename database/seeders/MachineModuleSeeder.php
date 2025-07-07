@@ -55,7 +55,7 @@ class MachineModuleSeeder extends Seeder
             'name' => 'CNC Lathe TX-200',
             'description' => 'High-precision lathe for metal parts production.',
             'status' => 'In Service',
-            'image_url' => '/storage/images/cnc-lathe.png',
+            'image_url' => '/storage/images/cnc-lathe.jpg',
             'created_by' => $maintenanceUser->id,
         ]);
         $spindle = $cncLathe->subsystems()->create(['name' => 'Spindle System']);
@@ -71,7 +71,7 @@ class MachineModuleSeeder extends Seeder
             'name' => 'Stamping Press P-50',
             'description' => '50-ton hydraulic press for sheet metal forming.',
             'status' => 'Under Maintenance',
-            'image_url' => '/storage/images/stamping-press.png',
+            'image_url' => '/storage/images/stamping-press.jpg',
             'created_by' => $maintenanceUser->id,
         ]);
         $hydraulics = $stampingPress->subsystems()->create(['name' => 'Hydraulic System']);
@@ -86,7 +86,7 @@ class MachineModuleSeeder extends Seeder
             'name' => 'Welding Robot WR-5000',
             'description' => '6-axis robotic arm for automated welding.',
             'status' => 'In Service',
-            'image_url' => '/storage/images/welding-robot.png',
+            'image_url' => '/storage/images/welding-robot.jpg',
             'created_by' => $maintenanceUser->id,
         ]);
         $robotArm = $weldingRobot->subsystems()->create(['name' => 'Robotic Arm Assembly']);
@@ -101,7 +101,7 @@ class MachineModuleSeeder extends Seeder
             'name' => 'Main Assembly Conveyor',
             'description' => 'Transports parts between assembly stations.',
             'status' => 'Out of Service',
-            'image_url' => '/storage/images/conveyor-belt.png',
+            'image_url' => '/storage/images/conveyor-belt.jpg',
             'created_by' => $maintenanceUser->id,
         ]);
         $drive = $conveyor->subsystems()->create(['name' => 'Motor & Drive System']);

@@ -27,10 +27,10 @@ interface InspectionPoint {
 }
 // Define the shape of the data to match what your controller sends
 // This includes the nested relationships for subsystems and inspection points
-interface Subsystem {
+export interface Subsystem {
   id: number;
   name: string;
-  inspection_points: InspectionPoint[]; // We only need the ID for counting
+  inspection_points: InspectionPoint[]; 
 }
 
 export interface Machine {

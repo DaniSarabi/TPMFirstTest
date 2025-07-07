@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Machine;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
 
 class MachineController extends Controller
 {
@@ -15,7 +17,7 @@ class MachineController extends Controller
     public function index()
     {
         //
-         // Fetch all machines from the database.
+        // Fetch all machines from the database.
         // We use `with` to eager-load the subsystems and their inspection points.
         // This is very efficient and prevents many small database queries.
         $machines = Machine::with('subsystems.inspectionPoints')->latest()->get();
@@ -39,33 +41,76 @@ class MachineController extends Controller
      */
     public function store(Request $request)
     {
-        //
-         // --- ACTION 1: Validate the incoming request data ---
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // --- ACTION 2: Create the machine with the validated data ---
-        // We also associate the machine with the currently logged-in user.
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images', 'public');
+        }
+
         $machine = Machine::create([
             'name' => $validated['name'],
             'description' => $validated['description'],
-            'created_by' => Auth::id(), // Get the ID of the authenticated user
+            'image_url' => $imagePath,
+            'created_by' => Auth::id(),
+            'status' => 'New',
         ]);
 
-        // --- ACTION 3: Return a JSON response ---
-        // Since we are inside a modal, we return the new machine data as JSON.
-        // This allows the frontend to get the new machine's ID and move to the next step.
-        return response()->json($machine);
+        // This is the correct way to respond to an Inertia form submission.
+        // We "flash" the new machine data so the frontend can get its ID.
+        return back()->with('flash', [
+            'machine' => [
+                'id' => $machine->id,
+            ]
+        ]);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Machine $machine)
     {
-        //
+        // Eager-load all necessary relationships for the details page.
+        $machine->load('creator', 'subsystems.inspectionPoints', 'statusLogs');
+
+        // Calculate uptime information ---
+        $uptimeData = [
+            'since' => null,
+            'duration' => null,
+        ];
+
+        // Find the most recent log entry where the status was set to "In Service".
+        $inServiceLog = $machine->statusLogs()
+            ->where('status', 'In Service')
+            ->latest()
+            ->first();
+
+        if ($inServiceLog) {
+            $uptimeData['since'] = $inServiceLog->created_at->format('M d, Y, h:i A');
+            // Use Carbon's diffForHumans() to get a readable duration like "2 days ago".
+            $uptimeData['duration'] = $inServiceLog->created_at->diffForHumans(null, true, true);
+        }
+
+        $stats = [
+            'subsystems_count' => $machine->subsystems->count(),
+            // --- ACTION: Update this line to be safer ---
+            'inspection_points_count' => $machine->subsystems->reduce(function ($carry, $subsystem) {
+                // Use the null-safe operator (?->) to prevent an error if the relationship is null.
+                // The null coalescing operator (?? 0) ensures we add 0 if it's null.
+                return $carry + ($subsystem->inspectionPoints?->count() ?? 0);
+            }, 0),
+        ];
+
+        // Render the 'Show' page component and pass both the machine and uptime data.
+        return Inertia::render('Machines/Show', [
+            'machine' => $machine,
+            'uptime' => $uptimeData,
+            'stats' => $stats,
+        ]);
     }
 
     /**
@@ -81,23 +126,45 @@ class MachineController extends Controller
      */
     public function update(Request $request, Machine $machine)
     {
-        // You can add authorization here if needed, e.g.,
-        // $this->authorize('update', $machine);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'status' => 'required|string|in:New,In Service,Under Maintenance,Out of Service',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        // Check if the status has changed to create a log entry
+        $statusChanged = $machine->status !== $validated['status'];
+
+        // Handle the file upload if a new image is provided
+        if ($request->hasFile('image')) {
+            // Delete the old image if it exists
+            if ($machine->image_url) {
+                Storage::disk('public')->delete($machine->image_url);
+            }
+            // Store the new image and add the path to the validated data
+            $validated['image_url'] = $request->file('image')->store('images', 'public');
+        }
+
+        // Update the machine with the validated data
         $machine->update($validated);
 
-        // Return the updated machine data as JSON.
-        return response()->json($machine);
+        // Create a new log entry if the status changed
+        if ($statusChanged) {
+            $machine->statusLogs()->create([
+                'status' => $validated['status'],
+            ]);
+        }
+
+        // --- ACTION: Return a redirect with a success message ---
+        // This is the correct response for an Inertia form submission.
+        return to_route('machines.show', $machine->id)
+            ->with('success', 'Machine updated successfully.');
     }
     /**
      * Remove the specified resource from storage.
      */
-   public function destroy(Machine $machine)
+    public function destroy(Machine $machine)
     {
         // Delete the machine. Because we set up 'onDelete('cascade')' in our migrations,
         // Laravel will automatically delete all of its associated subsystems and inspection points.

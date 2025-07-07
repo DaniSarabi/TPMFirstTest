@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 
 class Machine extends Model
@@ -23,7 +25,37 @@ class Machine extends Model
         'description',
         'created_by',
         'status',
+        'image_url',
     ];
+    /**
+     * This method will automatically format the image_url whenever it's accessed.
+     */
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                // If the value exists, return the full public URL from storage.
+                // Otherwise, return null.
+                return $value ? Storage::url($value) : null;
+            }
+        );
+    }
+    /**
+     * The "booted" method of the model.
+     *
+     * This is the perfect place to register model events.
+     */
+    protected static function booted(): void
+    {
+        // --- ACTION: Add the 'created' event listener ---
+        // This will automatically run every time a new machine is created.
+        static::created(function (Machine $machine) {
+            // Create the initial status log for the new machine.
+            $machine->statusLogs()->create([
+                'status' => $machine->status,
+            ]);
+        });
+    }
 
     /**
      * Get the user who created the machine.
@@ -39,5 +71,12 @@ class Machine extends Model
     public function subsystems(): HasMany
     {
         return $this->hasMany(Subsystem::class);
+    }
+    /**
+     * Get the status logs for the machine.
+     */
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(MachineStatusLog::class);
     }
 }

@@ -16,12 +16,21 @@ import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react';
 
+interface Creator {
+    id: number;
+    name: string;
+    email: string;
+}
+interface InspectionPoint {
+    id: number;
+    name: string;
+}
 // Define the shape of the data to match what your controller sends
 // This includes the nested relationships for subsystems and inspection points
 interface Subsystem {
   id: number;
   name: string;
-  inspection_points: { id: number }[]; // We only need the ID for counting
+  inspection_points: InspectionPoint[]; // We only need the ID for counting
 }
 
 export interface Machine {
@@ -29,6 +38,8 @@ export interface Machine {
   name: string;
   description: string;
   status: 'New' | 'In Service' | 'Under Maintenance' | 'Out of Service';
+  image_url: string | null;
+  creator: Creator;
   subsystems: Subsystem[];
 }
 

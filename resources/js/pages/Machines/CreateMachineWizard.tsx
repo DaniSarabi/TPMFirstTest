@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useForm } from '@inertiajs/react';
 import axios from 'axios';
 import { X } from 'lucide-react';
 import * as React from 'react';
@@ -33,10 +34,10 @@ const WizardProgressBar = ({ currentStep }: { currentStep: number }) => {
         return (
           <li
             key={stepNumber}
-            className={`flex items-center md:w-full ${isCompleted ? 'text-primary font-bold' : ''} ${index < steps.length - 1 ? "after:border-1 after:mx-6 after:hidden after:h-1 after:w-full after:border-b after:border-gray-200 sm:after:inline-block sm:after:content-[''] xl:after:mx-10 dark:after:border-gray-700" : ''}`}
+            className={`flex items-center md:w-full ${isCompleted ? 'font-bold text-primary' : ''} ${index < steps.length - 1 ? "after:mx-6 after:hidden after:h-1 after:w-full after:border-1 after:border-b after:border-gray-200 sm:after:inline-block sm:after:content-[''] xl:after:mx-10 dark:after:border-gray-700" : ''}`}
           >
             <span
-              className={`flex items-center after:mx-2 after:text-primary after:content-['/'] sm:after:hidden dark:after:text-gray-500 ${isCurrent ? 'font-bold' : ''}`}
+              className={`flex items-center after:mx-2 after:text-gray-200 after:content-['/'] sm:after:hidden dark:after:text-gray-500 ${isCurrent ? 'font-bold' : ''}`}
             >
               {isCompleted ? (
                 <svg
@@ -63,45 +64,39 @@ const WizardProgressBar = ({ currentStep }: { currentStep: number }) => {
 export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMachineWizardProps) {
   const [step, setStep] = React.useState(1);
   const [newMachineId, setNewMachineId] = React.useState<number | null>(null);
+  const [axiosProcessing, setAxiosProcessing] = React.useState(false); // For axios steps
 
-  // State for Step 1
-  const [name, setName] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [processing, setProcessing] = React.useState(false);
-  const [errors, setErrors] = React.useState<{ name?: string; description?: string; subsystems?: string[]; inspection_points?: string[] }>({});
+  // --- Use Inertia's useForm for Step 1 ---
+  const { data, setData, post, errors, reset, processing } = useForm({
+    name: '',
+    description: '',
+    image: null as File | null,
+  });
 
   // State for Step 2
   const [subsystemName, setSubsystemName] = React.useState('');
   const [subsystems, setSubsystems] = React.useState<string[]>([]);
+  const [subsystemErrors, setSubsystemErrors] = React.useState<{ subsystems?: string[] }>({});
 
   // State for Step 3
   const [createdSubsystems, setCreatedSubsystems] = React.useState<CreatedSubsystem[]>([]);
   const [inspectionPointName, setInspectionPointName] = React.useState('');
   const [inspectionPoints, setInspectionPoints] = React.useState<Record<number, string[]>>({});
+  const [inspectionPointErrors, setInspectionPointErrors] = React.useState<{ inspection_points?: string[] }>({});
 
-  const handleSaveMachine = async (e: React.FormEvent) => {
+  const handleSaveMachine = (e: React.FormEvent) => {
     e.preventDefault();
-    setProcessing(true);
-    setErrors({});
-    const payload = { name, description };
-    try {
-      let response;
-      if (newMachineId) {
-        response = await axios.put(route('machines.update', newMachineId), payload);
-      } else {
-        response = await axios.post(route('machines.store'), payload);
-      }
-      setNewMachineId(response.data.id);
-      setStep(2);
-    } catch (error: any) {
-      if (error.response && error.response.status === 422) {
-        setErrors(error.response.data.errors);
-      } else {
-        console.error('An unexpected error occurred:', error);
-      }
-    } finally {
-      setProcessing(false);
-    }
+    post(route('machines.store'), {
+      preserveScroll: true,
+      onSuccess: (page) => {
+        // Assert the type of flash to avoid 'unknown' error
+        const flash = page.props.flash as { machine?: { id: number } };
+        if (flash && flash.machine) {
+          setNewMachineId(flash.machine.id);
+          setStep(2);
+        }
+      },
+    });
   };
 
   const handleAddSubsystem = () => {
@@ -117,29 +112,22 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
 
   const handleSaveSubsystemsAndContinue = async () => {
     if (!newMachineId) return;
-    setProcessing(true);
-    setErrors({});
+    setAxiosProcessing(true);
+    setSubsystemErrors({});
     try {
       const response = await axios.post(route('subsystems.store', newMachineId), {
         subsystems: subsystems,
       });
-      const savedSubsystems = response.data.subsystems as CreatedSubsystem[];
-
-      // --- ACTION 1: Synchronize the state ---
-      // Update both the `createdSubsystems` (with IDs) and the `subsystems` (names only)
-      // to match exactly what is now in the database.
-      setCreatedSubsystems(savedSubsystems);
-      setSubsystems(savedSubsystems.map((sub) => sub.name));
-
+      setCreatedSubsystems(response.data.subsystems);
       setStep(3);
     } catch (error: any) {
       if (error.response && error.response.status === 422) {
-        setErrors(error.response.data.errors);
+        setSubsystemErrors(error.response.data.errors);
       } else {
         console.error('An unexpected error occurred:', error);
       }
     } finally {
-      setProcessing(false);
+      setAxiosProcessing(false);
     }
   };
 
@@ -165,8 +153,8 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
   };
 
   const handleSaveInspectionPointsAndFinish = async () => {
-    setProcessing(true);
-    setErrors({});
+    setAxiosProcessing(true);
+    setInspectionPointErrors({});
     try {
       await axios.post(route('inspection-points.store'), {
         inspection_points: inspectionPoints,
@@ -174,26 +162,24 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
       handleClose();
     } catch (error: any) {
       if (error.response && error.response.status === 422) {
-        setErrors(error.response.data.errors);
+        setInspectionPointErrors(error.response.data.errors);
       } else {
         console.error('An unexpected error occurred:', error);
       }
     } finally {
-      setProcessing(false);
+      setAxiosProcessing(false);
     }
   };
 
   const handleClose = () => {
-    setName('');
-    setDescription('');
+    reset();
     setSubsystemName('');
     setSubsystems([]);
-    // --- ACTION 2: Reset the createdSubsystems state ---
-    // This fixes the bug where old data would persist if the modal was closed and reopened.
     setCreatedSubsystems([]);
     setInspectionPointName('');
     setInspectionPoints({});
-    setErrors({});
+    setSubsystemErrors({});
+    setInspectionPointErrors({});
     setStep(1);
     setNewMachineId(null);
     onOpenChange(false);
@@ -204,16 +190,21 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
     switch (step) {
       case 1:
         return (
-          <form id="machine-form" onSubmit={handleSaveMachine} className="grid gap-4 py-4" autoComplete='off'>
+          <form id="machine-form" onSubmit={handleSaveMachine} className="grid gap-4 py-4" autoComplete="off">
             <div className="space-y-2">
               <Label htmlFor="name">Machine Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name[0]}</p>}
+              <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description (Optional)</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-              {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description[0]}</p>}
+              <Textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
+              {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image">Machine Image (Optional)</Label>
+              <Input id="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
+              {errors.image && <p className="mt-1 text-sm text-red-500">{errors.image}</p>}
             </div>
           </form>
         );
@@ -238,23 +229,23 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
                   Add
                 </Button>
               </div>
-              {errors.subsystems && <p className="mt-1 text-sm text-red-500">{errors.subsystems[0]}</p>}
+              {subsystemErrors.subsystems && <p className="mt-1 text-sm text-red-500">{subsystemErrors.subsystems[0]}</p>}
             </div>
             <div className="space-y-2">
               <Label>Added Subsystems</Label>
               {subsystems.length > 0 ? (
                 <div className="space-y-2 rounded-md border p-2">
                   {subsystems.map((name, index) => (
-                    <div key={index} className="bg-primary flex items-center justify-between rounded p-2 text-white">
+                    <div key={index} className="flex items-center justify-between rounded bg-primary p-2 text-primary-foreground">
                       <span>{name}</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-red-500" onClick={() => handleRemoveSubsystem(index)}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive" onClick={() => handleRemoveSubsystem(index)}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground py-4 text-center text-sm">No subsystems added yet.</p>
+                <p className="py-4 text-center text-sm text-muted-foreground">No subsystems added yet.</p>
               )}
             </div>
           </div>
@@ -263,7 +254,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
         return (
           <div className="grid gap-4 py-4">
             <Tabs defaultValue={createdSubsystems[0]?.id.toString()} className="w-full overflow-x-auto">
-              <TabsList className="x-max">
+              <TabsList className="w-max">
                 {createdSubsystems.map((sub) => (
                   <TabsTrigger key={sub.id} value={sub.id.toString()}>
                     {sub.name}
@@ -295,30 +286,25 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
                     <div className="space-y-2">
                       <Label>Added Points for {sub.name}</Label>
                       {(inspectionPoints[sub.id]?.length ?? 0) > 0 ? (
-                        <div className="bg-pri space-y-2 rounded-md border p-2">
+                        <div className="space-y-2 rounded-md border p-2">
                           {inspectionPoints[sub.id].map((name, index) => (
-                            <div key={index} className="bg-primary flex items-center justify-between rounded p-2 text-white">
+                            <div key={index} className="flex items-center justify-between rounded bg-secondary p-2 text-secondary-foreground">
                               <span>{name}</span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 hover:bg-red-500"
-                                onClick={() => handleRemoveInspectionPoint(sub.id, index)}
-                              >
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveInspectionPoint(sub.id, index)}>
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-muted-foreground py-4 text-center text-sm">No inspection points added yet for this subsystem.</p>
+                        <p className="py-4 text-center text-sm text-muted-foreground">No inspection points added yet for this subsystem.</p>
                       )}
                     </div>
                   </div>
                 </TabsContent>
               ))}
             </Tabs>
-            {errors.inspection_points && <p className="mt-2 text-sm text-red-500">{errors.inspection_points[0]}</p>}
+            {inspectionPointErrors.inspection_points && <p className="mt-2 text-sm text-red-500">{inspectionPointErrors.inspection_points[0]}</p>}
           </div>
         );
       default:
@@ -339,7 +325,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
         {renderStepContent()}
         <DialogFooter>
           {step > 1 && (
-            <Button variant="outline" onClick={() => setStep(step - 1)} disabled={processing}>
+            <Button variant="outline" onClick={() => setStep(step - 1)} disabled={axiosProcessing}>
               Back
             </Button>
           )}
@@ -350,17 +336,17 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
           )}
           {step === 2 && (
             <>
-              <Button variant="secondary" className="text-white" onClick={handleClose} disabled={processing}>
+              <Button variant="secondary" onClick={handleClose} disabled={axiosProcessing}>
                 Finish
               </Button>
-              <Button onClick={handleSaveSubsystemsAndContinue} disabled={processing}>
-                {processing ? 'Saving...' : 'Save and Continue'}
+              <Button onClick={handleSaveSubsystemsAndContinue} disabled={axiosProcessing}>
+                {axiosProcessing ? 'Saving...' : 'Save and Continue'}
               </Button>
             </>
           )}
           {step === 3 && (
-            <Button onClick={handleSaveInspectionPointsAndFinish} disabled={processing}>
-              {processing ? 'Saving...' : 'Finish'}
+            <Button onClick={handleSaveInspectionPointsAndFinish} disabled={axiosProcessing}>
+              {axiosProcessing ? 'Saving...' : 'Finish'}
             </Button>
           )}
         </DialogFooter>

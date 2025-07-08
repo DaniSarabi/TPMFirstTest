@@ -14,17 +14,29 @@ class MachineController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        // Fetch all machines from the database.
-        // We use `with` to eager-load the subsystems and their inspection points.
-        // This is very efficient and prevents many small database queries.
-        $machines = Machine::with('subsystems.inspectionPoints')->latest()->get();
+        $searchQuery = $request->input('search');
+        $statusFilter = $request->input('statuses');
 
-        // Render the React component and pass the machines data as a prop.
+        // --- ACTION: Update the 'with' clause to include nested relationships ---
+        $machines = Machine::with('creator', 'subsystems.inspectionPoints')
+            ->when($searchQuery, function ($query, $search) {
+                $query->where('name', 'like', '%' . $search . '%');
+            })
+            ->when($statusFilter && count($statusFilter) > 0, function ($query) use ($statusFilter) {
+                $query->whereIn('status', $statusFilter);
+            })
+            ->latest()
+            ->paginate(8)
+            ->withQueryString();
+
         return Inertia::render('Machines/Index', [
             'machines' => $machines,
+            'filters' => [
+                'search' => $searchQuery,
+                'statuses' => $statusFilter,
+            ],
         ]);
     }
 

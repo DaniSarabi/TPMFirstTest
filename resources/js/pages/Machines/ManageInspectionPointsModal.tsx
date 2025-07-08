@@ -20,9 +20,10 @@ interface ManageInspectionPointsModalProps {
   subsystem: Subsystem | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  can: { create: boolean; edit: boolean; delete: boolean };
 }
 
-export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange }: ManageInspectionPointsModalProps) {
+export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, can }: ManageInspectionPointsModalProps) {
   // State to manage the list of points displayed in the modal
   const [points, setPoints] = React.useState<InspectionPoint[]>([]);
   // State to manage which point is currently being edited
@@ -147,30 +148,36 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange }:
                     // --- Default View ---
                     <>
                       <span className="flex-1">{point.name}</span>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(point)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeletePoint(point.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {can.edit && (
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(point)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {can.delete && (
+                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeletePoint(point.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
               ))}
             </div>
 
-            <div className="border-t pt-4">
-              <Label>Add New Inspection Point</Label>
-              <form onSubmit={handleAddNewPoint} className="mt-2 flex items-center gap-2">
-                <div className="flex-1">
-                  <Input value={newData.name} onChange={(e) => setNewData('name', e.target.value)} placeholder="e.g., Check oil level" />
-                  <InputError message={newErrors.name} className="mt-1" />
-                </div>
-                <Button type="submit" disabled={processingNew}>
-                  {processingNew ? 'Adding...' : 'Add Point'}
-                </Button>
-              </form>
-            </div>
+            {can.create && (
+              <div className="border-t pt-4">
+                <Label>Add New Inspection Point</Label>
+                <form onSubmit={handleAddNewPoint} className="mt-2 flex items-center gap-2">
+                  <div className="flex-1">
+                    <Input value={newData.name} onChange={(e) => setNewData('name', e.target.value)} placeholder="e.g., Check oil level" />
+                    <InputError message={newErrors.name} className="mt-1" />
+                  </div>
+                  <Button type="submit" disabled={processingNew}>
+                    {processingNew ? 'Adding...' : 'Add Point'}
+                  </Button>
+                </form>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

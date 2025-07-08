@@ -19,25 +19,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    Route::get('TestTablePage', function () {
-        return Inertia::render('TestTablePage');
-    })->name('TestTablePage');
+    //* ***************************** Machines module Routes *****************************
 
-    Route::resource('machines', MachineController::class);
-    Route::post('/machines/{machine}/subsystems', [SubsystemController::class, 'store'])->name('subsystems.store');
-    Route::post('/inspection-points', [InspectionPointController::class, 'store'])->name('inspection-points.store');
-    Route::post('/machines/{machine}/subsystems/add', [SubsystemController::class, 'add'])->name('subsystems.add');
-    Route::put('/subsystems/{subsystem}', [SubsystemController::class, 'update'])->name('subsystems.update');
-    Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy');
-    Route::put('/subsystems/{subsystem}/update-from-page', [SubsystemController::class, 'updateFromPage'])->name('subsystems.updateFromPage');
-    // Route for adding a new inspection point to a specific subsystem
-    Route::post('/subsystems/{subsystem}/inspection-points/add', [InspectionPointController::class, 'add'])->name('inspection-points.add');
+    // Routes for viewing machines (list and details)
+    Route::resource('machines', MachineController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:machines.view');
 
-    // Route for updating a specific inspection point
-    Route::put('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'update'])->name('inspection-points.update');
+    // Routes for creating a new machine and its components
+    Route::resource('machines', MachineController::class)
+        ->only(['store'])
+        ->middleware('permission:machines.create');
 
-    // Route for deleting a specific inspection point
-    Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy');
+    Route::post('/machines/{machine}/subsystems', [SubsystemController::class, 'store'])->name('subsystems.store')->middleware('permission:machines.create');
+    Route::post('/inspection-points', [InspectionPointController::class, 'store'])->name('inspection-points.store')->middleware('permission:machines.create');
+
+    // Routes for adding a single subsystem (from the details page)
+    Route::post('/machines/{machine}/subsystems/add', [SubsystemController::class, 'add'])->name('subsystems.add')->middleware('permission:machines.create');
+
+    // Routes for editing/updating a machine and its components
+    Route::resource('machines', MachineController::class)
+        ->only(['update'])
+        ->middleware('permission:machines.edit');
+
+    Route::put('/subsystems/{subsystem}', [SubsystemController::class, 'update'])->name('subsystems.update')->middleware('permission:machines.edit');
+    Route::put('/subsystems/{subsystem}/update-from-page', [SubsystemController::class, 'updateFromPage'])->name('subsystems.updateFromPage')->middleware('permission:machines.edit');
+    Route::put('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'update'])->name('inspection-points.update')->middleware('permission:machines.edit');
+
+    // Routes for deleting a machine and its components
+    Route::resource('machines', MachineController::class)
+        ->only(['destroy'])
+        ->middleware('permission:machines.delete');
+
+    Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy')->middleware('permission:machines.delete');
+    Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy')->middleware('permission:machines.delete');
 
 
     //Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');

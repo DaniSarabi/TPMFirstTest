@@ -1,6 +1,6 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { ChartNoAxesGantt, Pencil, Trash2 } from 'lucide-react';
+import { ChartNoAxesGantt, Trash2 } from 'lucide-react';
 import { Machine, Subsystem } from './Columns';
 
 // Define the props for this component
@@ -9,9 +9,10 @@ interface SubsystemAccordionProps {
   onDelete: (id: number) => void;
   onEdit: (subsystem: Subsystem) => void;
   onManagePoints: (subsystem: Subsystem) => void;
+  can: { edit: boolean; delete: boolean };
 }
 
-export function SubsystemAccordion({ machine, onDelete, onEdit, onManagePoints }: SubsystemAccordionProps) {
+export function SubsystemAccordion({ machine, onDelete, onEdit, onManagePoints, can }: SubsystemAccordionProps) {
   if (!machine.subsystems || machine.subsystems.length === 0) {
     return <p className="py-4 text-center text-sm text-muted-foreground">This machine does not have any subsystems yet.</p>;
   }
@@ -42,30 +43,31 @@ export function SubsystemAccordion({ machine, onDelete, onEdit, onManagePoints }
               </div>
               {/* --- ACTION: The buttons are now here, inside the content --- */}
               <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onManagePoints(subsystem);
-                  }}
-                >
-                  <ChartNoAxesGantt className="mr-2 h-4 w-4" />
-                  Manage Points
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent the accordion from toggling
-                    onEdit(subsystem);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="destructive" size="icon" onClick={() => onDelete(subsystem.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {can.edit && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onManagePoints(subsystem);
+                    }}
+                  >
+                    <ChartNoAxesGantt className="mr-2 h-4 w-4" />
+                    Manage Points
+                  </Button>
+                )}
+                {can.delete && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(subsystem.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </AccordionContent>

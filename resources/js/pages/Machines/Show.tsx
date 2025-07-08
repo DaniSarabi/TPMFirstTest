@@ -3,17 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import AppLayout from '@/layouts/app-layout';
+import useCan from '@/lib/useCan';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, Ticket, Wrench } from 'lucide-react';
+import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, Ticket, Trash2, Wrench } from 'lucide-react';
 import React from 'react';
 import { AddSubsystemWizard } from './AddSubsystemWizard';
 import { Machine, Subsystem } from './Columns'; // Import the Machine type from your columns file
 import { EditMachineModal } from './EditMachineModal';
 import { EditSubsystemModal } from './EditSubsystemModal';
-import { SubsystemAccordion } from './SubsystemAccordion';
 import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
+import { SubsystemAccordion } from './SubsystemAccordion';
 
 // Define the props for the Show page
 interface ShowPageProps {
@@ -42,6 +43,14 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
   const [managePointsModalIsOpen, setManagePointsModalIsOpen] = React.useState(false);
   const [subsystemToManage, setSubsystemToManage] = React.useState<Subsystem | null>(null);
 
+  const [isMachineDeleteDialogOpen, setIsMachineDeleteDialogOpen] = React.useState(false);
+
+  const can = {
+    create: useCan('machines.create'),
+    edit: useCan('machines.edit'),
+    delete: useCan('machines.delete'),
+  };
+
   // Define the breadcrumbs for this page, including a link back to the index
   const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -58,10 +67,10 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
   // Helper to get the correct color for the status badge
   const getStatusColor = (status: string) => {
     return {
-      'In Service': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-      'Under Maintenance': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-      'Out of Service': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-      New: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+      'In Service': 'bg-green-300 text-green-800 dark:bg-green-900 dark:text-green-300',
+      'Under Maintenance': 'bg-yellow-300 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+      'Out of Service': 'bg-red-300 text-red-800 dark:bg-red-900 dark:text-red-300',
+      New: 'bg-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
     }[status];
   };
 
@@ -90,6 +99,10 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
     setSubsystemToManage(subsystem);
     setManagePointsModalIsOpen(true);
   };
+  const confirmMachineDelete = () => {
+    // Note: This will redirect to the index page on success.
+    router.delete(route('machines.destroy', machine.id));
+  };
 
   // This function will be called to refresh the page data
   const handleFinish = () => {
@@ -99,7 +112,6 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={`Machine: ${machine.name}`} />
-
       <div className="space-y-6 p-6">
         {/* --- Main Machine Details Card --- */}
         <Card>
@@ -109,9 +121,18 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
               <div className="flex flex-col pb-4">
                 <div className="mb-2 flex items-center justify-between">
                   <Badge className={cn('text-sm', getStatusColor(machine.status))}>{machine.status}</Badge>
-                  <Button variant="outline" size="icon" onClick={() => setEditModalIsOpen(true)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {can.edit && (
+                      <Button variant="outline" size="icon" onClick={() => setEditModalIsOpen(true)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {can.delete && (
+                      <Button variant="destructive" size="icon" onClick={() => setIsMachineDeleteDialogOpen(true)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <h1 className="mb-2 text-3xl font-bold">{machine.name}</h1>
                 <p className="mb-6 leading-relaxed text-muted-foreground">{machine.description || 'No description provided.'}</p>
@@ -189,14 +210,22 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Subsystems for {machine.name}</CardTitle>
-              <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setAddSubsystemWizardIsOpen(true)}>
-                <PlusCircle className="h-4 w-4" />
-                Add Subsystem
-              </Button>
+              {can.create && (
+                <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setAddSubsystemWizardIsOpen(true)}>
+                  <PlusCircle className="h-4 w-4" />
+                  Add Subsystem
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <SubsystemAccordion machine={machine} onDelete={handleDeleteSubsystem} onEdit={handleEditSubsystem} onManagePoints={handleManagePoints} />
+            <SubsystemAccordion
+              machine={machine}
+              onDelete={handleDeleteSubsystem}
+              onEdit={handleEditSubsystem}
+              onManagePoints={handleManagePoints}
+              can={can}
+            />
           </CardContent>
         </Card>
       </div>
@@ -214,12 +243,20 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
         title="Delete Subsystem"
         description="This will permanently delete the subsystem and all of its associated inspection points. This action cannot be undone."
       />
-      <EditSubsystemModal subsystem={subsystemToEdit} isOpen={editSubsystemModalIsOpen} onOpenChange={setEditSubsystemModalIsOpen} />
+      {can.edit && <EditSubsystemModal subsystem={subsystemToEdit} isOpen={editSubsystemModalIsOpen} onOpenChange={setEditSubsystemModalIsOpen} />}{' '}
       <ManageInspectionPointsModal
-                subsystem={subsystemToManage}
-                isOpen={managePointsModalIsOpen}
-                onOpenChange={setManagePointsModalIsOpen}
-            />
+        subsystem={subsystemToManage}
+        isOpen={managePointsModalIsOpen}
+        onOpenChange={setManagePointsModalIsOpen}
+        can={can}
+      />
+      <ConfirmDeleteDialog
+        isOpen={isMachineDeleteDialogOpen}
+        onOpenChange={setIsMachineDeleteDialogOpen}
+        onConfirm={confirmMachineDelete}
+        title={`Delete Machine: ${machine.name}`}
+        description="This action cannot be undone. This will permanently delete the entire machine, including all of its subsystems and inspection points."
+      />
     </AppLayout>
   );
 }

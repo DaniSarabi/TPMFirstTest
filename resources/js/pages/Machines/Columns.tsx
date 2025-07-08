@@ -40,6 +40,8 @@ export interface Machine {
   status: 'New' | 'In Service' | 'Under Maintenance' | 'Out of Service';
   image_url: string | null;
   creator: Creator;
+  created_at: string;
+  updated_at: string;
   subsystems: Subsystem[];
 }
 

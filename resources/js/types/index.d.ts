@@ -42,3 +42,27 @@ export interface User {
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
 }
+
+// Define the shape of a single pagination link
+export interface Link {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+// Define the shape of a paginated API response from Laravel
+export interface Paginated<T> {
+    data: T[];
+    links: Link[];
+    // You can add other pagination properties here if needed
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
+// Define the shape of the filters object
+export interface Filter {
+    search?: string;
+    statuses?: string[];
+}

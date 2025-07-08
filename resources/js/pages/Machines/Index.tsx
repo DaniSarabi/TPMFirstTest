@@ -1,20 +1,22 @@
-import { DataTable } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/lib/useCan';
-import { type BreadcrumbItem } from '@/types';
+import { Paginated, type BreadcrumbItem, type Filter } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Row } from '@tanstack/react-table';
-import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
-import { getColumns, Machine } from './Columns'; // Import from your new columns file
-import { SubsystemList } from './SubsystemList';
+import { Machine } from './Columns'; // Import from your new columns file
 import { CreateMachineWizard } from './CreateMachineWizard';
+import { MachineGrid } from './MachineGrid';
+import { MachineListToolbar } from './MachineListToolbar';
+import { PaginationControls } from './PaginationControls';
+import { SubsystemList } from './SubsystemList';
+import { CirclePlus } from 'lucide-react';
 
 // Define the props for the Index page
 interface IndexPageProps {
-  machines: Machine[];
+  machines: Paginated<Machine>;
+  filters: Filter;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,11 +26,42 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Index({ machines }: IndexPageProps) {
+export default function Index({ machines, filters }: IndexPageProps) {
   const [dialogIsOpen, setDialogIsOpen] = React.useState(false);
   const [machineToDelete, setMachineToDelete] = React.useState<number | null>(null);
   const [wizardIsOpen, setWizardIsOpen] = React.useState(false);
 
+  // ---  Add state for both search and status filters ---
+  const [search, setSearch] = React.useState(filters.search || '');
+  const [statusFilter, setStatusFilter] = React.useState<Set<string>>(new Set(filters.statuses || []));
+
+  const canCreate = useCan('machines.create');
+
+  const isInitialMount = React.useRef(true);
+
+  // This effect will trigger a search when the user stops typing
+  React.useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    // Convert the Set to an array for the request
+    const statuses = Array.from(statusFilter);
+
+    const timeout = setTimeout(() => {
+      router.get(
+        route('machines.index'),
+        { search, statuses }, // Send both filters to the backend
+        {
+          preserveState: true,
+          replace: true,
+        },
+      );
+    }, 300); // 300ms delay
+
+    // --- Add statusFilter to the dependency array ---
+    return () => clearTimeout(timeout);
+  }, [search, statusFilter]);
   // Check permissions for machine actions
   const can = {
     create: useCan('machines.create'),
@@ -36,39 +69,11 @@ export default function Index({ machines }: IndexPageProps) {
     delete: useCan('machines.delete'),
   };
 
-  // Handle the delete action
-  function handleDelete(id: number) {
-    setMachineToDelete(id);
-    setDialogIsOpen(true);
-  }
-
-  function confirmDelete() {
-    if (machineToDelete) {
-      router.delete(route('machines.destroy', machineToDelete), {
-        onFinish: () => {
-          setMachineToDelete(null);
-          setDialogIsOpen(false);
-        },
-      });
-    }
-  }
-
   // This function will be passed to the wizard and called when it closes.
-    function handleWizardFinish() {
-        // router.reload() tells Inertia to re-fetch the props for the current page.
-        router.reload({ only: ['machines'] });
-    }
-
-  // Generate the columns array, passing permissions and the delete handler
-  const columns = React.useMemo(() => getColumns(can, handleDelete), [can]);
-
-  // Define the "Create Machine" button to pass to the toolbar
-  const toolbarAction = can.create ? (
-    <Button variant="default" className="" size="lg" onClick={() => setWizardIsOpen(true)}>
-      <PlusCircle className="h-4 w-4" />
-      Create Machine
-    </Button>
-  ) : null;
+  function handleWizardFinish() {
+    // router.reload() tells Inertia to re-fetch the props for the current page.
+    router.reload({ only: ['machines'] });
+  }
 
   // This function takes the table row and returns the SubsystemList component,
   // passing the specific machine data from that row.
@@ -84,30 +89,20 @@ export default function Index({ machines }: IndexPageProps) {
           <h1 className="text-2xl font-bold">Machine Management</h1>
         </div>
 
-        {/* Render the DataTable component */}
-        <DataTable
-          columns={columns}
-          data={machines}
-          filterColumnId="name"
-          filterPlaceholder="Filter by machine name..."
-          toolbarAction={toolbarAction}
-          renderSubComponent={renderSubComponent}
-          rowClassName='h-15'
+        <MachineListToolbar
+          onSearch={setSearch}
+          statusFilterValues={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          createAction={
+            // --- ACTION 3: Conditionally render the create button ---
+            canCreate ? <Button onClick={() => setWizardIsOpen(true)}><CirclePlus className="h-4 w-4" />Create Machine</Button> : null
+          }
         />
-        <ConfirmDeleteDialog
-          isOpen={dialogIsOpen}
-          onOpenChange={setDialogIsOpen}
-          onConfirm={confirmDelete}
-          title="Delete Machine"
-          description="This will permanently delete the machine and all of its associated subsystems and inspection points. This action cannot be undone."
-        />
+        <MachineGrid machines={machines.data} />
 
-        <CreateMachineWizard 
-          isOpen={wizardIsOpen} 
-          onOpenChange={setWizardIsOpen}
-          onFinish={handleWizardFinish}
-        />
+        <PaginationControls links={machines.links} />
       </div>
+      {canCreate && <CreateMachineWizard isOpen={wizardIsOpen} onOpenChange={setWizardIsOpen} onFinish={handleWizardFinish} />}{' '}
     </AppLayout>
   );
 }

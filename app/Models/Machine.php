@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class Machine extends Model
 {
     //
-     use HasFactory;
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -24,7 +24,7 @@ class Machine extends Model
         'name',
         'description',
         'created_by',
-        'status',
+        'machine_status_id', // Use the new foreign key
         'image_url',
     ];
     /**
@@ -50,9 +50,8 @@ class Machine extends Model
         // --- ACTION: Add the 'created' event listener ---
         // This will automatically run every time a new machine is created.
         static::created(function (Machine $machine) {
-            // Create the initial status log for the new machine.
             $machine->statusLogs()->create([
-                'status' => $machine->status,
+                'machine_status_id' => $machine->machine_status_id,
             ]);
         });
     }
@@ -78,5 +77,13 @@ class Machine extends Model
     public function statusLogs(): HasMany
     {
         return $this->hasMany(MachineStatusLog::class);
+    }
+    /**
+     * Get the status for the machine.
+     * This is the relationship method that was missing.
+     */
+    public function machineStatus(): BelongsTo
+    {
+        return $this->belongsTo(MachineStatus::class);
     }
 }

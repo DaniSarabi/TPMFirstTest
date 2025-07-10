@@ -7,6 +7,8 @@ use Inertia\Inertia;
 use App\Models\Machine;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\MachineStatus;
+
 
 
 class MachineController extends Controller
@@ -20,7 +22,7 @@ class MachineController extends Controller
         $statusFilter = $request->input('statuses');
 
         // --- ACTION: Update the 'with' clause to include nested relationships ---
-        $machines = Machine::with('creator', 'subsystems.inspectionPoints')
+        $machines = Machine::with('creator', 'subsystems.inspectionPoints', 'machineStatus')
             ->when($searchQuery, function ($query, $search) {
                 $query->where('name', 'like', '%' . $search . '%');
             })
@@ -87,7 +89,7 @@ class MachineController extends Controller
     public function show(Machine $machine)
     {
         // Eager-load all necessary relationships for the details page.
-        $machine->load('creator', 'subsystems.inspectionPoints', 'statusLogs');
+        $machine->load('creator', 'subsystems.inspectionPoints', 'statusLogs', 'machineStatus');
 
         // Calculate uptime information ---
         $uptimeData = [
@@ -97,13 +99,14 @@ class MachineController extends Controller
 
         // Find the most recent log entry where the status was set to "In Service".
         $inServiceLog = $machine->statusLogs()
-            ->where('status', 'In Service')
+            ->whereHas('machineStatus', function ($query) {
+                $query->where('name', 'In Service');
+            })
             ->latest()
             ->first();
 
         if ($inServiceLog) {
             $uptimeData['since'] = $inServiceLog->created_at->format('M d, Y, h:i A');
-            // Use Carbon's diffForHumans() to get a readable duration like "2 days ago".
             $uptimeData['duration'] = $inServiceLog->created_at->diffForHumans(null, true, true);
         }
 
@@ -122,6 +125,8 @@ class MachineController extends Controller
             'machine' => $machine,
             'uptime' => $uptimeData,
             'stats' => $stats,
+            'statuses' => MachineStatus::all(),
+
         ]);
     }
 
@@ -141,35 +146,30 @@ class MachineController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|string|in:New,In Service,Under Maintenance,Out of Service',
+            'machine_status_id' => 'required|exists:machine_statuses,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Check if the status has changed to create a log entry
-        $statusChanged = $machine->status !== $validated['status'];
+        $statusChanged = $machine->machine_status_id !== (int)$validated['machine_status_id'];
 
-        // Handle the file upload if a new image is provided
+        // Handle file upload...
         if ($request->hasFile('image')) {
-            // Delete the old image if it exists
             if ($machine->image_url) {
                 Storage::disk('public')->delete($machine->image_url);
             }
-            // Store the new image and add the path to the validated data
             $validated['image_url'] = $request->file('image')->store('images', 'public');
         }
 
-        // Update the machine with the validated data
         $machine->update($validated);
 
-        // Create a new log entry if the status changed
         if ($statusChanged) {
+            // --- ACTION: Use the correct ID to create the log ---
             $machine->statusLogs()->create([
-                'status' => $validated['status'],
+                'machine_status_id' => $validated['machine_status_id'],
             ]);
         }
 
-        // --- ACTION: Return a redirect with a success message ---
-        // This is the correct response for an Inertia form submission.
         return to_route('machines.show', $machine->id)
             ->with('success', 'Machine updated successfully.');
     }

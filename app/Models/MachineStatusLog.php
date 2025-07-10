@@ -19,7 +19,7 @@ class MachineStatusLog extends Model
      */
     protected $fillable = [
         'machine_id',
-        'status',
+        'machine_status_id', // Use the new foreign key
     ];
 
     /**
@@ -28,5 +28,9 @@ class MachineStatusLog extends Model
     public function machine(): BelongsTo
     {
         return $this->belongsTo(Machine::class);
+    }
+    public function machineStatus(): BelongsTo
+    {
+        return $this->belongsTo(MachineStatus::class);
     }
 }

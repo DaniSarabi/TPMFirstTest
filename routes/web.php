@@ -7,6 +7,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\MachineController;
 use App\Http\Controllers\SubsystemController;
 use App\Http\Controllers\InspectionPointController;
+use App\Http\Controllers\MachineStatusController;
+
 
 
 Route::get('/', function () {
@@ -19,6 +21,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
+
+     // --- ACTION 2: Use a Route Group to correctly prefix the names and URLs ---
+    Route::prefix('general-settings')->name('settings.')->group(function () {
+        Route::resource('machine-status', MachineStatusController::class)
+            ->except(['show'])
+            ->middleware('permission:machines.edit'); // Protect the routes
+    });
     //* ***************************** Machines module Routes *****************************
 
     // Routes for viewing machines (list and details)

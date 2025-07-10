@@ -1,7 +1,6 @@
 'use client';
 
 import { DataTableColumnHeader } from '@/components/data-table-column-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,33 +10,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 interface Creator {
-    id: number;
-    name: string;
-    email: string;
+  id: number;
+  name: string;
+  email: string;
 }
 interface InspectionPoint {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
 }
 // Define the shape of the data to match what your controller sends
 // This includes the nested relationships for subsystems and inspection points
 export interface Subsystem {
   id: number;
   name: string;
-  inspection_points: InspectionPoint[]; 
+  inspection_points: InspectionPoint[];
 }
 
+export interface MachineStatus {
+  id: number;
+  name: string;
+  bg_color: string;
+  text_color: string;
+}
 export interface Machine {
   id: number;
   name: string;
   description: string;
-  status: 'New' | 'In Service' | 'Under Maintenance' | 'Out of Service';
+  machine_status: MachineStatus;
   image_url: string | null;
   creator: Creator;
   created_at: string;
@@ -54,8 +58,8 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
     cell: ({ row }) => {
       // Check if the row can be expanded (i.e., if it has subsystems)
       return row.getCanExpand() ? (
-        <Button variant="ghost" size="icon" onClick={row.getToggleExpandedHandler()} className="h-8 w-8 p-0 bg-accent/30">
-          {row.getIsExpanded() ? <ChevronDown className="h-4 w-4 " /> : <ChevronRight className="h-4 w-4" />}
+        <Button variant="ghost" size="icon" onClick={row.getToggleExpandedHandler()} className="h-8 w-8 bg-accent/30 p-0">
+          {row.getIsExpanded() ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Button>
       ) : null;
     },
@@ -74,20 +78,23 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
     header: 'Description',
   },
   {
-    accessorKey: 'status',
+    accessorKey: 'machine_status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => {
-      const status = row.getValue('status') as string;
+      const status = row.original.machine_status;
+      if (!status) return null;
 
-      // Define the color classes based on the status value
-      const statusColor = {
-        'In Service': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-        'Under Maintenance': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-        'Out of Service': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-        New: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-      }[status];
-
-      return <Badge className={cn('', statusColor)}>{status}</Badge>;
+      return (
+        <span
+          className="rounded-md px-3 py-1 text-sm font-semibold"
+          style={{
+            backgroundColor: status.bg_color,
+            color: status.text_color,
+          }}
+        >
+          {status.name}
+        </span>
+      );
     },
   },
   {

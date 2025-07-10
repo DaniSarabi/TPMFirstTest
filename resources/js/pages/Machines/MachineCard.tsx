@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import { Calendar, Clock, ListChecks, RotateCw, Wrench } from 'lucide-react';
 import { Machine } from './Columns';
@@ -8,17 +7,6 @@ import { Machine } from './Columns';
 interface MachineCardProps {
   machine: Machine;
 }
-
-// Helper to get the correct color for the status badge
-const getStatusColor = (status: string) => {
-  return {
-    'In Service': 'bg-green-300 text-green-900 dark:bg-green-900 dark:text-green-300',
-    'Under Maintenance': 'bg-yellow-300 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-    'Out of Service': 'bg-red-300 text-red-800 dark:bg-red-900 dark:text-red-300',
-    New: 'bg-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  }[status];
-};
-
 export function MachineCard({ machine }: MachineCardProps) {
   // Format the dates for display
   const dateAdded = new Date(machine.created_at).toLocaleDateString('en-US', {
@@ -33,7 +21,7 @@ export function MachineCard({ machine }: MachineCardProps) {
     hour12: false,
   });
 
-  // --- ACTION: Safely calculate the total inspection points ---
+  // ---  Safely calculate the total inspection points ---
   const totalInspectionPoints =
     machine.subsystems?.reduce((acc, sub) => {
       // Use optional chaining (?.) and nullish coalescing (??) to prevent errors
@@ -56,8 +44,14 @@ export function MachineCard({ machine }: MachineCardProps) {
                 className="h-full w-full object-cover"
               />
             </div>
-            <Badge className={cn('absolute top-0 left-0 z-10 mt-3 ml-3 text-white select-none', getStatusColor(machine.status))}>
-              {machine.status}
+            <Badge
+              className="absolute top-0 left-0 z-10 mt-3 ml-3 select-none"
+              style={{
+                backgroundColor: machine.machine_status.bg_color,
+                color: machine.machine_status.text_color,
+              }}
+            >
+              {machine.machine_status.name}
             </Badge>
             {/* Stats Overlay Section */}
             <div className="absolute bottom-0 mb-3 flex w-full justify-center">

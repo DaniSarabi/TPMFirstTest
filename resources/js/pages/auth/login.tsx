@@ -39,7 +39,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     };
 
     return (
-        <div >
+        <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
             <Head title="Log in" />
 
             {/* --- ACTION 1: Use the new Card-based layout --- */}

@@ -4,13 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import AppLayout from '@/layouts/app-layout';
 import useCan from '@/lib/useCan';
-import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, Ticket, Trash2, Wrench } from 'lucide-react';
 import React from 'react';
 import { AddSubsystemWizard } from './AddSubsystemWizard';
-import { Machine, Subsystem } from './Columns'; // Import the Machine type from your columns file
+import { Machine, MachineStatus, Subsystem } from './Columns'; // Import the Machine type from your columns file
 import { EditMachineModal } from './EditMachineModal';
 import { EditSubsystemModal } from './EditSubsystemModal';
 import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
@@ -19,6 +18,7 @@ import { SubsystemAccordion } from './SubsystemAccordion';
 // Define the props for the Show page
 interface ShowPageProps {
   machine: Machine;
+  statuses: MachineStatus[];
   uptime: {
     since: string | null;
     duration: string | null;
@@ -29,7 +29,7 @@ interface ShowPageProps {
   };
 }
 
-export default function Show({ machine, uptime, stats }: ShowPageProps) {
+export default function Show({ machine,statuses, uptime, stats }: ShowPageProps) {
   const [editModalIsOpen, setEditModalIsOpen] = React.useState(false);
 
   const [AddSubsystemWizardIsOpen, setAddSubsystemWizardIsOpen] = React.useState(false);
@@ -63,16 +63,6 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
       isCurrent: true,
     },
   ];
-
-  // Helper to get the correct color for the status badge
-  const getStatusColor = (status: string) => {
-    return {
-      'In Service': 'bg-green-300 text-green-800 dark:bg-green-900 dark:text-green-300',
-      'Under Maintenance': 'bg-yellow-300 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-      'Out of Service': 'bg-red-300 text-red-800 dark:bg-red-900 dark:text-red-300',
-      New: 'bg-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-    }[status];
-  };
 
   const handleDeleteSubsystem = (id: number) => {
     setSubsystemToDelete(id);
@@ -120,7 +110,15 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
             <div className="flex flex-col p-6">
               <div className="flex flex-col pb-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <Badge className={cn('text-sm', getStatusColor(machine.status))}>{machine.status}</Badge>
+                  <Badge
+                    className="text-sm"
+                    style={{
+                      backgroundColor: machine.machine_status.bg_color,
+                      color: machine.machine_status.text_color,
+                    }}
+                  >
+                    {machine.machine_status.name}
+                  </Badge>{' '}
                   <div className="flex items-center gap-2">
                     {can.edit && (
                       <Button variant="outline" size="icon" onClick={() => setEditModalIsOpen(true)}>
@@ -229,7 +227,7 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
           </CardContent>
         </Card>
       </div>
-      <EditMachineModal machine={machine} isOpen={editModalIsOpen} onOpenChange={setEditModalIsOpen} />
+      <EditMachineModal machine={machine} statuses={statuses} isOpen={editModalIsOpen} onOpenChange={setEditModalIsOpen} />
       <AddSubsystemWizard
         machineId={machine.id}
         isOpen={AddSubsystemWizardIsOpen}

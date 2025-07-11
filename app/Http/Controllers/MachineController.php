@@ -66,16 +66,18 @@ class MachineController extends Controller
             $imagePath = $request->file('image')->store('images', 'public');
         }
 
+        // --- ACTION: Explicitly set the machine_status_id ---
+        // This ensures the model event has the correct data.
         $machine = Machine::create([
             'name' => $validated['name'],
             'description' => $validated['description'],
             'image_url' => $imagePath,
             'created_by' => Auth::id(),
-            'status' => 'New',
+            'machine_status_id' => 1, // Set the default status to 'New' (ID 1)
         ]);
 
-        // This is the correct way to respond to an Inertia form submission.
-        // We "flash" the new machine data so the frontend can get its ID.
+        // The 'created' event in the Machine model will now work correctly.
+
         return back()->with('flash', [
             'machine' => [
                 'id' => $machine->id,

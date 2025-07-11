@@ -25,7 +25,7 @@ export interface MachineStatus {
 }
 
 // This function will be called from your Index page to generate the columns
-export const getColumns = (onEdit: (status: MachineStatus) => void, onDelete: (id: number) => void): ColumnDef<MachineStatus>[] => [
+export const getColumns = (onEdit: (status: MachineStatus) => void, onDelete: (status: MachineStatus) => void): ColumnDef<MachineStatus>[] => [
   {
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
@@ -33,6 +33,10 @@ export const getColumns = (onEdit: (status: MachineStatus) => void, onDelete: (i
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+  },
+    {
+    accessorKey: 'description',
+    header: 'Description',
   },
   {
     id: 'preview',
@@ -82,18 +86,16 @@ export const getColumns = (onEdit: (status: MachineStatus) => void, onDelete: (i
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              {canDelete && (
-                <DropdownMenuItem
-                  onSelect={() => {
-                    onDelete(status.id);
-                    setIsOpen(false); // Manually close the dropdown
-                  }}
-                  className="text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              )}
+               {canDelete && (
+                                // --- ACTION 2: Pass the entire status object to the onDelete handler ---
+                                <DropdownMenuItem onSelect={() => {
+                                    onDelete(status);
+                                    setIsOpen(false);
+                                }} className="text-red-600">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                            )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

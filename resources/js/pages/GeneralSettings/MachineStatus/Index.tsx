@@ -7,6 +7,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
+import { ReassignAndDeleteStatusModal } from '../ReassingAndDeleteStatusModal';
 import { StatusFormModal } from '../StatusFormModal';
 import { getColumns, MachineStatus } from './Columns';
 
@@ -28,52 +29,75 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Index({ statuses }: IndexPageProps) {
-  // --- State to manage all modals ---
   const [isFormModalOpen, setIsFormModalOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [statusToEdit, setStatusToEdit] = React.useState<Partial<MachineStatus> | null>(null);
-  const [statusToDelete, setStatusToDelete] = React.useState<number | null>(null);
+  const [statusToDelete, setStatusToDelete] = React.useState<MachineStatus | null>(null);
 
-  // Inertia form helper for create/update actions
-  const { post, put, setData, errors, reset, processing } = useForm();
+  // --- ACTION 1: The Index page now manages the form state for the modal ---
+  const { data, setData, post, put, errors, reset, processing } = useForm({
+    name: '',
+    description: '',
+    bg_color: '#dcfce7',
+    text_color: '#166534',
+  });
 
   const can = {
-    create: useCan('machines.edit'), // Using 'machines.edit' as a proxy for settings management
+    create: useCan('machines.edit'),
     edit: useCan('machines.edit'),
     delete: useCan('machines.edit'),
   };
 
-  // --- Handlers for all CRUD actions ---
+  // --- ACTION 2: Update handlers to reset the form state ---
   const handleCreate = () => {
-    setStatusToEdit(null); // Ensure we are in "create" mode
+    reset();
+    setStatusToEdit(null);
     setIsFormModalOpen(true);
   };
 
   const handleEdit = (status: MachineStatus) => {
+    reset();
+    setData({
+      name: status.name,
+      description: status.description || '',
+      bg_color: status.bg_color,
+      text_color: status.text_color,
+    });
     setStatusToEdit(status);
     setIsFormModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    setStatusToDelete(id);
+  const handleDelete = (status: MachineStatus) => {
+    setStatusToDelete(status);
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = (newStatusId: number) => {
     if (!statusToDelete) return;
-    router.delete(route('settings.machine-status.destroy', statusToDelete), {
+    router.delete(route('settings.machine-status.destroy', statusToDelete.id), {
+      data: { new_status_id: newStatusId },
       onSuccess: () => setIsDeleteDialogOpen(false),
     });
   };
 
-  const handleSubmit = (formData: Omit<MachineStatus, 'id'>) => {
+  // --- ACTION 3: The submit handler now uses the form state from this page ---
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     const onSuccess = () => setIsFormModalOpen(false);
     if (statusToEdit && 'id' in statusToEdit) {
-      put(route('settings.machine-status.update', statusToEdit.id!), { ...formData, onSuccess });
+      put(route('settings.machine-status.update', statusToEdit.id!), { ...data, onSuccess });
     } else {
-      post(route('settings.machine-status.store'), { ...formData, onSuccess });
+      post(route('settings.machine-status.store'), { ...data, onSuccess });
     }
   };
+
+  const columns = React.useMemo(
+    // --- ACTION 3: Pass the correct handleDelete function signature ---
+    () => getColumns(handleEdit, handleDelete),
+    [],
+  );
+
+  const otherStatuses = statusToDelete ? statuses.filter((s) => s.id !== statusToDelete.id) : [];
 
   const toolbarAction = can.create ? (
     <Button onClick={handleCreate}>
@@ -82,7 +106,6 @@ export default function Index({ statuses }: IndexPageProps) {
     </Button>
   ) : null;
 
-  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete), []);
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <GeneralSettingsLayout>
@@ -95,10 +118,33 @@ export default function Index({ statuses }: IndexPageProps) {
             </div>
           </div>
 
-          <DataTable columns={columns} data={statuses} filterColumnId="name" filterPlaceholder="Filter by name..." toolbarAction={toolbarAction} />
+          {/* --- ACTION: Reinstated the DataTable with all props --- */}
+          <DataTable
+            columns={columns}
+            data={statuses}
+            filterColumnId="name"
+            filterPlaceholder="Filter by status name..."
+            toolbarAction={toolbarAction}
+          />
         </div>
-
-        <StatusFormModal isOpen={isFormModalOpen} onOpenChange={setIsFormModalOpen} onSubmit={handleSubmit} status={statusToEdit} />
+        {/* --- ACTION 4: Pass the form state and handlers down to the modal --- */}
+        <StatusFormModal
+          isOpen={isFormModalOpen}
+          onOpenChange={setIsFormModalOpen}
+          onSubmit={handleSubmit}
+          status={statusToEdit}
+          data={data}
+          setData={setData}
+          errors={errors}
+          processing={processing}
+        />
+        <ReassignAndDeleteStatusModal
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          statusToDelete={statusToDelete}
+          otherStatuses={otherStatuses}
+        />
       </GeneralSettingsLayout>
     </AppLayout>
   );

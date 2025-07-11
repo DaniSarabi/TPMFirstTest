@@ -6,54 +6,23 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useForm } from '@inertiajs/react';
 import * as React from 'react';
+import { MachineStatus } from './MachineStatus/Columns';
 
-// --- ACTION 1: Define a generic Status type inside the component ---
-// This makes the component reusable for any kind of status.
-interface Status {
-  id: number;
-  name: string;
-  description: string | null;
-  bg_color: string;
-  text_color: string;
-}
-
-// Define the props for the modal
+// --- ACTION 1: Update the props to receive form state and handlers ---
 interface StatusFormModalProps {
-  status: Partial<Status> | null; // Use the generic Status type
+  status: Partial<MachineStatus> | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSubmit: (form: any) => void; // A generic onSubmit handler
+  onSubmit: (e: React.FormEvent) => void;
+  data: { name: string; description: string; bg_color: string; text_color: string };
+  setData: (key: string, value: any) => void;
+  processing: boolean;
+  errors: Partial<Record<keyof MachineStatus, string>>;
 }
 
-export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit }: StatusFormModalProps) {
-  const { data, setData, errors, processing, reset } = useForm({
-    name: '',
-    description: '',
-    bg_color: '#000000',
-    text_color: '#ffffff',
-  });
-
+export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit, data, setData, processing, errors }: StatusFormModalProps) {
   const isEditing = !!status?.id;
-
-  // This useEffect hook resets the form when the modal opens
-  React.useEffect(() => {
-    if (isOpen) {
-      reset();
-      setData({
-        name: status?.name || '',
-        description: status?.description || '',
-        bg_color: status?.bg_color || '#dcfce7',
-        text_color: status?.text_color || '#166534',
-      });
-    }
-  }, [isOpen, status]);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(data);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -64,7 +33,8 @@ export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit }: Stat
             {isEditing ? `Update the details for the "${status?.name}" status.` : 'Create a new status for your system.'}
           </DialogDescription>
         </DialogHeader>
-        <form id="status-form" onSubmit={submit} className="grid gap-4 py-4">
+        {/* --- ACTION 2: The form now uses the onSubmit prop from the parent --- */}
+        <form id="status-form" onSubmit={onSubmit} className="grid gap-4 py-4" autoComplete='off'>
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
@@ -80,14 +50,12 @@ export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit }: Stat
             <div className="flex items-center gap-4">
               <ColorPicker
                 value={{ bgColor: data.bg_color, textColor: data.text_color }}
-                // --- ACTION: Update the onChange handler ---
-                // This is the correct way to update multiple fields with useForm.
                 onChange={(colors) => {
                   setData('bg_color', colors.bgColor);
                   setData('text_color', colors.textColor);
                 }}
-              />{' '}
-              <div className="flex flex-1 items-center justify-center rounded-md p-4">
+              />
+              <div className="flex flex-1 items-center justify-center rounded-md border p-4">
                 <Badge
                   className="px-4 py-2 text-base"
                   style={{
@@ -100,10 +68,7 @@ export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit }: Stat
               </div>
             </div>
           </div>
-
-          {/* We will add the color palette picker here later */}
         </form>
-
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

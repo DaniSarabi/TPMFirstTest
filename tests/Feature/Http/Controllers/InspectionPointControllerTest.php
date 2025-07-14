@@ -19,9 +19,11 @@ class InspectionPointControllerTest extends TestCase
         parent::setUp();
 
         Permission::firstOrCreate(['name' => 'machines.edit']);
+        Permission::firstOrCreate(['name' => 'machines.delete']);
+
 
         $role = Role::firstOrCreate(['name' => 'test-role']);
-        $role->givePermissionTo('machines.edit');
+        $role->givePermissionTo('machines.edit', 'machines.delete');
 
         $user = User::factory()->create();
         $user->assignRole($role);
@@ -33,8 +35,9 @@ class InspectionPointControllerTest extends TestCase
     {
         $subsystem = Subsystem::factory()->create();
 
-        $response = $this->post(route('inspection-points.add', $subsystem), [
+        $response = $this->post(route('inspection-points.add'), [
             'name' => 'New Test Point',
+            'subsystem_id' => $subsystem->id, // Send the ID in the body
         ]);
 
         $response->assertRedirect()->with('flash.newPoint');

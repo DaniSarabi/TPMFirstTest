@@ -8,6 +8,8 @@ use App\Http\Controllers\MachineController;
 use App\Http\Controllers\SubsystemController;
 use App\Http\Controllers\InspectionPointController;
 use App\Http\Controllers\MachineStatusController;
+use App\Http\Controllers\InspectionStatusController;
+
 
 
 
@@ -22,11 +24,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
 
-     // --- ACTION 2: Use a Route Group to correctly prefix the names and URLs ---
+    //  Use a Route Group to correctly prefix the names and URLs ---
+    // --- General Settings Route Group ---
     Route::prefix('general-settings')->name('settings.')->group(function () {
+        
         Route::resource('machine-status', MachineStatusController::class)
             ->except(['show'])
-            ->middleware('permission:machines.edit'); // Protect the routes
+            ->middleware('permission:machines.edit');
+
+        // --- ACTION 2: Add the resource route for Inspection Statuses ---
+        Route::resource('inspection-status', InspectionStatusController::class)
+            ->except(['show'])
+            ->middleware('permission:inspections.edit');
     });
     //* ***************************** Machines module Routes *****************************
 
@@ -45,6 +54,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Routes for adding a single subsystem (from the details page)
     Route::post('/machines/{machine}/subsystems/add', [SubsystemController::class, 'add'])->name('subsystems.add')->middleware('permission:machines.create');
+
+    // Routes for adding a single inspection point (from the details page)
+    Route::post('/inspection-points/add', [InspectionPointController::class, 'add'])->name('inspection-points.add');
+
 
     // Routes for editing/updating a machine and its components
     Route::resource('machines', MachineController::class)

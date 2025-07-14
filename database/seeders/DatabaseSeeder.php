@@ -24,5 +24,6 @@ class DatabaseSeeder extends Seeder
         $this->call(MachineStatusSeeder::class);
         $this->call(MachineSeeder::class);
         $this->call(SubsystemAndPointsSeeder::class);
+        $this->call(InspectionStatusSeeder::class);
     }
 }

@@ -7,6 +7,8 @@ use Inertia\Inertia;
 use App\Models\MachineStatus;
 use App\Models\Machine;
 use App\Models\MachineStatusLog;
+use App\Models\InspectionStatus;
+
 
 
 
@@ -76,15 +78,19 @@ class MachineStatusController extends Controller
             return back()->with('error', 'The default status cannot be deleted.');
         }
 
-        // --- ACTION 2: Re-assign all machines with the old status ---
+        //  Re-assign all machines with the old status ---
         Machine::where('machine_status_id', $machineStatus->id)
             ->update(['machine_status_id' => $validated['new_status_id']]);
 
-        // --- ACTION 3: Re-assign all log entries with the old status ---
+        // Re-assign all log entries with the old status ---
         MachineStatusLog::where('machine_status_id', $machineStatus->id)
             ->update(['machine_status_id' => $validated['new_status_id']]);
 
-        // --- ACTION 4: Now, safely delete the status ---
+        // Re-assign any inspection statuses that were using this machine status ---
+        InspectionStatus::where('sets_machine_status_to', $machineStatus->name)
+            ->update(['sets_machine_status_to' => MachineStatus::find($validated['new_status_id'])->name]);
+
+        // Now, safely delete the status ---
         $machineStatus->delete();
 
         return back()->with('success', 'Status deleted and machines reassigned successfully.');

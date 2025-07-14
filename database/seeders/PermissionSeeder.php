@@ -39,6 +39,13 @@ class PermissionSeeder extends Seeder
             'machines.create',
             'machines.edit',
             'machines.delete',
+
+            // Inspections Permissions
+            'inspections.view',
+            'inspections.perform',
+            'inspections.edit',
+            'inspections.delete',
+
         ];
 
         // Create permissions if they don't exist

@@ -41,15 +41,21 @@ class InspectionPointController extends Controller
      /**
      * Add a new inspection point to a subsystem.
      */
-    public function add(Request $request, Subsystem $subsystem)
+   public function add(Request $request)
     {
+        // ---  Add validation for the subsystem_id ---
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'subsystem_id' => 'required|exists:subsystems,id',
         ]);
 
-        $newPoint = $subsystem->inspectionPoints()->create($validated);
+        // Find the subsystem using the ID from the request data
+        $subsystem = Subsystem::findOrFail($validated['subsystem_id']);
 
-        // --- ACTION: Flash the new point back to the frontend ---
+        $newPoint = $subsystem->inspectionPoints()->create([
+            'name' => $validated['name'],
+        ]);
+
         return back()->with('flash', ['newPoint' => $newPoint]);
     }
 

@@ -41,6 +41,7 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
     reset: resetNew,
   } = useForm({
     name: '',
+    subsystem_id: null as number | null,
   });
 
   // Form for editing an existing inspection point
@@ -60,6 +61,7 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
   React.useEffect(() => {
     if (subsystem) {
       setPoints(subsystem.inspection_points);
+      setNewData('subsystem_id', subsystem.id);
     }
   }, [subsystem]);
 

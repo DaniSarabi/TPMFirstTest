@@ -65,7 +65,7 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
           <DialogDescription>Make changes to your machine here. Click save when you're done.</DialogDescription>
         </DialogHeader>
         {/* Add name and autocomplete attributes for accessibility */}
-        <form id="edit-machine-form" onSubmit={submit} className="grid gap-4 py-4">
+        <form id="edit-machine-form" onSubmit={submit} className="grid gap-4 py-4" autoComplete='off'>
           <div className="space-y-2">
             <Label htmlFor="edit-name">Machine Name</Label>
             <Input
@@ -75,7 +75,7 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
               value={data.name}
               onChange={(e) => setData('name', e.target.value)}
               required
-              className="hover:bg-accent hover:text-accent-foreground"
+              className="hover:bg-accent hover:text-accent-foreground bg-gray-100"
             />
             <InputError message={errors.name} />
           </div>
@@ -87,20 +87,20 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
               autoComplete="off"
               value={data.description}
               onChange={(e) => setData('description', e.target.value)}
-              className="hover:bg-accent hover:text-accent-foreground"
+              className="hover:bg-accent hover:text-accent-foreground bg-gray-100"
             />
             <InputError message={errors.description} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-status">Status</Label>
             <Select value={String(data.machine_status_id)} onValueChange={(value) => setData('machine_status_id', Number(value))}>
-              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground" id="edit-status" name="machine_status_id">
+              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground bg-gray-100" id="edit-status" name="machine_status_id">
                 <SelectValue placeholder="Select a status" />
               </SelectTrigger>
               <SelectContent >
                 {/* Map over the statuses from props to create the options */}
                 {statuses.map((status) => (
-                  <SelectItem className="hover:bg-primary hover:text-accent-foreground" key={status.id} value={String(status.id)}>
+                  <SelectItem className="hover:bg-primary hover:text-primary-foreground" key={status.id} value={String(status.id)}>
                     {status.name}
                   </SelectItem>
                 ))}
@@ -111,7 +111,7 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
           <div className="space-y-2">
             <Label htmlFor="edit-image">Change Machine Image (Optional)</Label>
             <Input
-              className="hover:bg-accent hover:text-accent-foreground"
+              className="hover:bg-accent hover:text-accent-foreground bg-gray-100"
               id="edit-image"
               name="image"
               type="file"

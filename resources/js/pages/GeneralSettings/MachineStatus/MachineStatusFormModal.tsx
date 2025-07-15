@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import * as React from 'react';
-import { MachineStatus } from './MachineStatus/Columns';
+import { MachineStatus } from './Columns';
 
 // --- ACTION 1: Update the props to receive form state and handlers ---
 interface StatusFormModalProps {
@@ -26,23 +26,23 @@ export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit, data, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-popover">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Status' : 'Create Status'}</DialogTitle>
           <DialogDescription>
             {isEditing ? `Update the details for the "${status?.name}" status.` : 'Create a new status for your system.'}
           </DialogDescription>
         </DialogHeader>
-        {/* --- ACTION 2: The form now uses the onSubmit prop from the parent --- */}
+        {/*  The form now uses the onSubmit prop from the parent --- */}
         <form id="status-form" onSubmit={onSubmit} className="grid gap-4 py-4" autoComplete='off'>
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+            <Input className='ring-1 ring-ring hover:bg-accent' id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
             <InputError message={errors.name} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
+            <Textarea className='ring-1 ring-ring hover:bg-accent' id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
             <InputError message={errors.description} />
           </div>
           <div className="space-y-2">
@@ -55,7 +55,7 @@ export function StatusFormModal({ status, isOpen, onOpenChange, onSubmit, data, 
                   setData('text_color', colors.textColor);
                 }}
               />
-              <div className="flex flex-1 items-center justify-center rounded-md border p-4">
+              <div className="flex flex-1 items-center justify-center rounded-md  p-4">
                 <Badge
                   className="px-4 py-2 text-base"
                   style={{

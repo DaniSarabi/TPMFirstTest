@@ -193,17 +193,17 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
           <form id="machine-form" onSubmit={handleSaveMachine} className="grid gap-4 py-4" autoComplete="off">
             <div className="space-y-2">
               <Label htmlFor="name">Machine Name</Label>
-              <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+              <Input className="bg-accent ring-ring" id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
               {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description (Optional)</Label>
-              <Textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
+              <Textarea className="bg-accent" id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
               {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="image">Machine Image (Optional)</Label>
-              <Input id="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
+              <Input className="bg-accent" id="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
               {errors.image && <p className="mt-1 text-sm text-red-500">{errors.image}</p>}
             </div>
           </form>
@@ -215,6 +215,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
               <Label htmlFor="subsystem-name">Subsystem Name</Label>
               <div className="flex space-x-2">
                 <Input
+                  className="bg-accent"
                   id="subsystem-name"
                   value={subsystemName}
                   onChange={(e) => setSubsystemName(e.target.value)}
@@ -236,9 +237,14 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
               {subsystems.length > 0 ? (
                 <div className="space-y-2 rounded-md border p-2">
                   {subsystems.map((name, index) => (
-                    <div key={index} className="flex items-center justify-between rounded bg-primary p-2 text-primary-foreground">
+                    <div key={index} className="flex items-center justify-between rounded-sm bg-primary p-2 text-primary-foreground">
                       <span>{name}</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive" onClick={() => handleRemoveSubsystem(index)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => handleRemoveSubsystem(index)}
+                      >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -268,6 +274,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
                       <Label htmlFor={`ip-name-${sub.id}`}>Inspection Point Name</Label>
                       <div className="flex space-x-2">
                         <Input
+                          className="bg-accent"
                           id={`ip-name-${sub.id}`}
                           value={inspectionPointName}
                           onChange={(e) => setInspectionPointName(e.target.value)}
@@ -288,7 +295,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
                       {(inspectionPoints[sub.id]?.length ?? 0) > 0 ? (
                         <div className="space-y-2 rounded-md border p-2">
                           {inspectionPoints[sub.id].map((name, index) => (
-                            <div key={index} className="flex items-center justify-between rounded bg-secondary p-2 text-secondary-foreground">
+                            <div key={index} className="flex items-center justify-between rounded-sm bg-primary p-2 text-primary-foreground">
                               <span>{name}</span>
                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveInspectionPoint(sub.id, index)}>
                                 <X className="h-4 w-4" />
@@ -314,7 +321,7 @@ export function CreateMachineWizard({ isOpen, onOpenChange, onFinish }: CreateMa
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="bg-popover sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Create a New Machine</DialogTitle>
           <DialogDescription>Follow the steps to add a new machine and its components to the system.</DialogDescription>

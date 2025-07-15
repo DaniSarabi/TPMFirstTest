@@ -19,13 +19,9 @@ const mainNavItems: NavItem[] = [
     icon: Bolt,
   },
   {
-    title: 'Inspections',
-    href: '/inspections',
+    title: 'Start Inspections',
+    href: route('inspections.start'),
     icon: ReceiptText,
-  },
-  {
-    title: 'Test',
-    href: '/TestTablePage',
   },
 ];
 

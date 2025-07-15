@@ -42,7 +42,7 @@ export function ReassignAndDeleteStatusModal({ isOpen, onOpenChange, onConfirm, 
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className='bg-popover'>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Status: "{statusToDelete?.name}"?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -52,12 +52,12 @@ export function ReassignAndDeleteStatusModal({ isOpen, onOpenChange, onConfirm, 
         <div className="py-4">
           <Label htmlFor="new-status-select">Re-assign items to:</Label>
           <Select value={newStatusId ? String(newStatusId) : ''} onValueChange={(value) => setNewStatusId(Number(value))}>
-            <SelectTrigger id="new-status-select">
+            <SelectTrigger className='ring-1 ring-ring' id="new-status-select">
               <SelectValue placeholder="Select a new status..." />
             </SelectTrigger>
             <SelectContent>
               {otherStatuses.map((status) => (
-                <SelectItem key={status.id} value={String(status.id)}>
+                <SelectItem key={status.id} value={String(status.id)} className='hover:bg-accent hover:text-accent-foreground'>
                   <div className="flex items-center">
                     <div className="mr-2 h-3 w-3 rounded-full border" style={{ backgroundColor: status.bg_color }} />
                     <span>{status.name}</span>

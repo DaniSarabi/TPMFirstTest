@@ -39,7 +39,7 @@ export function InspectionStatusFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-popover">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Inspection Status' : 'Create Inspection Status'}</DialogTitle>
           <DialogDescription>Configure the rules and appearance for this status.</DialogDescription>
@@ -48,7 +48,8 @@ export function InspectionStatusFormModal({
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input
-              className="hover:bg-accent hover:text-accent-foreground"
+              className="hover:bg-accent hover:text-accent-foreground ring-1 ring-ring bg-accent"
+              type="text"
               id="name"
               value={data.name}
               onChange={(e) => setData('name', e.target.value)}
@@ -60,7 +61,7 @@ export function InspectionStatusFormModal({
           <div className="space-y-2">
             <Label htmlFor="severity">Severity</Label>
             <Select value={String(data.severity)} onValueChange={(v) => setData('severity', Number(v))}>
-              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground">
+              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground ring-1 ring-ring ">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -84,7 +85,7 @@ export function InspectionStatusFormModal({
               value={data.machine_status_id ? String(data.machine_status_id) : 'null'}
               onValueChange={(v) => setData('machine_status_id', v === 'null' ? null : Number(v))}
             >
-              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground">
+              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground ring-1 ring-ring">
                 <SelectValue placeholder="No Change" />
               </SelectTrigger>
               <SelectContent>
@@ -100,11 +101,11 @@ export function InspectionStatusFormModal({
             <InputError message={errors.machine_status_id} />
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="auto_creates_ticket" checked={data.auto_creates_ticket} onCheckedChange={(c) => setData('auto_creates_ticket', !!c)} />
+            <Checkbox className='bg-accent ring-1 ring-ring'  id="auto_creates_ticket" checked={data.auto_creates_ticket} onCheckedChange={(c) => setData('auto_creates_ticket', !!c)} />
             <Label htmlFor="auto_creates_ticket">Automatically Create a Ticket?</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="is_default" checked={data.is_default} onCheckedChange={(c) => setData('is_default', !!c)} />
+            <Checkbox className='bg-accent ring-1 ring-ring' id="is_default" checked={data.is_default} onCheckedChange={(c) => setData('is_default', !!c)} />
             <Label htmlFor="is_default">Is this the default status for new inspections?</Label>
           </div>
           <div className="space-y-2">
@@ -117,7 +118,7 @@ export function InspectionStatusFormModal({
                   setData('text_color', colors.textColor);
                 }}
               />
-              <div className="flex flex-1 items-center justify-center rounded-md border p-4">
+              <div className="flex flex-1 items-center justify-center rounded-md p-4">
                 <Badge
                   className="px-4 py-2 text-base"
                   style={{

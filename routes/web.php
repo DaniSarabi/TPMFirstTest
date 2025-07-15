@@ -9,6 +9,8 @@ use App\Http\Controllers\SubsystemController;
 use App\Http\Controllers\InspectionPointController;
 use App\Http\Controllers\MachineStatusController;
 use App\Http\Controllers\InspectionStatusController;
+use App\Http\Controllers\InspectionController;
+
 
 
 
@@ -24,10 +26,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
 
+    Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start');
+    Route::get('/inspections/{machine}/perform', [InspectionController::class, 'perform'])->name('inspections.perform');
+
+    //* ***************************** Statuses module Routes *****************************
+
     //  Use a Route Group to correctly prefix the names and URLs ---
     // --- General Settings Route Group ---
     Route::prefix('general-settings')->name('settings.')->group(function () {
-        
+
         Route::resource('machine-status', MachineStatusController::class)
             ->except(['show'])
             ->middleware('permission:machines.edit');

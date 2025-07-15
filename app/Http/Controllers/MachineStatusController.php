@@ -8,9 +8,7 @@ use App\Models\MachineStatus;
 use App\Models\Machine;
 use App\Models\MachineStatusLog;
 use App\Models\InspectionStatus;
-
-
-
+use Illuminate\Support\Facades\DB;
 
 class MachineStatusController extends Controller
 {
@@ -78,21 +76,23 @@ class MachineStatusController extends Controller
             return back()->with('error', 'The default status cannot be deleted.');
         }
 
-        //  Re-assign all machines with the old status ---
-        Machine::where('machine_status_id', $machineStatus->id)
-            ->update(['machine_status_id' => $validated['new_status_id']]);
+        DB::transaction(function () use ($validated, $machineStatus) {
+            $newStatusId = $validated['new_status_id'];
 
-        // Re-assign all log entries with the old status ---
-        MachineStatusLog::where('machine_status_id', $machineStatus->id)
-            ->update(['machine_status_id' => $validated['new_status_id']]);
+            // Re-assign all machines and logs.
+            Machine::where('machine_status_id', $machineStatus->id)
+                ->update(['machine_status_id' => $newStatusId]);
 
-        // Re-assign any inspection statuses that were using this machine status ---
-        InspectionStatus::where('sets_machine_status_to', $machineStatus->name)
-            ->update(['sets_machine_status_to' => MachineStatus::find($validated['new_status_id'])->name]);
+            MachineStatusLog::where('machine_status_id', $machineStatus->id)
+                ->update(['machine_status_id' => $newStatusId]);
 
-        // Now, safely delete the status ---
-        $machineStatus->delete();
+            // --- ACTION: Update the query to use the correct foreign key ---
+            InspectionStatus::where('machine_status_id', $machineStatus->id)
+                ->update(['machine_status_id' => $newStatusId]);
 
+            // Now, safely delete the status.
+            $machineStatus->delete();
+        });
         return back()->with('success', 'Status deleted and machines reassigned successfully.');
     }
 }

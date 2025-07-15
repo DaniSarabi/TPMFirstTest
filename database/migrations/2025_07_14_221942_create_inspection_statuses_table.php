@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->integer('severity')->default(0);
             $table->boolean('auto_creates_ticket')->default(false);
-            $table->string('sets_machine_status_to')->nullable();
+            $table->foreignId('machine_status_id')->nullable()->constrained('machine_statuses')->onDelete('set null');
             $table->string('bg_color')->nullable();
             $table->string('text_color')->nullable();
             $table->boolean('is_default')->default(false);

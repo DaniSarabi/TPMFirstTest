@@ -4,18 +4,18 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bolt, HardHat, ReceiptText, TicketCheck } from 'lucide-react';
+import { Bolt, ReceiptText, TicketCheck } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
   {
     title: 'Machine Statuses',
-    href: '#',
+    href: route('settings.machine-status.index'),
     icon: Bolt,
   },
   {
     title: 'Inspection Statuses',
-    href: '#', // Placeholder for now
+    href: route('settings.inspection-status.index'),
     icon: ReceiptText,
   },
   {

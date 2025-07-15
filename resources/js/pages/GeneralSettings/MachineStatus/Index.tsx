@@ -7,8 +7,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
-import { ReassignAndDeleteStatusModal } from '../ReassingAndDeleteStatusModal';
-import { StatusFormModal } from '../StatusFormModal';
+import { ReassignAndDeleteStatusModal } from '../ReassingAndDeleteModal';
+import { StatusFormModal } from './MachineStatusFormModal';
 import { getColumns, MachineStatus } from './Columns';
 
 // Define the props for the page

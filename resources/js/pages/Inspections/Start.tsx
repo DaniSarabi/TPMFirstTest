@@ -38,8 +38,11 @@ function MachineCombobox({ machines }: { machines: Machine[] }) {
     setValue(selectedMachineId);
     setOpen(false);
     if (selectedMachineId) {
-      // --- ACTION: Navigate to the new "Perform Inspection" page ---
-      router.get(route('inspections.perform', selectedMachineId));
+      // --- ACTION: Send a POST request to create the inspection report ---
+      // Inertia will automatically follow the redirect to the "Perform" page.
+      router.post(route('inspections.store'), {
+        machine_id: selectedMachineId,
+      });
     }
   };
 
@@ -51,7 +54,7 @@ function MachineCombobox({ machines }: { machines: Machine[] }) {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className=" ring-ring w-[--radix-popover-trigger-width] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 ring-ring">
         <Command>
           <CommandInput placeholder="Search machine..." />
           <CommandList>
@@ -76,7 +79,7 @@ export default function Start({ machines }: StartPageProps) {
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Start Inspection" />
       <div className="flex min-h-[calc(100vh-10rem)] flex-col items-center justify-center p-4">
-        <Card className="ring-ring ring-1 w-full max-w-4xl">
+        <Card className="w-full max-w-4xl ring-1 ring-ring">
           <CardHeader>
             <CardTitle className="text-center text-2xl">Start a New Inspection</CardTitle>
             <CardDescription className="text-center">Select a machine by scanning its QR code or choosing from the list.</CardDescription>

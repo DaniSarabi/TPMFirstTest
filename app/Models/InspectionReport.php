@@ -26,9 +26,18 @@ class InspectionReport extends Model
     protected $fillable = [
         'machine_id',
         'user_id',
+        'status',
         'completed_at',
     ];
-
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        // --- ACTION: Add this cast to ensure completed_at is always a Carbon date object ---
+        'completed_at' => 'datetime',
+    ];
     /**
      * Get the user who performed the inspection.
      */

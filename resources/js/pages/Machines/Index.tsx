@@ -84,7 +84,7 @@ export default function Index({ machines, filters }: IndexPageProps) {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Machines" />
-      <div className="space-y-4 p-6">
+      <div className="space-y-4 p-6 ">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Machine Management</h1>
         </div>
@@ -98,6 +98,7 @@ export default function Index({ machines, filters }: IndexPageProps) {
             canCreate ? <Button onClick={() => setWizardIsOpen(true)}><CirclePlus className="h-4 w-4" />Create Machine</Button> : null
           }
         />
+       
         <MachineGrid machines={machines.data} />
 
         <PaginationControls links={machines.links} />

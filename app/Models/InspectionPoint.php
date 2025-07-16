@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InspectionPoint extends Model
 {
-    //
     use HasFactory;
 
     /**
@@ -18,24 +16,16 @@ class InspectionPoint extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'machine_id',
+        'subsystem_id',
         'name',
         'description',
     ];
 
     /**
-     * Get the machine that the subsystem belongs to.
+     * Get the subsystem that this inspection point belongs to.
      */
-    public function machine(): BelongsTo
+    public function subsystem(): BelongsTo
     {
-        return $this->belongsTo(Machine::class);
-    }
-
-    /**
-     * Get the inspection points for the subsystem.
-     */
-    public function inspectionPoints(): HasMany
-    {
-        return $this->hasMany(InspectionPoint::class);
+        return $this->belongsTo(Subsystem::class);
     }
 }

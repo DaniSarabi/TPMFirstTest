@@ -32,9 +32,9 @@ export function MachineCard({ machine }: MachineCardProps) {
     <div className="relative mx-auto w-full">
       <Link
         href={route('machines.show', machine.id)}
-        className="relative inline-block w-full transform transition-transform duration-300 ease-in-out hover:-translate-y-2"
+        className="relative inline-block w-full transform transition-transform duration-300 ease-in-out hover:-translate-y-3"
       >
-        <div className="rounded-lg bg-card p-4 shadow">
+        <div className="rounded-lg bg-card p-4 shadow hover:shadow-lg hover:bg-accent">
           {/* Image and Status Badge Section */}
           <div className="relative h-52 w-full justify-center overflow-hidden rounded-lg">
             <div className="relative h-52 w-full overflow-hidden rounded-lg">

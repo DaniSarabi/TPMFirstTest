@@ -21,7 +21,6 @@ export function MachineListToolbar({ onSearch, createAction, statusFilterValues,
                     className="max-w-sm ring-ring ring-1 hover:bg-accent hover:text-accent-foreground"
                     onChange={(e) => onSearch(e.target.value)}
                 />
-                {/* --- ACTION 3: Render the new filter component --- */}
                 <MachineStatusFilter
                     title="Status"
                     options={statuses}

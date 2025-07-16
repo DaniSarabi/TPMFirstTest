@@ -1,0 +1,117 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
+import { CheckCircle, CircleAlert, CircleX, Clock, User } from 'lucide-react';
+
+// --- Type Definitions for this component ---
+interface ReportStat {
+  ok_count: number;
+  warning_count: number;
+  critical_count: number;
+}
+
+interface Report {
+  id: number;
+  status: string;
+  start_date: string;
+  completion_date: string | null;
+  badge_text: string;
+  user_name: string;
+  machine_name: string;
+  machine_image_url: string | null; // Add machine_image_url
+  stats: ReportStat;
+}
+
+interface InspectionCardProps {
+  report: Report;
+}
+
+export function InspectionCard({ report }: InspectionCardProps) {
+  const { status, badge_text, start_date, completion_date, user_name, machine_name, machine_image_url, stats } = report;
+
+  const totalPoints = stats.ok_count + stats.warning_count + stats.critical_count;
+
+  const statusColor =
+    {
+      completed: 'bg-green-600',
+      in_progress: 'bg-blue-600',
+      abandoned: 'bg-red-600',
+    }[status] || 'bg-gray-500';
+
+  return (
+    // --- ACTION 1: Wrap the entire card in a Link component ---
+    <Link href={route('inspections.show', report.id)} className="block transform transition-transform duration-300 ease-in-out hover:-translate-y-3">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg p-0 shadow-md ring-1 ring-white hover:bg-accent">
+        {/* Image */}
+        <div>
+          <img src={machine_image_url || 'https://placehold.co/600x400?text=no+image'} alt={machine_name} className="h-36 w-full object-cover" />
+
+          {/* Status Bar */}
+          <div className={`flex items-center px-4 py-1 ${statusColor}`}>
+            <Clock className="h-5 w-5 text-white" />
+            <span className="ml-2 font-medium text-white">{badge_text}</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl">{machine_name}</CardTitle>
+          <CardDescription className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>{user_name}</span>
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex-grow space-y-1 text-sm text-muted-foreground">
+          <p>Start: {start_date}</p>
+          {completion_date && <p>Completed: {completion_date}</p>}
+
+          <Separator className="my-2" />
+
+          {/* Total */}
+          <p className="text-sm font-medium text-gray-800">
+            Total Points: <span className="font-semibold">{totalPoints}</span>
+          </p>
+
+          {/* Stats */}
+          <div className="mt-3 mb-4 flex justify-between text-base font-medium">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {/* --- ACTION 2: Conditionally apply gray color if count is zero --- */}
+                  <div className={cn('flex items-center gap-2', stats.ok_count > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                    <CheckCircle className="h-6 w-6" />
+                    {stats.ok_count}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>OK Points</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn('flex items-center gap-2', stats.warning_count > 0 ? 'text-yellow-500' : 'text-muted-foreground')}>
+                    <CircleAlert className="h-6 w-6" />
+                    {stats.warning_count}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Warnings</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn('flex items-center gap-2', stats.critical_count > 0 ? 'text-red-600' : 'text-muted-foreground')}>
+                    <CircleX className="h-6 w-6" />
+                    {stats.critical_count}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Criticals</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}

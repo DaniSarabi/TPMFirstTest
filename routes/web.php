@@ -26,8 +26,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
 
+    // This route will display the "Start Inspection" page
     Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start');
-    Route::get('/inspections/{machine}/perform', [InspectionController::class, 'perform'])->name('inspections.perform');
+
+    // This route will create a new in-progress inspection report
+    Route::post('/inspections', [InspectionController::class, 'store'])->name('inspections.store');
+
+    // This route now accepts an InspectionReport model
+    Route::get('/inspections/{inspectionReport}/perform', [InspectionController::class, 'perform'])->name('inspections.perform');
+
+    // This route will handle submitting the completed inspection
+    Route::put('/inspections/{inspectionReport}', [InspectionController::class, 'update'])->name('inspections.update');
+
+    Route::resource('inspections', InspectionController::class)
+        ->only(['index'])
+        ->middleware('permission:inspections.view');
+
+    // This route will handle deleting/cancelling an inspection report.
+    Route::delete('/inspections/{inspectionReport}', [InspectionController::class, 'destroy'])->name('inspections.destroy');
+    // This route will display the details of a single inspection report
+    Route::get('/inspections/{inspectionReport}', [InspectionController::class, 'show'])->name('inspections.show');
 
     //* ***************************** Statuses module Routes *****************************
 

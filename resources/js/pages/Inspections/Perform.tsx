@@ -2,18 +2,20 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Circle, CircleAlert, CircleCheck, CircleX, Clock, ClockArrowUp, ListCheck, Wrench } from 'lucide-react';
 import React from 'react';
+import { ReportProblemModal } from './ReportProblemModal';
 
 // --- Type Definitions for this page ---
 // These should match the data structure sent from your controller
 
-interface InspectionPoint {
+export interface InspectionPoint {
   id: number;
   name: string;
   description: string | null;
@@ -30,6 +32,13 @@ interface Creator {
   name: string;
 }
 
+interface MachineStatus {
+  id: number;
+  name: string;
+  bg_color: string;
+  text_color: string;
+}
+
 interface Machine {
   id: number;
   name: string;
@@ -38,7 +47,7 @@ interface Machine {
   subsystems: Subsystem[];
   creator: Creator | null;
   created_at: string;
-  // We will add the status object here later
+  machine_status: MachineStatus;
 }
 
 interface InspectionStatus {
@@ -48,12 +57,15 @@ interface InspectionStatus {
   bg_color: string;
   text_color: string;
   is_default: boolean;
-  // ... other status properties
 }
 
+interface InspectionReport {
+  id: number;
+  machine: Machine;
+}
 // Define the props for the page
 interface PerformPageProps {
-  machine: Machine;
+  report: InspectionReport;
   inspectionStatuses: InspectionStatus[];
   uptime: {
     since: string | null;
@@ -107,7 +119,7 @@ function InspectionPointRow({ point, statuses, selectedValue, onChange }: Inspec
       </div>
       <div className="flex items-center gap-2">
         <Select value={selectedValue ? String(selectedValue) : ''} onValueChange={(value) => onChange(Number(value))}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-accent shadow-sm">
             <SelectValue placeholder="Select Status" />
           </SelectTrigger>
           <SelectContent>
@@ -126,17 +138,97 @@ function InspectionPointRow({ point, statuses, selectedValue, onChange }: Inspec
   );
 }
 
-export default function Perform({ machine, inspectionStatuses, uptime }: PerformPageProps) {
-  const [inspectionResults, setInspectionResults] = React.useState<Record<number, { status_id: number; comment?: string; image?: File | null }>>({});
+export default function Perform({ report, inspectionStatuses, uptime }: PerformPageProps) {
+  const { machine } = report;
+
+  const [inspectionResults, setInspectionResults] = React.useState<Record<number, { status_id?: number; comment?: string; image?: File | null }>>({});
+
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+  const [pointToReport, setPointToReport] = React.useState<InspectionPoint | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const [isDirty, setIsDirty] = React.useState(false);
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = React.useState(false);
+  const [nextUrl, setNextUrl] = React.useState<string | null>(null);
+
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleInertiaNavigate = (event: CustomEvent) => {
+      if (isDirty && event.detail.url) {
+        event.preventDefault();
+        setNextUrl(event.detail.url);
+        setShowUnsavedChangesDialog(true);
+      }
+    };
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isDirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+
+    const removeInertiaListener = router.on('before', handleInertiaNavigate);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      removeInertiaListener();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   const handleStatusChange = (pointId: number, statusId: number) => {
+    // First, update the status in the local state
+    setIsDirty(true);
     setInspectionResults((prev) => ({
       ...prev,
-      [pointId]: {
-        ...prev[pointId],
-        status_id: statusId,
+      [pointId]: { ...prev[pointId], status_id: statusId },
+    }));
+
+    // Then, check the severity to see if we need to open the modal
+    const selectedStatus = inspectionStatuses.find((s) => s.id === statusId);
+    if (selectedStatus && selectedStatus.severity > 0) {
+      const point = machine.subsystems.flatMap((sub) => sub.inspection_points).find((p) => p.id === pointId);
+
+      if (point) {
+        setPointToReport(point);
+        setIsReportModalOpen(true);
+      }
+    }
+  };
+
+  //  Create a handler to save the problem details ---
+  const handleSaveProblem = ({ comment, image }: { comment: string; image: File | null }) => {
+    if (!pointToReport) return;
+
+    setInspectionResults((prev) => ({
+      ...prev,
+      [pointToReport.id]: {
+        ...prev[pointToReport.id],
+        comment: comment,
+        image: image,
       },
     }));
+  };
+
+  const handleSubmitInspection = () => {
+    setIsSubmitting(true);
+    router.post(
+      route('inspections.update', report.id),
+      {
+        _method: 'put', // This is the correct way to tunnel a PUT request with files
+        results: inspectionResults,
+      },
+      {
+        onFinish: () => setIsSubmitting(false), // Reset submitting state on finish
+      },
+    );
+  };
+  const handleCancelInspection = () => {
+    // This will send the DELETE request to the server.
+    // Inertia will automatically follow the redirect to the start page.
+    router.delete(route('inspections.destroy', report.id));
   };
   // Define the breadcrumbs for this page
   const breadcrumbs: BreadcrumbItem[] = [
@@ -174,6 +266,7 @@ export default function Perform({ machine, inspectionStatuses, uptime }: Perform
           </div>
         </div>
 
+        {/* Summary card */}
         <Card className="flex h-fit w-full flex-col space-y-3 border-white p-3 shadow-lg md:h-64 md:flex-row md:space-y-0 md:space-x-5">
           {/* Image */}
           <div className="flex h-full w-full items-center justify-center md:w-1/3">
@@ -227,46 +320,58 @@ export default function Perform({ machine, inspectionStatuses, uptime }: Perform
           </CardContent>
         </Card>
 
-            <Card className='border-white'>
-                    <CardHeader>
-                        <CardTitle>Inspection Checklist</CardTitle>
-                        <CardDescription>Please review each point and select the appropriate status.</CardDescription>
-                    </CardHeader>
-                    <CardContent >
-                        {/* --- ACTION 2: Removed defaultValue and added spacing --- */}
-                        <Accordion type="single" collapsible className="w-full space-y-4">
-                            {machine.subsystems.map((subsystem) => (
-                                <AccordionItem key={subsystem.id} value={`subsystem-${subsystem.id}`}>
-                                    {/* --- ACTION 3: Added styling for open/closed state --- */}
-                                    <AccordionTrigger className="rounded-md bg-muted/50 px-4 text-lg font-medium hover:no-underline data-[state=open]:bg-primary data-[state=open]:text-primary-foreground">
-                                        {subsystem.name}
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                        <div className="space-y-1 rounded-b-md border-x border-b p-2">
-                                            {subsystem.inspection_points.map((point) => (
-                                                <InspectionPointRow
-                                                    key={point.id}
-                                                    point={point}
-                                                    statuses={inspectionStatuses}
-                                                    selectedValue={inspectionResults[point.id]?.status_id}
-                                                    onChange={(statusId) => handleStatusChange(point.id, statusId)}
-                                                />
-                                            ))}
-                                        </div>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    </CardContent>
-                </Card>
-
+        {/* Checlist card */}
+        <Card className="border-white">
+          <CardHeader>
+            <CardTitle>Inspection Checklist</CardTitle>
+            <CardDescription>Please review each point and select the appropriate status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* --- ACTION 2: Removed defaultValue and added spacing --- */}
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              {machine.subsystems.map((subsystem) => (
+                <AccordionItem key={subsystem.id} value={`subsystem-${subsystem.id}`}>
+                  {/* --- ACTION 3: Added styling for open/closed state --- */}
+                  <AccordionTrigger className="rounded-md bg-muted/50 px-4 text-lg font-medium hover:bg-primary hover:text-primary-foreground hover:no-underline data-[state=open]:bg-primary data-[state=open]:text-primary-foreground">
+                    {subsystem.name}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-1 rounded-b-md border-x border-b p-2">
+                      {subsystem.inspection_points.map((point) => (
+                        <InspectionPointRow
+                          key={point.id}
+                          point={point}
+                          statuses={inspectionStatuses}
+                          selectedValue={inspectionResults[point.id]?.status_id}
+                          onChange={(statusId) => handleStatusChange(point.id, statusId)}
+                        />
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
 
         {/* Action buttons at the bottom */}
         <div className="flex justify-end space-x-4">
-          <Button variant="secondary">Cancel</Button>
-          <Button>Submit Inspection</Button>
+          <Button variant="secondary" onClick={() => setIsCancelDialogOpen(true)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmitInspection} disabled={isSubmitting}>
+            {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
+          </Button>
         </div>
       </div>
+      <ReportProblemModal isOpen={isReportModalOpen} onOpenChange={setIsReportModalOpen} onSave={handleSaveProblem} point={pointToReport} />
+      <ConfirmDeleteDialog
+        isOpen={isCancelDialogOpen}
+        onOpenChange={setIsCancelDialogOpen}
+        onConfirm={handleCancelInspection}
+        title="Cancel Inspection?"
+        description="Are you sure you want to cancel? All progress on this inspection will be permanently deleted."
+      />
     </AppLayout>
   );
 }

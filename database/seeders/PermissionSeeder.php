@@ -45,6 +45,7 @@ class PermissionSeeder extends Seeder
             'inspections.perform',
             'inspections.edit',
             'inspections.delete',
+            'inspections.administration'
 
         ];
 

@@ -8,6 +8,14 @@ use Inertia\Inertia;
 use App\Models\InspectionStatus;
 use App\Models\InspectionReport;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\InspectionReportItem;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use App\Models\MachineStatus;
+
+
 
 
 
@@ -20,45 +28,38 @@ class InspectionController extends Controller
      */
     public function index(Request $request)
     {
-        $searchQuery = $request->input('search');
+        //  Get all filters from the request ---
+        $filters = $request->only(['search', 'user', 'start_date', 'end_date']);
 
-        // --- ACTION 1: Remove the where() clause to fetch ALL reports ---
-        $query = InspectionReport::with([
-            'user:id,name',
-            'machine:id,name,image_url',
-            'items.status'
-        ])
-            ->latest('created_at');
+        $query = InspectionReport::with('user:id,name', 'machine:id,name,image_url', 'items.status')
+            ->where('status', 'completed')
+            ->latest('completed_at');
 
         if (!$request->user()->can('inspections.administration')) {
             $query->where('user_id', $request->user()->id);
         }
 
-        if ($searchQuery) {
-            $query->whereHas('machine', function ($q) use ($searchQuery) {
-                $q->where('name', 'like', '%' . $searchQuery . '%');
+        // ---  Apply all filters to the query ---
+        $query->when($filters['search'] ?? null, function ($query, $search) {
+            $query->whereHas('machine', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             });
-        }
+        })->when($filters['user'] ?? null, function ($query, $userId) {
+            $query->where('user_id', $userId);
+        })->when($filters['start_date'] ?? null, function ($query, $startDate) {
+            $query->whereDate('completed_at', '>=', $startDate);
+        })->when($filters['end_date'] ?? null, function ($query, $endDate) {
+            $query->whereDate('completed_at', '<=', $endDate);
+        });
 
-        $reports = $query->paginate(8)->through(function ($report) {
+        $reports = $query->paginate(12)->through(function ($report) {
             $severityCounts = $report->items->countBy('status.severity');
-
-            // --- ACTION 2: Add conditional logic for the badge text ---
-            $badgeText = '';
-            if ($report->status === 'completed') {
-                $badgeText = $report->completed_at->diffForHumans($report->created_at, true);
-            } elseif ($report->status === 'in_progress') {
-                $badgeText = 'In Progress';
-            } else {
-                $badgeText = 'Abandoned';
-            }
-
             return [
                 'id' => $report->id,
                 'status' => $report->status,
                 'start_date' => $report->created_at->format('M d, Y, h:i A'),
                 'completion_date' => $report->completed_at ? $report->completed_at->format('M d, Y, h:i A') : null,
-                'badge_text' => $badgeText, // Send the new badge text
+                'badge_text' => $report->completed_at ? $report->completed_at->diffForHumans($report->created_at, true) : 'In Progress',
                 'user_name' => $report->user->name,
                 'machine_name' => $report->machine->name,
                 'machine_image_url' => $report->machine->image_url,
@@ -72,7 +73,10 @@ class InspectionController extends Controller
 
         return Inertia::render('Inspections/Index', [
             'reports' => $reports,
-            'filters' => ['search' => $searchQuery],
+            'filters' => $filters,
+            // --- Pass the list of users for the filter dropdown ---
+            // Only send users if the current user has permission to filter by them.
+            'users' => $request->user()->can('inspections.administration') ? User::select('id', 'name')->get() : [],
         ]);
     }
     /**
@@ -112,6 +116,26 @@ class InspectionController extends Controller
             ];
         })->values();
 
+        // ---Determine if a status change was triggered by this report ---
+        $statusChangeInfo = null;
+        $highestSeverity = -1;
+        $statusThatTriggeredChange = null;
+
+        foreach ($inspectionReport->items as $item) {
+            if ($item->status && $item->status->severity > $highestSeverity) {
+                $highestSeverity = $item->status->severity;
+                $statusThatTriggeredChange = $item->status;
+            }
+        }
+
+        if ($statusThatTriggeredChange && $statusThatTriggeredChange->machine_status_id) {
+            // Find the name of the machine status that was set
+            $newMachineStatus = MachineStatus::find($statusThatTriggeredChange->machine_status_id);
+            if ($newMachineStatus) {
+                $statusChangeInfo = "Set machine status to: " . $newMachineStatus->name;
+            }
+        }
+
         // Prepare the final report object for the view
         $reportData = [
             'id' => $inspectionReport->id,
@@ -121,6 +145,7 @@ class InspectionController extends Controller
             'user_name' => $inspectionReport->user->name,
             'machine_name' => $inspectionReport->machine->name,
             'grouped_items' => $formattedSubsystems,
+            'status_change_info' => $statusChangeInfo,
         ];
 
         return Inertia::render('Inspections/Show', [
@@ -132,6 +157,8 @@ class InspectionController extends Controller
      * This will be our "Start Inspection" page.
      *
      * @return \Inertia\Response
+     * 
+     * QR FUNCCIONALITY MISSING
      */
     public function create()
     {
@@ -169,7 +196,7 @@ class InspectionController extends Controller
      */
     public function perform(InspectionReport $inspectionReport)
     {
-        // --- ACTION 1: Eager-load all necessary relationships for the page ---
+        // ---  Eager-load all necessary relationships for the page ---
         $inspectionReport->load([
             'machine.subsystems.inspectionPoints',
             'machine.creator',
@@ -177,7 +204,7 @@ class InspectionController extends Controller
             'machine.statusLogs.machineStatus'
         ]);
 
-        // --- ACTION 2: Calculate uptime information for the associated machine ---
+        // ---  Calculate uptime information for the associated machine ---
         $machine = $inspectionReport->machine;
         $uptimeData = [
             'since' => null,
@@ -199,7 +226,7 @@ class InspectionController extends Controller
         // Fetch all available inspection statuses
         $inspectionStatuses = InspectionStatus::all();
 
-        // --- ACTION 3: Render the "Perform" page and pass all the necessary data ---
+        // ---  Render the "Perform" page and pass all the necessary data ---
         return Inertia::render('Inspections/Perform', [
             'report' => $inspectionReport,
             'inspectionStatuses' => $inspectionStatuses,
@@ -212,39 +239,66 @@ class InspectionController extends Controller
      */
     public function update(Request $request, InspectionReport $inspectionReport)
     {
-        // Validate the incoming data
-        $validated = $request->validate([
-            'results' => 'required|array',
-            'results.*.status_id' => 'required|exists:inspection_statuses,id',
-            'results.*.comment' => 'nullable|string',
-            'results.*.image' => 'nullable|file|image|max:2048',
-        ]);
+        // We wrap the entire operation in a database         // This ensures that if any part fails, all changes are rolled back.
+        DB::transaction(function () use ($request, $inspectionReport) {
+            $validated = $request->validate([
+                'results' => 'required|array',
+                'results.*.status_id' => 'required|exists:inspection_statuses,id',
+                'results.*.comment' => 'nullable|string',
+                'results.*.image' => 'nullable|file|image|max:2048',
+            ]);
 
-        // Loop through each inspection point result
-        foreach ($validated['results'] as $pointId => $result) {
-            $imagePath = null;
-            // Check if an image was uploaded for this specific point
-            if ($request->hasFile("results.{$pointId}.image")) {
-                // Store the image in a dedicated folder and get its path
-                $imagePath = $request->file("results.{$pointId}.image")->store('inspection_images', 'public');
+            $highestSeverityStatusId = null;
+            $highestSeverity = -1;
+
+            // Loop through each inspection point result to save it
+            foreach ($validated['results'] as $pointId => $result) {
+                $imagePath = null;
+                if ($request->hasFile("results.{$pointId}.image")) {
+                    $imagePath = $request->file("results.{$pointId}.image")->store('inspection_images', 'public');
+                }
+
+                $inspectionReport->items()->create([
+                    'inspection_point_id' => $pointId,
+                    'inspection_status_id' => $result['status_id'],
+                    'comment' => $result['comment'] ?? null,
+                    'image_url' => $imagePath,
+                ]);
+
+                // ---Find the highest severity status ---
+                $status = InspectionStatus::find($result['status_id']);
+                if ($status && $status->severity > $highestSeverity) {
+                    $highestSeverity = $status->severity;
+                    $highestSeverityStatusId = $status->id;
+                }
             }
 
-            // Create the inspection report item in the database
-            $inspectionReport->items()->create([
-                'inspection_point_id' => $pointId,
-                'inspection_status_id' => $result['status_id'],
-                'comment' => $result['comment'] ?? null,
-                'image_url' => $imagePath,
+            if ($highestSeverityStatusId) {
+                $statusToApply = InspectionStatus::find($highestSeverityStatusId);
+                // Check if this inspection status has a machine status ID linked to it
+                if ($statusToApply && $statusToApply->machine_status_id) {
+                    // Directly update the machine with the correct ID. No need for a second query.
+                    $inspectionReport->machine()->update(['machine_status_id' => $statusToApply->machine_status_id]);
+                }
+            }
+
+            // ---  Create tickets for items that require it ---
+            // We reload the items with their status to check the 'auto_creates_ticket' flag
+            $inspectionReport->load('items.status');
+            foreach ($inspectionReport->items as $item) {
+                if ($item->status->auto_creates_ticket) {
+                    // Placeholder: Logic to create a maintenance ticket will go here.
+                    // For now, we can just log that it would happen.
+                    // \Log::info("Ticket created for inspection item #{$item->id}");
+                }
+            }
+
+            // Mark the main report as completed
+            $inspectionReport->update([
+                'status' => 'completed',
+                'completed_at' => now(),
             ]);
-        }
-
-        // Mark the main report as completed
-        $inspectionReport->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
-
-        // We will add logic here later to create tickets and update machine status
+        });
 
         return to_route('dashboard')->with('success', 'Inspection submitted successfully!');
     }
@@ -263,5 +317,28 @@ class InspectionController extends Controller
 
         // Redirect back to the start page with a success message.
         return to_route('inspections.start')->with('success', 'Inspection has been cancelled.');
+    }
+    public function downloadPDF(InspectionReport $inspectionReport)
+    {
+        // --- ACTION 2: Load all the necessary data for the report ---
+        $inspectionReport->load([
+            'user:id,name',
+            'machine:id,name',
+            'items.point:id,name,subsystem_id',
+            'items.status',
+            'items.point.subsystem:id,name'
+        ]);
+
+        // Group the items by subsystem for easy display in the view
+        $groupedItems = $inspectionReport->items->groupBy('point.subsystem.name');
+
+        // ---Load the Blade view and generate the PDF ---
+        $pdf = Pdf::loadView('pdf.inspection-report', [
+            'report' => $inspectionReport,
+            'groupedItems' => $groupedItems,
+        ]);
+
+        // --- Return the PDF as a download ---
+        return $pdf->download('inspection-report-' . $inspectionReport->id . '.pdf');
     }
 }

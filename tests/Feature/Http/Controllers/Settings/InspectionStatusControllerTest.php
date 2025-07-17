@@ -8,6 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
+use App\Models\MachineStatus;
+
+
 
 class InspectionStatusControllerTest extends TestCase
 {
@@ -37,7 +40,7 @@ class InspectionStatusControllerTest extends TestCase
         $response = $this->get(route('settings.inspection-status.index'));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->component('GeneralSettings/InspectionStatus/Index'));
+        $response->assertInertia(fn($page) => $page->component('GeneralSettings/InspectionStatus/Index'));
     }
 
     public function test_can_create_a_new_inspection_status(): void
@@ -52,7 +55,7 @@ class InspectionStatusControllerTest extends TestCase
             'is_default' => false,
         ];
 
-        // --- ACTION: Use the correct, prefixed route name ---
+        // ---  Use the correct, prefixed route name ---
         $response = $this->post(route('settings.inspection-status.store'), $statusData);
 
         $response->assertRedirect()->with('success');
@@ -61,46 +64,55 @@ class InspectionStatusControllerTest extends TestCase
 
     public function test_can_update_an_inspection_status(): void
     {
+        $statusnew = InspectionStatus::factory()->create();
         $status = InspectionStatus::factory()->create();
+
+        $newMachineStatus = MachineStatus::factory()->create();
 
         $updatedData = [
             'name' => 'Updated Status Name',
             'severity' => 2,
             'auto_creates_ticket' => false,
-            'sets_machine_status_to' => 'Out of Service',
+            'machine_status_id' => $newMachineStatus->id,
             'bg_color' => '#ffffff',
             'text_color' => '#000000',
             'is_default' => false,
         ];
 
-        // --- ACTION: Use the correct, prefixed route name ---
         $response = $this->put(route('settings.inspection-status.update', $status), $updatedData);
 
         $response->assertRedirect()->with('success');
         $this->assertDatabaseHas('inspection_statuses', [
             'id' => $status->id,
             'name' => 'Updated Status Name',
+            'machine_status_id' => $newMachineStatus->id,
         ]);
     }
 
     public function test_can_delete_an_inspection_status(): void
     {
-        $status = InspectionStatus::factory()->create();
+        // --- ACTION: Update the delete test to send the new_status_id ---
+        $statusToDelete = InspectionStatus::factory()->create();
+        $newStatus = InspectionStatus::factory()->create();
 
-        // --- ACTION: Use the correct, prefixed route name ---
-        $response = $this->delete(route('settings.inspection-status.destroy', $status));
+        $response = $this->delete(route('settings.inspection-status.destroy', $statusToDelete), [
+            'new_status_id' => $newStatus->id,
+        ]);
 
         $response->assertRedirect()->with('success');
-        $this->assertDatabaseMissing('inspection_statuses', ['id' => $status->id]);
+        $this->assertDatabaseMissing('inspection_statuses', ['id' => $statusToDelete->id]);
     }
 
     public function test_cannot_delete_the_default_inspection_status(): void
     {
         // Create a status and mark it as the default
         $defaultStatus = InspectionStatus::factory()->create(['is_default' => true]);
+        $otherStatus = InspectionStatus::factory()->create();
 
-        // --- ACTION: Use the correct, prefixed route name ---
-        $response = $this->delete(route('settings.inspection-status.destroy', $defaultStatus));
+        // --- ACTION: Update the delete test to send the new_status_id ---
+        $response = $this->delete(route('settings.inspection-status.destroy', $defaultStatus), [
+            'new_status_id' => $otherStatus->id,
+        ]);
 
         $response->assertRedirect()->with('error');
         $this->assertDatabaseHas('inspection_statuses', ['id' => $defaultStatus->id]);

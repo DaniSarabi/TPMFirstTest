@@ -1,18 +1,19 @@
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
-import { MachineStatusFilter, statuses } from './MachineStatusFilter';
+import { MachineStatusFilter } from './MachineStatusFilter';
+import { MachineStatus } from './Columns';
 
 //  Define the props for the toolbar
 // We add types to ensure the component is used correctly.
 interface MachineListToolbarProps {
-  onSearch: (value: string) => void;
-  createAction: React.ReactNode;
-  // Add props to manage the status filter ---
-  statusFilterValues: Set<string>;
-  onStatusFilterChange: (values: Set<string>) => void;
+    onSearch: (value: string) => void;
+    createAction: React.ReactNode;
+    statuses: MachineStatus[];
+    statusFilterValues: Set<number>;
+    onStatusFilterChange: (values: Set<number>) => void;
 }
 
-export function MachineListToolbar({ onSearch, createAction, statusFilterValues, onStatusFilterChange }: MachineListToolbarProps) {
+export function MachineListToolbar({ onSearch, createAction, statusFilterValues, onStatusFilterChange, statuses }: MachineListToolbarProps) {
   return (
     <div className="flex items-center justify-between">
             <div className="flex flex-1 items-center space-x-2">

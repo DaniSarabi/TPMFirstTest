@@ -6,7 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import useCan from '@/lib/useCan';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, Ticket, Trash2, Wrench } from 'lucide-react';
+import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, QrCode, Ticket, Trash2, Wrench } from 'lucide-react';
 import React from 'react';
 import { AddSubsystemWizard } from './AddSubsystemWizard';
 import { Machine, MachineStatus, Subsystem } from './Columns'; // Import the Machine type from your columns file
@@ -29,7 +29,7 @@ interface ShowPageProps {
   };
 }
 
-export default function Show({ machine,statuses, uptime, stats }: ShowPageProps) {
+export default function Show({ machine, statuses, uptime, stats }: ShowPageProps) {
   const [editModalIsOpen, setEditModalIsOpen] = React.useState(false);
 
   const [AddSubsystemWizardIsOpen, setAddSubsystemWizardIsOpen] = React.useState(false);
@@ -118,10 +118,13 @@ export default function Show({ machine,statuses, uptime, stats }: ShowPageProps)
                     }}
                   >
                     {machine.machine_status.name}
-                  </Badge>{' '}
+                  </Badge>
                   <div className="flex items-center gap-2">
+                    <Button variant="secondary" size="icon" >
+                      <QrCode className="h-4 w-4" />
+                    </Button>
                     {can.edit && (
-                      <Button variant="outline" size="icon" onClick={() => setEditModalIsOpen(true)}>
+                      <Button variant="default" size="icon" onClick={() => setEditModalIsOpen(true)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                     )}

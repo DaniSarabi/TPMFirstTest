@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -33,12 +34,15 @@ export function InspectionCard({ report }: InspectionCardProps) {
 
   const totalPoints = stats.ok_count + stats.warning_count + stats.critical_count;
 
-  const statusColor =
-    {
-      completed: 'bg-green-600',
-      in_progress: 'bg-blue-600',
-      abandoned: 'bg-red-600',
-    }[status] || 'bg-gray-500';
+  const statusColor = (() => {
+    if (stats.critical_count > 0) {
+      return 'bg-orange-600'; // Red if there are any critical issues
+    }
+    if (stats.warning_count > 0) {
+      return 'bg-yellow-500'; // Yellow if there are warnings (and no criticals)
+    }
+    return 'bg-green-600'; // Green if all points are OK
+  })();
 
   return (
     // --- ACTION 1: Wrap the entire card in a Link component ---
@@ -47,6 +51,10 @@ export function InspectionCard({ report }: InspectionCardProps) {
         {/* Image */}
         <div>
           <img src={machine_image_url || 'https://placehold.co/600x400?text=no+image'} alt={machine_name} className="h-36 w-full object-cover" />
+
+          <Badge variant="default" className="absolute top-2 left-2 z-10">
+            Report #{report.id}
+          </Badge>
 
           {/* Status Bar */}
           <div className={`flex items-center px-4 py-1 ${statusColor}`}>

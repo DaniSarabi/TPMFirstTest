@@ -14,28 +14,15 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Check, PlusCircle } from 'lucide-react';
 import * as React from 'react';
-
-// Define the shape of a filter option
-interface FilterOption {
-    label: string;
-    value: string;
-}
+import { MachineStatus } from './Columns'; // Import the type
 
 // Define the props for our new component
 interface MachineStatusFilterProps {
     title?: string;
-    options: FilterOption[];
-    selectedValues: Set<string>;
-    onSelectedValuesChange: (values: Set<string>) => void;
+    options: MachineStatus[]; // Now expects the full status objects
+    selectedValues: Set<number>; // Works with IDs (numbers)
+    onSelectedValuesChange: (values: Set<number>) => void;
 }
-
-// The list of available statuses
-export const statuses: FilterOption[] = [
-    { value: 'New', label: 'New' },
-    { value: 'In Service', label: 'In Service' },
-    { value: 'Under Maintenance', label: 'Under Maintenance' },
-    { value: 'Out of Service', label: 'Out of Service' },
-];
 
 export function MachineStatusFilter({
     title,
@@ -46,7 +33,7 @@ export function MachineStatusFilter({
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 border-dashed">
+                <Button variant="outline" size="sm" className="h-9 border-dashed">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     {title}
                     {selectedValues.size > 0 && (
@@ -62,14 +49,14 @@ export function MachineStatusFilter({
                                     </Badge>
                                 ) : (
                                     options
-                                        .filter((option) => selectedValues.has(option.value))
+                                        .filter((option) => selectedValues.has(option.id))
                                         .map((option) => (
                                             <Badge
                                                 variant="secondary"
-                                                key={option.value}
+                                                key={option.id}
                                                 className="rounded-sm px-1 font-normal"
                                             >
-                                                {option.label}
+                                                {option.name}
                                             </Badge>
                                         ))
                                 )}
@@ -85,15 +72,15 @@ export function MachineStatusFilter({
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup>
                             {options.map((option) => {
-                                const isSelected = selectedValues.has(option.value);
+                                const isSelected = selectedValues.has(option.id);
                                 return (
                                     <CommandItem
-                                        key={option.value}
+                                        key={option.id}
                                         onSelect={() => {
                                             if (isSelected) {
-                                                selectedValues.delete(option.value);
+                                                selectedValues.delete(option.id);
                                             } else {
-                                                selectedValues.add(option.value);
+                                                selectedValues.add(option.id);
                                             }
                                             onSelectedValuesChange(new Set(selectedValues));
                                         }}
@@ -108,7 +95,7 @@ export function MachineStatusFilter({
                                         >
                                             <Check className={cn('h-4 w-4')} />
                                         </div>
-                                        <span>{option.label}</span>
+                                        <span>{option.name}</span>
                                     </CommandItem>
                                 );
                             })}

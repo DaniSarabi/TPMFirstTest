@@ -47,6 +47,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // This route will display the details of a single inspection report
     Route::get('/inspections/{inspectionReport}', [InspectionController::class, 'show'])->name('inspections.show');
 
+    Route::get('/inspections/{inspectionReport}/pdf', [InspectionController::class, 'downloadPDF'])
+        ->name('inspections.pdf')
+        ->middleware('permission:inspections.view');
+
     //* ***************************** Statuses module Routes *****************************
 
     //  Use a Route Group to correctly prefix the names and URLs ---

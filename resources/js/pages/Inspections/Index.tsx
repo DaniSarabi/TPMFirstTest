@@ -3,9 +3,11 @@ import { ListToolbar } from '@/components/list-toolbar';
 import { Pagination } from '@/components/pagination';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/lib/useCan';
-import { type BreadcrumbItem, type Filter, type Paginated } from '@/types';
+import { type BreadcrumbItem, type Filter, type Paginated, type User } from '@/types';
 import { Head, router } from '@inertiajs/react';
+import { format } from 'date-fns';
 import * as React from 'react';
+import { DateRange } from 'react-day-picker';
 import { InspectionCard } from './InspectionCard';
 import { InspectionFilters } from './InspectionFilters';
 
@@ -18,22 +20,29 @@ interface ReportStat {
 
 interface Report {
   id: number;
+  status: string;
+  start_date: string;
   completion_date: string | null;
-  duration: string | null;
+  badge_text: string;
   user_name: string;
   machine_name: string;
   machine_image_url: string | null;
   stats: ReportStat;
+  duration: string | null;
 }
 
 interface IndexPageProps {
   reports: Paginated<Report>;
-  filters: Filter;
+  filters: Filter & { user?: string; start_date?: string; end_date?: string };
+  users: User[];
 }
 
-export default function Index({ reports, filters }: IndexPageProps) {
+export default function Index({ reports, filters, users }: IndexPageProps) {
   const [search, setSearch] = React.useState(filters.search || '');
-  // We will add state here for the date and user filters later
+  const [selectedUser, setSelectedUser] = React.useState<number | null>(filters.user ? Number(filters.user) : null);
+  const [selectedDate, setSelectedDate] = React.useState<DateRange | undefined>(
+    filters.start_date ? { from: new Date(filters.start_date), to: filters.end_date ? new Date(filters.end_date) : undefined } : undefined,
+  );
 
   const isInitialMount = React.useRef(true);
 
@@ -48,7 +57,12 @@ export default function Index({ reports, filters }: IndexPageProps) {
     const timeout = setTimeout(() => {
       router.get(
         route('inspections.index'),
-        { search }, // We will add other filters here later
+        {
+          search,
+          user: selectedUser,
+          start_date: selectedDate?.from ? format(selectedDate.from, 'yyyy-MM-dd') : undefined,
+          end_date: selectedDate?.to ? format(selectedDate.to, 'yyyy-MM-dd') : undefined,
+        },
         {
           preserveState: true,
           replace: true,
@@ -57,7 +71,7 @@ export default function Index({ reports, filters }: IndexPageProps) {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search]);
+  }, [search, selectedUser, selectedDate]);
 
   const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -66,6 +80,13 @@ export default function Index({ reports, filters }: IndexPageProps) {
       isCurrent: true,
     },
   ];
+  const isFiltered = !!search || !!selectedUser || !!selectedDate;
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedUser(null);
+    setSelectedDate(undefined);
+  };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -78,11 +99,18 @@ export default function Index({ reports, filters }: IndexPageProps) {
           </div>
         </div>
 
-        <div className='justify-between flex'>
-          <ListToolbar  onSearch={setSearch} searchPlaceholder="Search by machine name...">
-            {/* The filters component is now rendered inside the toolbar */}
-            {/* We only show the user filter if the user is an administrator */}
-            <InspectionFilters showUserFilter={can} />
+        <div className="flex justify-between">
+          <ListToolbar onSearch={setSearch} searchPlaceholder="Search by machine name...">
+            <InspectionFilters
+              showUserFilter={can}
+              users={users}
+              selectedUser={selectedUser}
+              onUserChange={setSelectedUser}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              isFiltered={isFiltered}
+              onReset={handleResetFilters}
+            />
           </ListToolbar>
         </div>
 

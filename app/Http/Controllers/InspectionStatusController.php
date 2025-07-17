@@ -92,11 +92,11 @@ class InspectionStatusController extends Controller
         if ($inspectionStatus->is_default) {
             return back()->with('error', 'The default inspection status cannot be deleted.');
         }
-        
+
         DB::transaction(function () use ($validated, $inspectionStatus) {
             // Re-assign any inspection report items that were using the old status
-            InspectionReportItem::where('status_id', $inspectionStatus->id)
-                ->update(['status_id' => $validated['new_status_id']]);
+            InspectionReportItem::where('inspection_status_id', $inspectionStatus->id)
+                ->update(['inspection_status_id' => $validated['new_status_id']]);
 
             // Now, safely delete the status
             $inspectionStatus->delete();

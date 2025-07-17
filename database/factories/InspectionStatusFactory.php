@@ -20,7 +20,7 @@ class InspectionStatusFactory extends Factory
             'name' => $this->faker->unique()->word(),
             'severity' => $this->faker->numberBetween(0, 2),
             'auto_creates_ticket' => $this->faker->boolean(),
-            'sets_machine_status_to' => null,
+            'machine_status_id' => null,
             'bg_color' => $this->faker->hexColor(),
             'text_color' => $this->faker->hexColor(),
             'is_default' => false,

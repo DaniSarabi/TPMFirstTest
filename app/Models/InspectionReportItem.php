@@ -5,12 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+
+
 
 
 class InspectionReportItem extends Model
 {
     //
-     use HasFactory;
+    use HasFactory;
 
     /**
      * The table associated with the model.
@@ -31,7 +35,16 @@ class InspectionReportItem extends Model
         'comment',
         'image_url',
     ];
-
+    /**
+     * --- ACTION: Add an accessor for the image_url attribute ---
+     * This method will automatically format the image_url whenever it's accessed.
+     */
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? Storage::url($value) : null
+        );
+    }
     /**
      * Get the main report that this item belongs to.
      */

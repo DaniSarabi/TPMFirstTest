@@ -119,12 +119,15 @@ class MachineStatusControllerTest extends TestCase
 
     public function test_it_reassigns_inspection_statuses_when_a_machine_status_is_deleted(): void
     {
-        // 1. Arrange
-        $defaultStatus = MachineStatus::factory()->create(['name' => 'new']);
-        $statusToDelete = MachineStatus::factory()->create(['name' => 'Needs Maintenance']);
-        $newStatus = MachineStatus::factory()->create(['name' => 'Out of Service']);
+         // 1. Arrange
+         
+        MachineStatus::factory()->create(['id' => 1, 'name' => 'Default']);
+        $statusToDelete = MachineStatus::factory()->create();
+        $newStatus = MachineStatus::factory()->create();
+
+        // Create an inspection status that points to the status we will delete
         $inspectionStatus = InspectionStatus::factory()->create([
-            'sets_machine_status_to' => $statusToDelete->name,
+            'machine_status_id' => $statusToDelete->id,
         ]);
 
         // 2. Act
@@ -133,7 +136,7 @@ class MachineStatusControllerTest extends TestCase
         ]);
 
         // 3. Assert
-        // --- ACTION: Refresh the model from the database and assert directly ---
-        $this->assertEquals($newStatus->name, $inspectionStatus->fresh()->sets_machine_status_to);
+        // Assert that the inspection status's foreign key was updated to the new ID.
+        $this->assertEquals($newStatus->id, $inspectionStatus->fresh()->machine_status_id);
     }
 }

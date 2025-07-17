@@ -27,10 +27,10 @@ class MachineController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             })
             ->when($statusFilter && count($statusFilter) > 0, function ($query) use ($statusFilter) {
-                $query->whereIn('status', $statusFilter);
+                $query->whereIn('machine_status_id', $statusFilter);
             })
             ->latest()
-            ->paginate(8)
+            ->paginate(12)
             ->withQueryString();
 
         return Inertia::render('Machines/Index', [
@@ -39,6 +39,8 @@ class MachineController extends Controller
                 'search' => $searchQuery,
                 'statuses' => $statusFilter,
             ],
+            'machineStatuses' => MachineStatus::all(),
+
         ]);
     }
 

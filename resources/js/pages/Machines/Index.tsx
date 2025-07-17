@@ -4,19 +4,20 @@ import { useCan } from '@/lib/useCan';
 import { Paginated, type BreadcrumbItem, type Filter } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Row } from '@tanstack/react-table';
+import { CirclePlus } from 'lucide-react';
 import * as React from 'react';
-import { Machine } from './Columns'; // Import from your new columns file
+import { Machine, MachineStatus } from './Columns'; // Import from your new columns file
 import { CreateMachineWizard } from './CreateMachineWizard';
 import { MachineGrid } from './MachineGrid';
 import { MachineListToolbar } from './MachineListToolbar';
 import { PaginationControls } from './PaginationControls';
 import { SubsystemList } from './SubsystemList';
-import { CirclePlus } from 'lucide-react';
 
 // Define the props for the Index page
 interface IndexPageProps {
   machines: Paginated<Machine>;
-  filters: Filter;
+  filters: Filter & { statuses?: number[] };
+  machineStatuses: MachineStatus[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,14 +27,14 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Index({ machines, filters }: IndexPageProps) {
+export default function Index({ machines, filters, machineStatuses }: IndexPageProps) {
   const [dialogIsOpen, setDialogIsOpen] = React.useState(false);
   const [machineToDelete, setMachineToDelete] = React.useState<number | null>(null);
   const [wizardIsOpen, setWizardIsOpen] = React.useState(false);
 
   // ---  Add state for both search and status filters ---
   const [search, setSearch] = React.useState(filters.search || '');
-  const [statusFilter, setStatusFilter] = React.useState<Set<string>>(new Set(filters.statuses || []));
+  const [statusFilter, setStatusFilter] = React.useState<Set<number>>(new Set(filters.statuses || []));
 
   const canCreate = useCan('machines.create');
 
@@ -84,21 +85,26 @@ export default function Index({ machines, filters }: IndexPageProps) {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Machines" />
-      <div className="space-y-4 p-6 ">
+      <div className="space-y-4 p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Machine Management</h1>
         </div>
 
         <MachineListToolbar
           onSearch={setSearch}
-          statusFilterValues={statusFilter}
-          onStatusFilterChange={setStatusFilter}
+                    statuses={machineStatuses}
+                    statusFilterValues={statusFilter}
+                    onStatusFilterChange={setStatusFilter}
           createAction={
-            // --- ACTION 3: Conditionally render the create button ---
-            canCreate ? <Button onClick={() => setWizardIsOpen(true)}><CirclePlus className="h-4 w-4" />Create Machine</Button> : null
+            canCreate ? (
+              <Button onClick={() => setWizardIsOpen(true)}>
+                <CirclePlus className="h-4 w-4" />
+                Create Machine
+              </Button>
+            ) : null
           }
         />
-       
+
         <MachineGrid machines={machines.data} />
 
         <PaginationControls links={machines.links} />

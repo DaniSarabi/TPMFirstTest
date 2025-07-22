@@ -8,7 +8,7 @@ use App\Models\Machine;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\MachineStatus;
-
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 
 class MachineController extends Controller
@@ -42,14 +42,6 @@ class MachineController extends Controller
             'machineStatuses' => MachineStatus::all(),
 
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -135,14 +127,6 @@ class MachineController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Machine $machine)
@@ -188,5 +172,30 @@ class MachineController extends Controller
 
         // Redirect the user back to the index page with a success message.
         return to_route('machines.index')->with('success', 'Machine deleted successfully.');
+    }
+    /**
+     * Generate a QR code for starting an inspection for the specified machine.
+     *
+     * @param  \App\Models\Machine  $machine
+     * @return \Illuminate\Http\Response
+     */
+    public function generateQrCode(Machine $machine)
+    {
+        // --- Create the unique URL for the QR code ---
+        // This URL points to the 'startFromQr' method we created earlier.
+        $url = route('inspections.startFromQr', $machine->id);
+
+        $logoPath = public_path('images/jstlogo.png');
+
+
+        // --- Generate the QR code as an SVG image ---
+        // We use SVG because it's high quality and perfect for printing.
+        $qrCode = QrCode::format('svg')
+            ->size(300)
+            ->merge($logoPath, 0.5, true) // The 'true' makes the background of the logo transparent
+            ->generate($url);
+        // --- Return the image directly to the browser ---
+        // The browser will display this as an image, which the user can save or print.
+        return response($qrCode)->header('Content-Type', 'image/svg+xml');
     }
 }

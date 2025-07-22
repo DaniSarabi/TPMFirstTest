@@ -10,10 +10,7 @@ use App\Http\Controllers\InspectionPointController;
 use App\Http\Controllers\MachineStatusController;
 use App\Http\Controllers\InspectionStatusController;
 use App\Http\Controllers\InspectionController;
-
-
-
-
+use App\Http\Controllers\TicketController;
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -25,6 +22,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
+    //* ***************************** Tickets module Routes *****************************
+
+
+    Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit']);
+
+
+    //* ***************************** Inspections module Routes *****************************
 
     // This route will display the "Start Inspection" page
     Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start');
@@ -50,6 +54,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/inspections/{inspectionReport}/pdf', [InspectionController::class, 'downloadPDF'])
         ->name('inspections.pdf')
         ->middleware('permission:inspections.view');
+
+    // This new route will handle the GET request from the QR code scan
+    Route::get('/inspections/start-from-qr/{machine}', [InspectionController::class, 'startFromQr'])->name('inspections.startFromQr');
 
     //* ***************************** Statuses module Routes *****************************
 
@@ -105,7 +112,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy')->middleware('permission:machines.delete');
     Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy')->middleware('permission:machines.delete');
 
-
+    // Route for generating a QR code for a machine
+    Route::get('/machines/{machine}/qr-code', [MachineController::class, 'generateQrCode'])
+        ->name('machines.qr-code')
+        ->middleware('permission:machines.view');
     //Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');
 
     //* ***************************** Users Routes *****************************

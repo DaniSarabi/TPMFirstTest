@@ -36,7 +36,7 @@ export function InspectionFilters({
       {/* Date Range Filter */}
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 w-[240px] justify-start border-dashed text-left font-normal">
+          <Button variant="outline" className="h-9 w-[240px] justify-start border-dashed text-left font-normal border-ring">
             <CalendarIcon className="mr-2 h-4 w-4" />
             {selectedDate?.from ? (
               selectedDate.to ? (
@@ -60,7 +60,7 @@ export function InspectionFilters({
       {showUserFilter && (
         <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" role="combobox" aria-expanded={userPopoverOpen} className="h-9 w-[200px] justify-between border-dashed">
+            <Button variant="outline" role="combobox" aria-expanded={userPopoverOpen} className="h-9 w-[200px] justify-between border-dashed border-ring">
               {selectedUser ? users.find((user) => user.id === selectedUser)?.name : 'Filter by user...'}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>

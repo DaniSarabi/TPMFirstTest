@@ -150,8 +150,7 @@ export function AddSubsystemWizard({ machineId, isOpen, onOpenChange, onFinish }
               <Label htmlFor="inspection-point-name">Inspection Point Name</Label>
               <div className="flex space-x-2">
                 <Input
-                                className="bg-gray-100"
-
+                  className="bg-gray-100"
                   id="inspection-point-name"
                   value={inspectionPointName}
                   onChange={(e) => setInspectionPointName(e.target.value)}

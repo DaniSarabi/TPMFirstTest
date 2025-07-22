@@ -1,7 +1,4 @@
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
-import * as React from 'react';
-import { Badge } from './badge';
 
 // Define the shape of a single color option in our palette
 interface ColorOption {

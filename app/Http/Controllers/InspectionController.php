@@ -14,10 +14,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\MachineStatus;
-
-
-
-
+use App\Models\TicketStatus;
+use App\Models\Ticket;
 
 class InspectionController extends Controller
 {
@@ -190,7 +188,24 @@ class InspectionController extends Controller
         // Redirect to the "Perform Inspection" page for the new report
         return to_route('inspections.perform', $report->id);
     }
+    /**
+     * Create a new in-progress inspection report from a QR code scan.
+     *
+     * @param  \App\Models\Machine  $machine
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function startFromQr(Machine $machine)
+    {
+        // This method performs the same logic as the store() method,
+        // but it's triggered by a simple GET request from the QR code.
+        $report = InspectionReport::create([
+            'machine_id' => $machine->id,
+            'user_id' => Auth::id(),
+        ]);
 
+        // Redirect to the "Perform Inspection" page for the new report
+        return to_route('inspections.perform', $report->id);
+    }
     /**
      * Show the main inspection page for a specific report.
      */
@@ -239,7 +254,8 @@ class InspectionController extends Controller
      */
     public function update(Request $request, InspectionReport $inspectionReport)
     {
-        // We wrap the entire operation in a database         // This ensures that if any part fails, all changes are rolled back.
+        // We wrap the entire operation in a database transaction.
+        // This ensures that if any part fails, all changes are rolled back.
         DB::transaction(function () use ($request, $inspectionReport) {
             $validated = $request->validate([
                 'results' => 'required|array',
@@ -251,6 +267,8 @@ class InspectionController extends Controller
             $highestSeverityStatusId = null;
             $highestSeverity = -1;
 
+            $openTicketStatus = TicketStatus::where('name', 'Open')->first();
+
             // Loop through each inspection point result to save it
             foreach ($validated['results'] as $pointId => $result) {
                 $imagePath = null;
@@ -258,7 +276,7 @@ class InspectionController extends Controller
                     $imagePath = $request->file("results.{$pointId}.image")->store('inspection_images', 'public');
                 }
 
-                $inspectionReport->items()->create([
+                $item = $inspectionReport->items()->create([
                     'inspection_point_id' => $pointId,
                     'inspection_status_id' => $result['status_id'],
                     'comment' => $result['comment'] ?? null,
@@ -271,6 +289,18 @@ class InspectionController extends Controller
                     $highestSeverity = $status->severity;
                     $highestSeverityStatusId = $status->id;
                 }
+
+                if ($status && $status->auto_creates_ticket && $openTicketStatus) {
+                    Ticket::create([
+                        'inspection_report_item_id' => $item->id,
+                        'machine_id' => $inspectionReport->machine_id,
+                        'title' => $item->point->name, // Use the inspection point name as the title
+                        'description' => $item->comment,
+                        'created_by' => Auth::id(),
+                        'ticket_status_id' => $openTicketStatus->id,
+                        'priority' => $status->severity, // Use the severity as the priority
+                    ]);
+                }
             }
 
             if ($highestSeverityStatusId) {
@@ -279,17 +309,6 @@ class InspectionController extends Controller
                 if ($statusToApply && $statusToApply->machine_status_id) {
                     // Directly update the machine with the correct ID. No need for a second query.
                     $inspectionReport->machine()->update(['machine_status_id' => $statusToApply->machine_status_id]);
-                }
-            }
-
-            // ---  Create tickets for items that require it ---
-            // We reload the items with their status to check the 'auto_creates_ticket' flag
-            $inspectionReport->load('items.status');
-            foreach ($inspectionReport->items as $item) {
-                if ($item->status->auto_creates_ticket) {
-                    // Placeholder: Logic to create a maintenance ticket will go here.
-                    // For now, we can just log that it would happen.
-                    // \Log::info("Ticket created for inspection item #{$item->id}");
                 }
             }
 

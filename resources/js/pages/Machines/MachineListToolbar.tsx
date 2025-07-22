@@ -19,7 +19,7 @@ export function MachineListToolbar({ onSearch, createAction, statusFilterValues,
             <div className="flex flex-1 items-center space-x-2">
                 <Input
                     placeholder="Filter machines by name..."
-                    className="max-w-sm ring-ring ring-1 hover:bg-accent hover:text-accent-foreground"
+                    className="max-w-sm border-ring hover:bg-accent hover:text-accent-foreground"
                     onChange={(e) => onSearch(e.target.value)}
                 />
                 <MachineStatusFilter

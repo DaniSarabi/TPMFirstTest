@@ -15,6 +15,7 @@ import { EditSubsystemModal } from './EditSubsystemModal';
 import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
 import { SubsystemAccordion } from './SubsystemAccordion';
 
+
 // Define the props for the Show page
 interface ShowPageProps {
   machine: Machine;
@@ -120,8 +121,10 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
                     {machine.machine_status.name}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    <Button variant="secondary" size="icon" >
-                      <QrCode className="h-4 w-4" />
+                    <Button variant="secondary" size="icon" asChild>
+                      <a href={route('machines.qr-code', machine.id)} target="_blank">
+                        <QrCode className="h-4 w-4" />
+                      </a>
                     </Button>
                     {can.edit && (
                       <Button variant="default" size="icon" onClick={() => setEditModalIsOpen(true)}>

@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Bolt, FileClock, LayoutGrid, QrCode, ReceiptText, Settings, Shield, UserRound } from 'lucide-react';
+import { Bolt, FileClock, LayoutGrid, ReceiptText, Settings, Shield, Ticket, UserRound } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -28,6 +28,11 @@ const mainNavItems: NavItem[] = [
     href: '/inspections',
     icon: FileClock,
   },
+  {
+    title: 'Tickets',
+    href: route('tickets.index'), 
+    icon: Ticket,
+  },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -40,11 +45,6 @@ const footerNavItems: NavItem[] = [
     title: 'Roles',
     href: '/roles',
     icon: Shield,
-  },
-  {
-    title: 'QR Codes',
-    href: '#',
-    icon: QrCode,
   },
   {
     title: 'Settings',

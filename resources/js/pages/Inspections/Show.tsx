@@ -122,7 +122,7 @@ export default function Show({ report }: ShowPageProps) {
                 <div className="rounded-md border">
                   {subsystem.report_items?.map((item, index) => (
                     <div key={item.id}>
-                      {/* --- ACTION: This container is now responsive --- */}
+                      {/* ---  This container is now responsive --- */}
                       <div className="flex flex-col gap-4 p-4">
                         {/* Top Row: Point Name and Status */}
                         <div className="flex w-full items-center justify-between">
@@ -142,7 +142,7 @@ export default function Show({ report }: ShowPageProps) {
                             </div>
                           </div>
                         </div>
-                        {/* Bottom Row: Comment and Actions */}
+                        {/* Bottom Row: Comment and actions */}
                         <div className="flex w-full flex-wrap items-center justify-end gap-2 md:flex-nowrap">
                           {item.comment && (
                             <div className="flex w-full items-start gap-2 rounded-md border bg-muted/50 p-2 text-sm text-muted-foreground md:w-auto md:flex-1">

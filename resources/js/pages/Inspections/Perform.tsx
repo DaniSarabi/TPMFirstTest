@@ -148,17 +148,13 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [isDirty, setIsDirty] = React.useState(false);
-  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = React.useState(false);
-  const [nextUrl, setNextUrl] = React.useState<string | null>(null);
-
+ 
   const [isCancelDialogOpen, setIsCancelDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     const handleInertiaNavigate = (event: CustomEvent) => {
       if (isDirty && event.detail.url) {
         event.preventDefault();
-        setNextUrl(event.detail.url);
-        setShowUnsavedChangesDialog(true);
       }
     };
 
@@ -247,12 +243,6 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
     machine.subsystems?.reduce((acc, sub) => {
       return acc + (sub.inspection_points?.length ?? 0);
     }, 0) ?? 0;
-
-  const dateAdded = new Date(machine.created_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>

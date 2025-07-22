@@ -22,7 +22,7 @@ export function ListToolbar({
                 {onSearch && (
                     <Input
                         placeholder={searchPlaceholder}
-                        className="h-9 max-w-sm"
+                        className="h-9 max-w-sm border-ring"
                         onChange={(e) => onSearch(e.target.value)}
                     />
                 )}

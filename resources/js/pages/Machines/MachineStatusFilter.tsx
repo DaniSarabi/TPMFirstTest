@@ -31,9 +31,9 @@ export function MachineStatusFilter({
     onSelectedValuesChange,
 }: MachineStatusFilterProps) {
     return (
-        <Popover>
+        <Popover >
             <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 border-dashed border-ring">
+                <Button variant="outline" size="sm" className="h-9 border-dashed border-ring drop-shadow-lg">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     {title}
                     {selectedValues.size > 0 && (

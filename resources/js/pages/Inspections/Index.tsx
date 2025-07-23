@@ -116,7 +116,7 @@ export default function Index({ reports, filters, users }: IndexPageProps) {
 
         <CardGrid items={reports.data} renderCard={(report) => <InspectionCard report={report} />} />
 
-        <Pagination links={reports.links} />
+        <Pagination paginated={reports} />
       </div>
     </AppLayout>
   );

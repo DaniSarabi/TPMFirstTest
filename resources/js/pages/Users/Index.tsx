@@ -1,26 +1,40 @@
-import { DataTable } from '@/components/data-table'; // Your reusable component
+import { DataTable } from '@/components/data-table';
+import { DataTableViewOptions } from '@/components/data-table-view-options';
+import { ListToolbar } from '@/components/list-toolbar';
+import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/lib/useCan';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Filter, type Paginated } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
-import { getColumns, User } from './columns'; // The new user-specific columns function
+import { getColumns, User } from './columns';
 
 // Define the props for the Index page
 interface IndexPageProps {
-  users: User[];
+  users: Paginated<User>;
+  filters: Filter & { sort?: string; direction?: 'asc' | 'desc' };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Users',
     href: route('users.index'),
+    isCurrent: true,
   },
 ];
 
-export default function Index({ users }: IndexPageProps) {
+export default function Index({ users, filters }: IndexPageProps) {
+  const [search, setSearch] = React.useState(filters.search || '');
+  // --- Add state for sorting ---
+  const [sort, setSort] = React.useState<{ id: string; desc: boolean } | null>(
+    filters.sort ? { id: filters.sort, desc: filters.direction === 'desc' } : null,
+  );
+
+  const isInitialMount = React.useRef(true);
+
   const can = {
     create: useCan('users.create'),
     edit: useCan('users.edit'),
@@ -33,31 +47,67 @@ export default function Index({ users }: IndexPageProps) {
     }
   }
 
-  // Generate the columns array by calling the function
-  // This allows us to pass the permissions and delete handler to the columns
-  const columns = React.useMemo(() => getColumns(can, handleDelete), [can]);
+  // --- Update the useEffect to handle sorting ---
+  React.useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const timeout = setTimeout(() => {
+      router.get(
+        route('users.index'),
+        {
+          search,
+          sort: sort?.id,
+          direction: sort?.desc ? 'desc' : 'asc',
+        },
+        { preserveState: true, replace: true },
+      );
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, sort]);
 
-  // This variable will hold the "Create User" button if the user has permission,
-  // otherwise it will be null.
-  const toolbarAction = can.create ? (
-    <Button asChild variant="default" className='' size="lg">
-      {/* 2. Add flex utilities to the Link to align and space its content */}
-      <Link href={route('users.create')} className="flex items-center gap-2">
-        <PlusCircle className="h-4 w-4" /> {/* 3. Add the icon... */}
-        Create User {/* 4. ...and the text */}
-      </Link>
-    </Button>
-  ) : null;
+  const handleSort = (columnId: string, direction: 'asc' | 'desc' | null) => {
+    if (direction === null) {
+      setSort(null);
+    } else {
+      setSort({ id: columnId, desc: direction === 'desc' });
+    }
+  };
+
+  const columns = React.useMemo(() => getColumns(can, handleDelete, handleSort, sort), [can, sort]);
+
+  const table = useReactTable({
+    data: users.data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Users" />
       <div className="space-y-4 p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between ">
           <h1 className="text-2xl font-bold">Users</h1>
         </div>
-        {/* Render the DataTable component */}
-        <DataTable columns={columns} data={users} filterColumnId="email" filterPlaceholder="Filter by email..." toolbarAction={toolbarAction} />
+
+        <ListToolbar
+          onSearch={setSearch}
+          searchPlaceholder="Filter by name or email..."
+          createAction={
+            can.create ? (
+              <Button asChild>
+                <Link href={route('users.create')}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create User
+                </Link>
+              </Button>
+            ) : null
+          }
+          viewOptionsAction={<DataTableViewOptions table={table} />}
+        />
+        <DataTable table={table} columns={columns} />
+        <Pagination paginated={users} />
       </div>
     </AppLayout>
   );

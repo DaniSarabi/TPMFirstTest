@@ -16,15 +16,28 @@ class InspectionStatusController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        $statuses = InspectionStatus::with('machineStatus')->latest()->get();
+        $filters = $request->only(['search', 'sort', 'direction']);
+
+        $statuses = InspectionStatus::with('machineStatus')
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where('name', 'like', '%' . $search . '%');
+            })
+            ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
+                $direction = $filters['direction'] ?? 'asc';
+                $query->orderBy($sort, $direction);
+            }, function ($query) {
+                // Default sort order if none is provided
+                $query->latest();
+            })
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('GeneralSettings/InspectionStatus/Index', [
             'statuses' => $statuses,
+            'filters' => $filters,
             'machineStatuses' => MachineStatus::all(),
-
         ]);
     }
 

@@ -1,3 +1,5 @@
+import { CardGrid } from '@/components/card-grid';
+import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/lib/useCan';
@@ -8,9 +10,8 @@ import { CirclePlus } from 'lucide-react';
 import * as React from 'react';
 import { Machine, MachineStatus } from './Columns'; // Import from your new columns file
 import { CreateMachineWizard } from './CreateMachineWizard';
-import { MachineGrid } from './MachineGrid';
+import { MachineCard } from './MachineCard';
 import { MachineListToolbar } from './MachineListToolbar';
-import { PaginationControls } from './PaginationControls';
 import { SubsystemList } from './SubsystemList';
 
 // Define the props for the Index page
@@ -92,9 +93,9 @@ export default function Index({ machines, filters, machineStatuses }: IndexPageP
 
         <MachineListToolbar
           onSearch={setSearch}
-                    statuses={machineStatuses}
-                    statusFilterValues={statusFilter}
-                    onStatusFilterChange={setStatusFilter}
+          statuses={machineStatuses}
+          statusFilterValues={statusFilter}
+          onStatusFilterChange={setStatusFilter}
           createAction={
             canCreate ? (
               <Button onClick={() => setWizardIsOpen(true)}>
@@ -105,9 +106,9 @@ export default function Index({ machines, filters, machineStatuses }: IndexPageP
           }
         />
 
-        <MachineGrid machines={machines.data} />
+        <CardGrid items={machines.data} renderCard={(machine) => <MachineCard machine={machine} />} />
 
-        <PaginationControls links={machines.links} />
+        <Pagination paginated={machines} />
       </div>
       {canCreate && <CreateMachineWizard isOpen={wizardIsOpen} onOpenChange={setWizardIsOpen} onFinish={handleWizardFinish} />}{' '}
     </AppLayout>

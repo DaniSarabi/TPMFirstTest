@@ -11,12 +11,10 @@ interface AppLayoutProps {
 
 // We convert this to a standard function component to use hooks
 export default function AppLayout({ children, breadcrumbs, ...props }: AppLayoutProps) {
-    // --- ACTION 1: Get flash messages from the usePage hook ---
     const { props: pageProps } = usePage();
     // Provide a default empty object for flash to prevent the error
     const { success, error } = (pageProps.flash || {}) as { success?: string; error?: string };
 
-    // --- ACTION 2: Use useEffect to watch for new messages and show toasts ---
     useEffect(() => {
         if (success) {
             toast.success(success);
@@ -29,7 +27,6 @@ export default function AppLayout({ children, breadcrumbs, ...props }: AppLayout
     return (
         // We use a React Fragment (<>) to return multiple components
         <>
-            {/* --- ACTION 3: Add the Toaster component --- */}
             {/* This component listens for toast() calls and displays the notifications */}
             <Toaster position="top-right" richColors closeButton />
 

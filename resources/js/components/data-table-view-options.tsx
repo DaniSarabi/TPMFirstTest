@@ -13,20 +13,22 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 
+interface DataTableViewOptionsProps<TData> {
+  table: Table<TData>
+}
+
 export function DataTableViewOptions<TData>({
   table,
-}: {
-  table: Table<TData>
-}) {
+}: DataTableViewOptionsProps<TData>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          size="lg"
-          className="bg-secondary text-secondary-foreground ml-auto hidden h-10 lg:flex"
+          size="sm"
+          className="ml-auto hidden h-9 lg:flex drop-shadow-lg"
         >
-          <Settings2 />
+          <Settings2 className="mr-2 h-4 w-4" />
           View
         </Button>
       </DropdownMenuTrigger>

@@ -18,14 +18,27 @@ class MachineStatusController extends Controller
      *
      * @return \Inertia\Response
      */
-    public function index()
+       public function index(Request $request)
     {
-        // Fetch all machine statuses from the database
-        $statuses = MachineStatus::latest()->get();
+        $filters = $request->only(['search', 'sort', 'direction']);
 
-        // Render the new Inertia page and pass the statuses as a prop
+        $statuses = MachineStatus::query()
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where('name', 'like', '%' . $search . '%');
+            })
+            ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
+                $direction = $filters['direction'] ?? 'asc';
+                $query->orderBy($sort, $direction);
+            }, function ($query) {
+                // Default sort order if none is provided
+                $query->latest();
+            })
+            ->paginate(15)
+            ->withQueryString();
+
         return Inertia::render('GeneralSettings/MachineStatus/Index', [
             'statuses' => $statuses,
+            'filters' => $filters,
         ]);
     }
 

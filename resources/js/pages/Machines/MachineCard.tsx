@@ -34,7 +34,7 @@ export function MachineCard({ machine }: MachineCardProps) {
         href={route('machines.show', machine.id)}
         className="relative inline-block w-full transform transition-transform duration-300 ease-in-out hover:-translate-y-3"
       >
-        <div className="rounded-lg bg-card p-4 shadow hover:shadow-lg hover:bg-accent">
+        <div className="rounded-lg bg-card p-4  hover:shadow-lg hover:bg-accent shadow-md drop-shadow-lg">
           {/* Image and Status Badge Section */}
           <div className="relative h-52 w-full justify-center overflow-hidden rounded-lg">
             <div className="relative h-52 w-full overflow-hidden rounded-lg">

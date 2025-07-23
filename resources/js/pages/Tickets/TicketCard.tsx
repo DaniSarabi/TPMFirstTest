@@ -51,7 +51,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
       href={route('tickets.show', ticket.id)}
       className="block w-full transform transition-transform duration-300 ease-in-out hover:-translate-y-3"
     >
-      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg p-0 shadow-md ring-0 border-0 ring-white hover:bg-accent">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg p-0 shadow-md drop-shadow-lg ring-0 border-0 ring-white hover:bg-accent">
         {/* --- Use the dynamic image URL and make it touch the top --- */}
         <div className="relative h-32 w-full">
           <img src={imageUrl} alt={ticket.machine.name} className="h-full w-full object-cover" />

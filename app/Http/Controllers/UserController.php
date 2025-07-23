@@ -13,13 +13,30 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render("Users/Index", [
-            "users" => User::with("roles")->get()
+        $filters = $request->only(['search', 'sort', 'direction']);
+
+        $users = User::with('roles')
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('email', 'like', '%' . $search . '%');
+            })
+            ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
+                $direction = $filters['direction'] ?? 'asc';
+                $query->orderBy($sort, $direction);
+            }, function ($query) {
+                // Default sort order if none is provided
+                $query->latest();
+            })
+            ->paginate(15)
+            ->withQueryString();
+
+        return Inertia::render('Users/Index', [
+            'users' => $users,
+            'filters' => $filters,
         ]);
     }
-
     /**
      * Show the form for creating a new resource.
      */

@@ -11,9 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Link } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash } from 'lucide-react';
+import * as React from 'react';
 
 // Define the shape of the Role and User to match your real data
 interface Role {
@@ -28,8 +29,13 @@ export interface User {
   roles: Role[];
 }
 
-// This function will be called from your Index page to generate the columns
-export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete: (id: number) => void): ColumnDef<User>[] => [
+// The function now accepts the sorting state and handler
+export const getColumns = (
+  can: { edit: boolean; delete: boolean },
+  handleDelete: (id: number) => void,
+  onSort: (columnId: string, direction: 'asc' | 'desc' | null) => void,
+  currentSort: { id: string; desc: boolean } | null,
+): ColumnDef<User>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -45,15 +51,15 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
   },
   {
     accessorKey: 'id',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" onSort={onSort} currentSort={currentSort} />,
   },
   {
     accessorKey: 'name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" onSort={onSort} currentSort={currentSort} />,
   },
   {
     accessorKey: 'email',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" onSort={onSort} currentSort={currentSort} />,
   },
   {
     accessorKey: 'roles',
@@ -79,9 +85,9 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
     id: 'actions',
     cell: ({ row }) => {
       const user = row.original;
-
+      const [isOpen, setIsOpen] = React.useState(false);
       return (
-        <DropdownMenu>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Open menu</span>
@@ -91,15 +97,18 @@ export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href={route('users.show', user.id)}>View Details</Link>
-            </DropdownMenuItem>
             {can.edit && (
-              <DropdownMenuItem asChild>
-                <Link href={route('users.edit', user.id)}>Edit User</Link>
+              <DropdownMenuItem onSelect={() => router.get(route('users.edit', user.id))}>
+                <Pencil />
+                Edit User
               </DropdownMenuItem>
             )}
-            {can.delete && <DropdownMenuItem onClick={() => handleDelete(user.id)}>Delete User</DropdownMenuItem>}
+            {can.delete && (
+              <DropdownMenuItem className='text-red-600' onSelect={() => handleDelete(user.id)}>
+                <Trash className='text-red-600'/>
+                Delete User
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );

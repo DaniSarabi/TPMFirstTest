@@ -15,35 +15,47 @@ class TicketController extends Controller
      */
     public function index(Request $request)
     {
-         // --- ACTION 1: Get the search filter from the request ---
-        $filters = $request->only(['search']);
+        $filters = $request->only(['search', 'view']);
+        $viewMode = $filters['view'] ?? 'grid'; // Default to grid view
 
         $resolvedStatus = TicketStatus::where('is_closing_status', true)->first();
 
-        $ticketsQuery = Ticket::with(['machine:id,name,image_url', 'creator:id,name', 'status:id,name,bg_color,text_color','inspectionItem:id,image_url'])
-            ->latest();
+        // --- ACTION 1: Conditionally load relationships based on the view ---
+        $relations = [
+            'creator:id,name',
+            'status:id,name,bg_color,text_color',
+        ];
+
+        if ($viewMode === 'grid') {
+            // Grid view needs richer data
+            $relations[] = 'machine:id,name,image_url';
+            $relations[] = 'inspectionItem:id,image_url';
+        } else {
+            // List view only needs the machine name
+            $relations[] = 'machine:id,name';
+        }
+
+        $ticketsQuery = Ticket::with($relations)->latest();
 
         if ($resolvedStatus) {
             $ticketsQuery->where('ticket_status_id', '!=', $resolvedStatus->id);
         }
 
-        // --- ACTION 2: Apply the search filter to the query ---
         $ticketsQuery->when($filters['search'] ?? null, function ($query, $search) {
-            // Search by machine name or ticket title
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', '%' . $search . '%')
-                  ->orWhereHas('machine', function ($q2) use ($search) {
-                      $q2->where('name', 'like', '%' . $search . '%');
-                  });
+                    ->orWhereHas('machine', function ($q2) use ($search) {
+                        $q2->where('name', 'like', '%' . $search . '%');
+                    });
             });
         });
 
-        $tickets = $ticketsQuery->paginate(15)->withQueryString();
+        $tickets = $ticketsQuery->paginate(12)->withQueryString();
 
-        // --- ACTION 3: Pass the filters back to the view ---
         return Inertia::render('Tickets/Index', [
             'tickets' => $tickets,
             'filters' => $filters,
+            // We will add other filter data here later (e.g., all statuses, priorities)
         ]);
     }
 

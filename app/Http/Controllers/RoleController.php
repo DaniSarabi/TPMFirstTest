@@ -12,11 +12,21 @@ class RoleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        return Inertia::render("Roles/Index", [
-            "roles" => Role::with("permissions")->get(),
+        $filters = $request->only(['search']);
+
+        $roles = Role::with('permissions')
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where('name', 'like', '%' . $search . '%');
+            })
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        return Inertia::render('Roles/Index', [
+            'roles' => $roles,
+            'filters' => $filters,
         ]);
     }
 
@@ -57,9 +67,9 @@ class RoleController extends Controller
     {
         //
         $role = Role::find($id);
-        return Inertia::render("Roles/Show",[
-            "role"=> $role,
-            "permissions" =>$role->permissions()->pluck("name")
+        return Inertia::render("Roles/Show", [
+            "role" => $role,
+            "permissions" => $role->permissions()->pluck("name")
         ]);
     }
 
@@ -84,20 +94,19 @@ class RoleController extends Controller
     public function update(Request $request, string $id)
     {
         //
-         $request->validate([
+        $request->validate([
             "name" => "required",
             "permissions" => "required",
         ]);
         $role = Role::find($id);
 
-        $role->name = $request ->name;
+        $role->name = $request->name;
         $role->save();
 
 
         $role->syncPermissions($request->permissions);
 
         return to_route("roles.index");
-
     }
 
     /**

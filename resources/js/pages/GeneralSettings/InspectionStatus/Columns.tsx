@@ -16,14 +16,13 @@ import { Badge } from '@/components/ui/badge';
 import * as React from 'react';
 import { MachineStatus } from '../MachineStatus/Columns';
 
-// Define the shape of the InspectionStatus data to match your migration
+// Define the shape of the InspectionStatus data
 export interface InspectionStatus {
     id: number;
     name: string;
     severity: number;
     auto_creates_ticket: boolean;
     machine_status_id: number | null;
-    // We also need to load the related machine_status object to get its name
     machine_status: {
         name: string;
     } | null;
@@ -35,11 +34,13 @@ export interface InspectionStatus {
 // This function will be called from your Index page to generate the columns
 export const getColumns = (
     onEdit: (status: InspectionStatus) => void,
-    onDelete: (status: InspectionStatus) => void
+    onDelete: (status: InspectionStatus) => void,
+    onSort: (columnId: string, direction: 'asc' | 'desc' | null) => void,
+    currentSort: { id: string; desc: boolean } | null
 ): ColumnDef<InspectionStatus>[] => [
     {
         accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" onSort={onSort} currentSort={currentSort} />,
     },
     {
         id: 'preview',
@@ -60,7 +61,7 @@ export const getColumns = (
     },
     {
         accessorKey: 'severity',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Severity" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Severity" onSort={onSort} currentSort={currentSort} />,
     },
     {
         accessorKey: 'auto_creates_ticket',
@@ -78,7 +79,6 @@ export const getColumns = (
         accessorKey: 'sets_machine_status_to',
         header: 'Sets Machine Status To',
         cell: ({ row }) => {
-            // Access the name from the nested machine_status object
             return row.original.machine_status?.name || <span className="text-muted-foreground">N/A</span>;
         },
     },
@@ -86,7 +86,6 @@ export const getColumns = (
         id: 'actions',
         cell: ({ row }) => {
             const status = row.original;
-            // Prevent deleting the default status
             const canDelete = !status.is_default;
             const [isOpen, setIsOpen] = React.useState(false);
 
@@ -108,7 +107,7 @@ export const getColumns = (
                             </DropdownMenuItem>
                             {canDelete && (
                                 <DropdownMenuItem onSelect={() => { onDelete(status); setIsOpen(false); }} className="text-red-600">
-                                    <Trash2 className="mr-2 h-4 w-4 text-red-600" />
+                                    <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
                                 </DropdownMenuItem>
                             )}

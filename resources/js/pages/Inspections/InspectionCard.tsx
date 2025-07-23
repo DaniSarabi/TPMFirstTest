@@ -47,7 +47,7 @@ export function InspectionCard({ report }: InspectionCardProps) {
   return (
     // ---  Wrap the entire card in a Link component ---
     <Link href={route('inspections.show', report.id)} className="block transform transition-transform duration-300 ease-in-out hover:-translate-y-3">
-      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg border-0 p-0 shadow-md ring-1 ring-white hover:bg-accent">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg border-0 p-0 ring-white hover:bg-accent shadow-md drop-shadow-lg">
         {/* Image */}
         <div>
           <img src={machine_image_url || 'https://placehold.co/600x400?text=no+image'} alt={machine_name} className="h-36 w-full object-cover" />

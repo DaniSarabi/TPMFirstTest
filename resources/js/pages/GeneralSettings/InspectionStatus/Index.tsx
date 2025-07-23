@@ -1,10 +1,14 @@
 import { DataTable } from '@/components/data-table';
+import { DataTableViewOptions } from '@/components/data-table-view-options';
+import { ListToolbar } from '@/components/list-toolbar';
+import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import GeneralSettingsLayout from '@/layouts/general-settings-layout';
 import useCan from '@/lib/useCan';
-import { type BreadcrumbItem } from '@/types';
+import { Filter, Paginated, type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
 import { MachineStatus } from '../MachineStatus/Columns';
@@ -14,10 +18,10 @@ import { ReassignAndDeleteStatusModal } from './ReassignAndDeleteInspectionStatu
 
 // Define the props for the page, which it receives from the controller
 interface IndexPageProps {
-  statuses: InspectionStatus[];
+  statuses: Paginated<InspectionStatus>;
   machineStatuses: MachineStatus[];
+  filters: Filter & { sort?: string; direction?: 'asc' | 'desc' };
 }
-
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'General Settings',
@@ -30,11 +34,17 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Index({ statuses, machineStatuses }: IndexPageProps) {
+export default function Index({ statuses, machineStatuses, filters }: IndexPageProps) {
   const [isFormModalOpen, setIsFormModalOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [statusToEdit, setStatusToEdit] = React.useState<Partial<InspectionStatus> | null>(null);
   const [statusToDelete, setStatusToDelete] = React.useState<InspectionStatus | null>(null);
+
+  const [search, setSearch] = React.useState(filters.search || '');
+  const [sort, setSort] = React.useState<{ id: string; desc: boolean } | null>(
+    filters.sort ? { id: filters.sort, desc: filters.direction === 'desc' } : null,
+  );
+  const isInitialMount = React.useRef(true);
 
   const form = useForm<{
     name: string;
@@ -104,11 +114,42 @@ export default function Index({ statuses, machineStatuses }: IndexPageProps) {
     edit: useCan('inspections.edit'),
     delete: useCan('inspections.edit'),
   };
+  React.useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const timeout = setTimeout(() => {
+      router.get(
+        route('settings.inspection-status.index'),
+        {
+          search,
+          sort: sort?.id,
+          direction: sort?.desc ? 'desc' : 'asc',
+        },
+        { preserveState: true, replace: true },
+      );
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, sort]);
 
+  const handleSort = (columnId: string, direction: 'asc' | 'desc' | null) => {
+    if (direction === null) {
+      setSort(null);
+    } else {
+      setSort({ id: columnId, desc: direction === 'desc' });
+    }
+  };
   // Create the columns for the data table, passing in the placeholder handlers.
-  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete), []);
+  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete, handleSort, sort), [sort]);
 
-  const otherStatuses = statusToDelete ? statuses.filter((s) => s.id !== statusToDelete.id) : [];
+  const table = useReactTable({
+    data: statuses.data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  const otherStatuses = statusToDelete ? statuses.data.filter((s) => s.id !== statusToDelete.id) : [];
 
   const toolbarAction = can.create ? (
     <Button onClick={handleCreate}>
@@ -129,13 +170,23 @@ export default function Index({ statuses, machineStatuses }: IndexPageProps) {
             </div>
           </div>
 
-          <DataTable
-            columns={columns}
-            data={statuses}
-            filterColumnId="name"
-            filterPlaceholder="Filter by status name..."
-            toolbarAction={toolbarAction}
+          <ListToolbar
+            onSearch={setSearch}
+            searchPlaceholder="Filter by status name..."
+            createAction={
+              can.create ? (
+                <Button onClick={handleCreate} className='drop-shadow-lg'>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Status
+                </Button>
+              ) : null
+            }
+            viewOptionsAction={<DataTableViewOptions table={table} />}
           />
+
+          <DataTable table={table} columns={columns} />
+
+          <Pagination paginated={statuses} />
           <InspectionStatusFormModal
             isOpen={isFormModalOpen}
             onOpenChange={setIsFormModalOpen}

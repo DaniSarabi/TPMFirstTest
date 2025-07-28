@@ -14,6 +14,7 @@ import { AlertTriangle, Eye, MoreHorizontal, ShieldAlert } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@inertiajs/react';
+import { MachineStatus } from '../GeneralSettings/MachineStatus/Columns';
 
 // --- Type Definitions for the Tickets Module ---
 // These must match the data sent from the TicketController
@@ -25,9 +26,46 @@ export interface TicketStatus {
     text_color: string;
 }
 
-export interface InspectionItem {
+export interface User {
+    id: number;
+    name: string;
+}
+
+export interface Subsystem {
+    id: number;
+    name: string;
+}
+
+export interface InspectionPoint {
+    id: number;
+    name: string;
+    subsystem: Subsystem;
+}
+
+export interface InspectionReportItem {
     id: number;
     image_url: string | null;
+    point: InspectionPoint;
+}
+
+export interface Machine {
+    id: number;
+    name: string;
+    image_url: string | null;
+    machine_status: { name: string; };
+}
+
+export interface TicketUpdate {
+    id: number;
+    comment: string | null;
+    action_taken: string | null;
+    parts_used: string | null;
+    created_at: string;
+    user: User;
+    old_status: TicketStatus | null;
+    new_status: TicketStatus | null;
+    new_machine_status_id: number | null;
+    new_machine_status: MachineStatus | null;
 }
 
 export interface Ticket {
@@ -36,15 +74,11 @@ export interface Ticket {
     description: string | null;
     priority: number;
     created_at: string;
-    machine: {
-        name: string;
-        image_url: string | null;
-    };
-    creator: {
-        name: string;
-    };
+    creator: User;
+    machine: Machine;
     status: TicketStatus;
-    inspection_item: InspectionItem | null;
+    inspection_item: InspectionReportItem | null;
+    updates: TicketUpdate[];
 }
 
 // This function will be called from your Index page to generate the columns

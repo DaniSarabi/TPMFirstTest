@@ -30,6 +30,7 @@ class TicketUpdate extends Model
         'parts_used',
         'old_status_id',
         'new_status_id',
+        'new_machine_status_id', 
     ];
 
     /**
@@ -62,5 +63,13 @@ class TicketUpdate extends Model
     public function newStatus(): BelongsTo
     {
         return $this->belongsTo(TicketStatus::class, 'new_status_id');
+    }
+
+    /**
+     * Get the new machine status for this update.
+     */
+    public function newMachineStatus(): BelongsTo
+    {
+        return $this->belongsTo(MachineStatus::class, 'new_machine_status_id');
     }
 }

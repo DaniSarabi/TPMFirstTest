@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { router, useForm } from '@inertiajs/react';
-import { Pencil, Save, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Save, Send, Trash2, X } from 'lucide-react';
 import * as React from 'react';
 import { Subsystem } from './Columns';
 
@@ -171,10 +171,11 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
                 <Label>Add New Inspection Point</Label>
                 <form onSubmit={handleAddNewPoint} className="mt-2 flex items-center gap-2" autoComplete='off'>
                   <div className="flex-1">
-                    <Input className='bg-gray-100 ring-1 ring-ring' value={newData.name} onChange={(e) => setNewData('name', e.target.value)} placeholder="e.g., Check oil level" />
+                    <Input className='drop-shadow-md shadow-md bg-gray-100 ring-1 ring-ring' value={newData.name} onChange={(e) => setNewData('name', e.target.value)} placeholder="e.g., Check oil level" />
                     <InputError message={newErrors.name} className="mt-1" />
                   </div>
-                  <Button type="submit" disabled={processingNew}>
+                  <Button className='drop-shadow-md shadow-md' type="submit" disabled={processingNew}>
+                    <Send/>
                     {processingNew ? 'Adding...' : 'Add Point'}
                   </Button>
                 </form>

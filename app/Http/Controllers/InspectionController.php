@@ -252,10 +252,8 @@ class InspectionController extends Controller
      * Update the specified resource in storage.
      * This method is called when the user submits the full inspection.
      */
-    public function update(Request $request, InspectionReport $inspectionReport)
+ public function update(Request $request, InspectionReport $inspectionReport)
     {
-        // We wrap the entire operation in a database transaction.
-        // This ensures that if any part fails, all changes are rolled back.
         DB::transaction(function () use ($request, $inspectionReport) {
             $validated = $request->validate([
                 'results' => 'required|array',
@@ -266,8 +264,8 @@ class InspectionController extends Controller
 
             $highestSeverityStatusId = null;
             $highestSeverity = -1;
-
             $openTicketStatus = TicketStatus::where('name', 'Open')->first();
+            $newlyCreatedTickets = [];
 
             // Loop through each inspection point result to save it
             foreach ($validated['results'] as $pointId => $result) {
@@ -283,7 +281,6 @@ class InspectionController extends Controller
                     'image_url' => $imagePath,
                 ]);
 
-                // ---Find the highest severity status ---
                 $status = InspectionStatus::find($result['status_id']);
                 if ($status && $status->severity > $highestSeverity) {
                     $highestSeverity = $status->severity;
@@ -291,24 +288,44 @@ class InspectionController extends Controller
                 }
 
                 if ($status && $status->auto_creates_ticket && $openTicketStatus) {
-                    Ticket::create([
+                    $ticket = Ticket::create([
                         'inspection_report_item_id' => $item->id,
                         'machine_id' => $inspectionReport->machine_id,
-                        'title' => $item->point->name, // Use the inspection point name as the title
+                        'title' => $item->point->name,
                         'description' => $item->comment,
                         'created_by' => Auth::id(),
                         'ticket_status_id' => $openTicketStatus->id,
-                        'priority' => $status->severity, // Use the severity as the priority
+                        'priority' => $status->severity,
                     ]);
+                    
+                    // --- ACTION: Re-introduce the creation of the initial log entry ---
+                    $ticket->updates()->create([
+                        'user_id' => Auth::id(),
+                        'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
+                        'new_status_id' => $openTicketStatus->id,
+                    ]);
+
+                    $newlyCreatedTickets[] = $ticket;
                 }
             }
 
+            // Update the machine status if required
             if ($highestSeverityStatusId) {
                 $statusToApply = InspectionStatus::find($highestSeverityStatusId);
-                // Check if this inspection status has a machine status ID linked to it
                 if ($statusToApply && $statusToApply->machine_status_id) {
-                    // Directly update the machine with the correct ID. No need for a second query.
-                    $inspectionReport->machine()->update(['machine_status_id' => $statusToApply->machine_status_id]);
+                    $newMachineStatus = MachineStatus::find($statusToApply->machine_status_id);
+                    if ($newMachineStatus) {
+                        $inspectionReport->machine()->update(['machine_status_id' => $newMachineStatus->id]);
+
+                        // Log this specific event on all newly created tickets
+                        foreach ($newlyCreatedTickets as $ticket) {
+                            $ticket->updates()->create([
+                                'user_id' => Auth::id(),
+                                'comment' => 'System: Machine status updated via inspection.',
+                                'new_machine_status_id' => $newMachineStatus->id,
+                            ]);
+                        }
+                    }
                 }
             }
 

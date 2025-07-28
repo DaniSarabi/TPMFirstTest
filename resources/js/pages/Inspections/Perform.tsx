@@ -8,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Circle, CircleAlert, CircleCheck, CircleX, Clock, ClockArrowUp, ListCheck, Wrench } from 'lucide-react';
+import { Circle, CircleAlert, CircleCheck, CircleX, Clock, ClockArrowUp, ListCheck, Send, Wrench } from 'lucide-react';
 import React from 'react';
 import { ReportProblemModal } from './ReportProblemModal';
 
@@ -257,7 +257,7 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
         </div>
 
         {/* Summary card */}
-        <Card className="flex h-fit w-full flex-col space-y-3 border-white p-3 shadow-lg md:h-64 md:flex-row md:space-y-0 md:space-x-5">
+        <Card className="flex h-fit w-full flex-col space-y-3 drop-shadow-lg  p-3 shadow-lg md:h-64 md:flex-row md:space-y-0 md:space-x-5">
           {/* Image */}
           <div className="flex h-full w-full items-center justify-center md:w-1/3">
             <img
@@ -311,22 +311,22 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
         </Card>
 
         {/* Checlist card */}
-        <Card className="border-white">
+        <Card className="border-white shadow-lg drop-shadow-lg">
           <CardHeader>
             <CardTitle>Inspection Checklist</CardTitle>
             <CardDescription>Please review each point and select the appropriate status.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* --- ACTION 2: Removed defaultValue and added spacing --- */}
+            {/* --- Removed defaultValue and added spacing --- */}
             <Accordion type="single" collapsible className="w-full space-y-4">
               {machine.subsystems.map((subsystem) => (
-                <AccordionItem key={subsystem.id} value={`subsystem-${subsystem.id}`}>
-                  {/* --- ACTION 3: Added styling for open/closed state --- */}
+                <AccordionItem className='' key={subsystem.id} value={`subsystem-${subsystem.id}`}>
+                  {/* --- Added styling for open/closed state --- */}
                   <AccordionTrigger className="rounded-md bg-muted/50 px-4 text-lg font-medium hover:bg-primary hover:text-primary-foreground hover:no-underline data-[state=open]:bg-primary data-[state=open]:text-primary-foreground">
                     {subsystem.name}
                   </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-1 rounded-b-md border-x border-b p-2">
+                  <AccordionContent className=''>
+                    <div className="space-y-1 rounded-b-md border-x border-b p-2 drop-shadow-lg shadow-lg">
                       {subsystem.inspection_points.map((point) => (
                         <InspectionPointRow
                           key={point.id}
@@ -345,11 +345,13 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
         </Card>
 
         {/* Action buttons at the bottom */}
-        <div className="flex justify-end space-x-4">
-          <Button variant="secondary" onClick={() => setIsCancelDialogOpen(true)}>
+        <div className="flex justify-end space-x-4 ">
+          <Button className='drop-shadow-lg shadow-lg' variant="secondary" onClick={() => setIsCancelDialogOpen(true)}>
+            <CircleX/>
             Cancel
           </Button>
-          <Button onClick={handleSubmitInspection} disabled={isSubmitting}>
+          <Button className='drop-shadow-lg shadow-lg' onClick={handleSubmitInspection} disabled={isSubmitting}>
+            <Send/>
             {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
           </Button>
         </div>

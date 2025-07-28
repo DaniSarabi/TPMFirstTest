@@ -22,30 +22,36 @@ class PermissionSeeder extends Seeder
         // --- 1. Define Permissions ---
         // Add all your application's permissions to this array.
         $all_permissions = [
-            // User Permissions
+            // * User Permissions
             'users.view',
             'users.create',
             'users.edit',
             'users.delete',
 
-            // Role Permissions
+            // * Role Permissions
             'roles.view',
             'roles.create',
             'roles.edit',
             'roles.delete',
             
-            // Machine Permissions
+            // * Machine Permissions
             'machines.view',
             'machines.create',
             'machines.edit',
             'machines.delete',
 
-            // Inspections Permissions
+            // * Inspections Permissions
             'inspections.view',
             'inspections.perform',
             'inspections.edit',
             'inspections.delete',
-            'inspections.administration'
+            'inspections.administration',
+
+            // * Tickets Permissions
+            'tickets.view',
+            'tickets.create',
+            'tickets.edit',
+            'tickets.delete',
 
         ];
 

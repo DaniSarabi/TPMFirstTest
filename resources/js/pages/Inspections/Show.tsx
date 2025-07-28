@@ -110,7 +110,7 @@ export default function Show({ report }: ShowPageProps) {
         </div>
 
         {/* --- Main Content --- */}
-        <Card>
+        <Card className='drop-shadow-lg shadow-lg'>
           <CardHeader>
             <CardTitle>Inspection Results</CardTitle>
             <CardDescription>Completed on: {report.completion_date}</CardDescription>
@@ -119,11 +119,11 @@ export default function Show({ report }: ShowPageProps) {
             {report.grouped_items?.map((subsystem) => (
               <div key={subsystem.id}>
                 <h3 className="mb-2 text-lg font-semibold">{subsystem.name}</h3>
-                <div className="rounded-md border">
+                <div className="rounded-md border drop-shadow-sm shadow-lg">
                   {subsystem.report_items?.map((item, index) => (
                     <div key={item.id}>
                       {/* ---  This container is now responsive --- */}
-                      <div className="flex flex-col gap-4 p-4">
+                      <div className="flex flex-col gap-4 p-4 ">
                         {/* Top Row: Point Name and Status */}
                         <div className="flex w-full items-center justify-between">
                           <div className="flex items-start gap-4">
@@ -143,7 +143,7 @@ export default function Show({ report }: ShowPageProps) {
                           </div>
                         </div>
                         {/* Bottom Row: Comment and actions */}
-                        <div className="flex w-full flex-wrap items-center justify-end gap-2 md:flex-nowrap">
+                        <div className="flex w-full flex-wrap items-center justify-end gap-2 md:flex-nowrap ">
                           {item.comment && (
                             <div className="flex w-full items-start gap-2 rounded-md border bg-muted/50 p-2 text-sm text-muted-foreground md:w-auto md:flex-1">
                               <FileText className="h-4 w-4 shrink-0" />

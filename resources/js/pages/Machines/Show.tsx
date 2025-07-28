@@ -105,7 +105,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
       <Head title={`Machine: ${machine.name}`} />
       <div className="space-y-6 p-6">
         {/* --- Main Machine Details Card --- */}
-        <Card>
+        <Card className='drop-shadow-lg shadow-lg'>
           <div className="grid md:grid-cols-2">
             {/* Left Column: Details */}
             <div className="flex flex-col p-6">
@@ -163,7 +163,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
                 </div>
               </div>
 
-              {/*  Add the new stats grid --- */}
+              {/*   stats grid --- */}
               <div className="mt-auto grid grid-cols-2 gap-4 border-t pt-6">
                 <div className="flex items-center gap-3">
                   <Wrench className="h-8 w-8 text-primary" />
@@ -197,9 +197,9 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
             </div>
 
             {/* Right Column: Image */}
-            <div className="flex items-center justify-center bg-muted/50 p-6">
+            <div className="flex items-center justify-center p-6">
               {machine.image_url ? (
-                <img src={machine.image_url} alt={`Image of ${machine.name}`} className="max-h-96 w-full rounded-md object-contain" />
+                <img src={machine.image_url} alt={`Image of ${machine.name}`} className="max-h-96 w-full rounded-lg object-contain" />
               ) : (
                 <div className="flex h-64 w-full items-center justify-center rounded-md bg-muted">
                   <p className="text-muted-foreground">No image available</p>
@@ -210,7 +210,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
         </Card>
 
         {/* --- Subsystems Section --- */}
-        <Card>
+        <Card className='drop-shadow-lg shadow-lg'>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Subsystems for {machine.name}</CardTitle>

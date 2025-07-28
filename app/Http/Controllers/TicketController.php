@@ -59,5 +59,26 @@ class TicketController extends Controller
         ]);
     }
 
-    // We will add the other methods (show, update, etc.) here later.
+    /**
+     * Display the specified resource.
+     */
+    public function show(Ticket $ticket)
+    {
+        // Eager-load all the necessary relationships for the details page
+        $ticket->load([
+            'machine.machineStatus',
+            'creator:id,name',
+            'status',
+            'inspectionItem.point.subsystem',
+            'updates' => function ($query) {
+                $query->with(['user:id,name', 'oldStatus:id,name,bg_color,text_color', 'newStatus:id,name,bg_color,text_color', 'newMachineStatus:id,name,bg_color,text_color'])->latest();
+            }
+        ]);
+
+        // We will add logic here later to fetch related tickets
+
+        return Inertia::render('Tickets/Show', [
+            'ticket' => $ticket,
+        ]);
+    }
 }

@@ -11,6 +11,8 @@ use App\Http\Controllers\MachineStatusController;
 use App\Http\Controllers\InspectionStatusController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketUpdateController;
+
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -27,6 +29,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit']);
 
+
+    // ------------------------------------ Ticket Update ------------------------------------ 
+    // This route will handle posting new comments to a ticket
+    Route::post('/tickets/{ticket}/updates', [TicketUpdateController::class, 'store'])->name('tickets.updates.store');
 
     //* ***************************** Inspections module Routes *****************************
 

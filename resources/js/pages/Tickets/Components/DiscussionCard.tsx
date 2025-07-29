@@ -2,13 +2,18 @@ import InputError from '@/components/input-error';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useForm } from '@inertiajs/react';
+import { MessageCircle, Send } from 'lucide-react';
 import * as React from 'react';
-import { Ticket } from '../Columns';
+import { Ticket, TicketUpdate } from '../Columns';
 
 interface DiscussionCardProps {
   ticket: Ticket;
+}
+
+interface DiscussionItem extends TicketUpdate {
+  is_initial?: boolean; // Make it optional
 }
 
 // Helper function to get initials from a name
@@ -19,70 +24,95 @@ const getInitials = (name: string) => {
 };
 
 export function DiscussionCard({ ticket }: DiscussionCardProps) {
-  // Filter for user-submitted comments
-const comments = ticket.updates.filter(
-        update => update.comment && !update.comment.startsWith('Ping:') && !update.comment.startsWith('System:')
-    );  const { data, setData, post, processing, errors, reset } = useForm({
+  const discussionItems: DiscussionItem[] = React.useMemo(() => {
+    const items: DiscussionItem[] = [];
+
+    const createdEvent = ticket.updates.find((update) => !update.old_status && update.new_status);
+    if (createdEvent) {
+      items.push(createdEvent);
+    }
+
+    if (ticket.description) {
+      items.push({
+        // We cast this synthetic object to fit the TicketUpdate shape for consistency
+        id: `initial-${ticket.id}` as any,
+        user: ticket.creator,
+        comment: ticket.description,
+        created_at: ticket.created_at,
+        is_initial: true,
+        action_taken: null,
+        parts_used: null,
+        old_status: null,
+        new_status: null,
+        new_machine_status_id: null,
+        new_machine_status: null,
+      });
+    }
+
+    ticket.updates.forEach((update) => {
+      if (update.comment && !update.comment.startsWith('Ping:') && !update.comment.startsWith('System:') && update.id !== createdEvent?.id) {
+        items.push(update);
+      }
+    });
+
+    return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [ticket]);
+  const { data, setData, post, processing, errors, reset } = useForm({
     comment: '',
   });
 
   const submitComment = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO We will create this route later
     post(route('tickets.updates.store', ticket.id), {
       onSuccess: () => reset('comment'),
     });
   };
 
   return (
-    <Card className="shadow-lg drop-shadow-lg">
+    <Card className="overflow-y-auto shadow-lg drop-shadow-lg hover:-translate-1 ease-in-out transition-transform transition-500">
       <CardHeader>
-        <CardTitle>Comments</CardTitle>
+        <CardTitle className='flex items-center gap-2'>
+          <>
+          <MessageCircle className='h-5 w-5'/>
+          Comments
+          </>
+          </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* List of comments */}
-        <div className="max-h-96 space-y-4 overflow-y-auto pr-2">
-            
-          {comments.length > 0 ? (
-            comments.map((update) => (
-              <div key={update.id} className="flex items-start gap-3">
+        <div className="max-h-60 space-y-4 overflow-y-auto pr-2">
+          {discussionItems.length > 0 ? (
+            discussionItems.map((item) => (
+              <div key={item.id} className="flex items-start gap-3">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback>{getInitials(update.user.name)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(item.user.name)}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 rounded-md bg-muted p-3 text-sm">
-                  <p className="font-semibold">{update.user.name}</p>
-                  <p className="whitespace-pre-wrap">{update.comment}</p>
+                <div className="flex-1 rounded-md bg-muted p-3 text-sm backdrop-blur-lg shadow">
+                  <p className="font-semibold text-primary">{item.user.name}</p>
+                  <p className="whitespace-pre-wrap">{item.comment}</p>
+                  {item.is_initial && <p className="mt-1 text-xs text-muted-foreground">Initial problem description</p>}
                 </div>
               </div>
             ))
           ) : (
             <p className="text-center text-sm text-muted-foreground">No comments yet.</p>
           )}
-          {ticket.description && (
-                        <div className="flex items-start gap-3">
-                            <Avatar className="h-8 w-8">
-                                <AvatarFallback>{getInitials(ticket.creator.name)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 rounded-md bg-muted p-3 text-sm">
-                                <p className="font-semibold">{ticket.creator.name}</p>
-                                <p className="whitespace-pre-wrap font-medium text-foreground">{ticket.description}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Initial problem description</p>
-                            </div>
-                        </div>
-                    )}
         </div>
         {/* Form to add a new comment */}
-        <form onSubmit={submitComment} className="space-y-2 border-t border-primary pt-4">
-          <Textarea
-            className="w-full border-primary shadow-sm transition focus:border-primary focus:ring-2 focus:ring-primary"
-            placeholder="Add a comment..."
-            value={data.comment}
-            onChange={(e) => setData('comment', e.target.value)}
-          />
-          <InputError message={errors.comment} />
+        <form onSubmit={submitComment} className="space-y-2 border-t-2 border-primary pt-4">
+          <>
+            <Input
+              className="ring-1 hover:ring-primary"
+              placeholder="Add a comment..."
+              value={data.comment}
+              onChange={(e) => setData('comment', e.target.value)}
+            />
+            <InputError message={errors.comment} />
+          </>
           <div className="flex justify-end">
-            <Button size="sm" disabled={processing}>
-              {processing ? 'Posting...' : 'Post Comment'}
+            <Button size="sm" disabled={processing} className='hover:bg-primary/60'>
+              <Send />
+              {processing ? 'Posting...' : 'Post comment'}
             </Button>
           </div>
         </form>

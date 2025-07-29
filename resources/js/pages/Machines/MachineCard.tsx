@@ -36,7 +36,7 @@ export function MachineCard({ machine }: MachineCardProps) {
       >
         <div className="rounded-lg bg-card p-4  hover:shadow-lg hover:bg-accent shadow-md drop-shadow-lg">
           {/* Image and Status Badge Section */}
-          <div className="relative h-52 w-full justify-center overflow-hidden rounded-lg">
+          <div className="shadow-sm drop-shadow-lg shadow-primary relative h-52 w-full justify-center overflow-hidden rounded-lg">
             <div className="relative h-52 w-full overflow-hidden rounded-lg">
               <img
                 src={machine.image_url || 'https://placehold.co/600x400?text=no+image'}

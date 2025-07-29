@@ -27,7 +27,7 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
   );
   console.log('Actividades', activities);
   return (
-    <Card className='drop-shadow-lg shadow-lg'>
+    <Card className='drop-shadow-lg shadow-lg hover:-translate-1 ease-in-out transition-transform transition-500'>
       <CardHeader>
         <CardTitle>Activity Log</CardTitle>
       </CardHeader>

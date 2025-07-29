@@ -79,6 +79,7 @@ export interface Ticket {
     status: TicketStatus;
     inspection_item: InspectionReportItem | null;
     updates: TicketUpdate[];
+    solved_by: User |null;
 }
 
 // This function will be called from your Index page to generate the columns

@@ -75,10 +75,27 @@ class TicketController extends Controller
             }
         ]);
 
-        // We will add logic here later to fetch related tickets
+        // First, find the single status that is marked as the closing status.
+        $closingStatus = TicketStatus::where('is_closing_status', true)->first();
+        $solvedBy = null;
+
+        // Only proceed if a closing status actually exists
+        if ($closingStatus) {
+            // Then, find the first update for this ticket where the new status matches the closing status ID.
+            $closingUpdate = $ticket->updates->first(function ($update) use ($closingStatus) {
+                return $update->new_status_id === $closingStatus->id;
+            });
+
+            // If we found that update, the user who made it is the one who solved the ticket.
+            $solvedBy = $closingUpdate ? $closingUpdate->user : null;
+        }
+
+        $timeOpen = $ticket->created_at->diffForHumans(null, true);
 
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
+            'timeOpen' => $timeOpen,
+            'solvedBy' => $solvedBy,
         ]);
     }
 }

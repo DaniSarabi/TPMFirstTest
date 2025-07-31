@@ -7,21 +7,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CircleX, Info, Send } from 'lucide-react';
+import { Info } from 'lucide-react';
 import * as React from 'react';
 import { BehaviorsInfoModal } from '../BehaviorsInfoModal';
+import { Behavior, TicketStatus } from './Columns';
 import { MachineStatus } from '../MachineStatus/Columns';
-import { Behavior, InspectionStatus } from './Columns';
 
-// Define the shape of a behavior object
+// Define the shape of a behavior object for the form
 interface BehaviorData {
   id: number;
-  machine_status_id: number | null;
 }
 
 // Define the props for the modal
-interface InspectionStatusFormModalProps {
-  status: Partial<InspectionStatus> | null;
+interface TicketStatusFormModalProps {
+  status: Partial<TicketStatus> | null;
   machineStatuses: MachineStatus[];
   behaviors: Behavior[];
   isOpen: boolean;
@@ -33,7 +32,7 @@ interface InspectionStatusFormModalProps {
   errors: any;
 }
 
-export function InspectionStatusFormModal({
+export function TicketStatusFormModal({
   status,
   machineStatuses,
   behaviors,
@@ -44,7 +43,7 @@ export function InspectionStatusFormModal({
   setData,
   processing,
   errors,
-}: InspectionStatusFormModalProps) {
+}: TicketStatusFormModalProps) {
   const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
   const isEditing = !!status?.id;
 
@@ -77,28 +76,20 @@ export function InspectionStatusFormModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-popover sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Inspection Status' : 'Create Inspection Status'}</DialogTitle>
-            <DialogDescription>Configure the rules and appearance for this status.</DialogDescription>
+            <DialogTitle>{isEditing ? 'Edit Ticket Status' : 'Create Ticket Status'}</DialogTitle>
+            <DialogDescription>Configure the rules and appearance for this ticket status.</DialogDescription>
           </DialogHeader>
-
-          <form id="inspection-status-form" onSubmit={onSubmit} className="grid gap-4 py-4" autoComplete="false">
-            {/* //* Nombre del estado */}
+          <form id="ticket-status-form" onSubmit={onSubmit} className="grid gap-4 py-4">
+            {/* //*********** Name ***********\\ */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                className="bg-accent ring-1 ring-ring hover:bg-accent hover:text-accent-foreground"
-                type="text"
-                id="name"
-                value={data.name}
-                onChange={(e) => setData('name', e.target.value)}
-                required
-              />
+              <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required className='ring-1 ring-ring hover:bg-accent hover:text-accent-foreground'/>
               <InputError message={errors.name} />
             </div>
 
-            {/* //* Behaviors */}
+            {/* //*********** Behaviors ***********\\ */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label>Behaviors</Label>
@@ -132,7 +123,7 @@ export function InspectionStatusFormModal({
                   value={selectedMachineStatusId ? String(selectedMachineStatusId) : ''}
                   onValueChange={(value) => handleMachineStatusChangeForBehavior(Number(value))}
                 >
-                  <SelectTrigger className="hover:bg-accent hover:text-accent-foreground">
+                  <SelectTrigger className="hover:bg-accent hover:text-accent-foreground ring ring-ring">
                     <SelectValue placeholder="Select a machine status..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -149,8 +140,7 @@ export function InspectionStatusFormModal({
                 </Select>
               </div>
             )}
-
-            {/* //* Color picker */}
+            {/* //*********** Color Picker ***********\\ */}
             <div className="space-y-2">
               <Label>Color & Preview</Label>
               <div className="flex items-center gap-4">
@@ -169,7 +159,7 @@ export function InspectionStatusFormModal({
                       color: data.text_color,
                     }}
                   >
-                    Live Preview
+                    {data.name || 'Preview'}
                   </Badge>
                 </div>
               </div>
@@ -177,16 +167,15 @@ export function InspectionStatusFormModal({
           </form>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              <CircleX />
               Cancel
             </Button>
-            <Button type="submit" form="inspection-status-form" disabled={processing}>
-              <Send />
+            <Button type="submit" form="ticket-status-form" disabled={processing}>
               {processing ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <BehaviorsInfoModal isOpen={isInfoModalOpen} onOpenChange={setIsInfoModalOpen} behaviors={behaviors} />
     </>
   );

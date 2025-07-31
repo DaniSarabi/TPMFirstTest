@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 
 class InspectionStatus extends Model
@@ -35,10 +36,11 @@ class InspectionStatus extends Model
     ];
 
     /**
-     * Get the machine status that this inspection status sets.
+     * The behaviors that belong to the inspection status.
      */
-    public function machineStatus(): BelongsTo
+    public function behaviors(): BelongsToMany
     {
-        return $this->belongsTo(MachineStatus::class, 'machine_status_id');
+        return $this->belongsToMany(Behavior::class, 'inspection_status_has_behaviors')
+            ->withPivot('machine_status_id'); // Important for accessing the extra pivot column
     }
 }

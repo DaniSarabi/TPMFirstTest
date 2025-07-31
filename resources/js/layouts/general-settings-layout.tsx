@@ -20,7 +20,7 @@ const sidebarNavItems: NavItem[] = [
   },
   {
     title: 'Ticket Statuses',
-    href: '#', // Placeholder for now
+    href: route('settings.ticket-status.index'),
     icon: TicketCheck,
   },
 ];

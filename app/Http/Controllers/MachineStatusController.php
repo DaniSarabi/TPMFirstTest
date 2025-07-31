@@ -84,9 +84,9 @@ class MachineStatusController extends Controller
             'new_status_id' => 'required|exists:machine_statuses,id',
         ]);
 
-        // Prevent deleting the default status (ID 1)
-        if ($machineStatus->id === 1) {
-            return back()->with('error', 'The default status cannot be deleted.');
+        // Prevent deleting a protected status
+        if ($machineStatus->is_protected) {
+            return back()->with('error', 'This status is protected and cannot be deleted.');
         }
 
         DB::transaction(function () use ($validated, $machineStatus) {
@@ -98,14 +98,17 @@ class MachineStatusController extends Controller
 
             MachineStatusLog::where('machine_status_id', $machineStatus->id)
                 ->update(['machine_status_id' => $newStatusId]);
-
-            // --- ACTION: Update the query to use the correct foreign key ---
-            InspectionStatus::where('machine_status_id', $machineStatus->id)
+                
+            // This finds all the pivot table entries that are using the old machine status ID
+            // and updates them to point to the new one.
+            DB::table('inspection_status_has_behaviors')
+                ->where('machine_status_id', $machineStatus->id)
                 ->update(['machine_status_id' => $newStatusId]);
 
             // Now, safely delete the status.
             $machineStatus->delete();
         });
-        return back()->with('success', 'Status deleted and machines reassigned successfully.');
+
+        return back()->with('success', 'Status deleted and all related items reassigned successfully.');
     }
 }

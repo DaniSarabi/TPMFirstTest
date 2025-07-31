@@ -11,7 +11,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
-import { MachineStatus } from './MachineStatus/Columns';
+import { MachineStatus } from './Columns';
 
 // Define the props for our new modal
 interface ReassignAndDeleteStatusModalProps {

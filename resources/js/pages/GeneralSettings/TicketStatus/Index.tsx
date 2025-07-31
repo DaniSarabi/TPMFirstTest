@@ -6,18 +6,22 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import GeneralSettingsLayout from '@/layouts/general-settings-layout';
 import { useCan } from '@/lib/useCan';
-import { Filter, Paginated, type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Filter, type Paginated } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
-import { ReassignAndDeleteStatusModal } from './ReassingAndDeleteModal';
-import { getColumns, MachineStatus } from './Columns';
-import { StatusFormModal } from './MachineStatusFormModal';
+import { BehaviorsInfoModal } from '../BehaviorsInfoModal';
+import { MachineStatus } from '../MachineStatus/Columns';
+import { Behavior, getColumns, TicketStatus } from './Columns';
+import { ReassignAndDeleteStatusModal } from './ReassindAndDeleteTicketsStatusModal';
+import { TicketStatusFormModal } from './TicketStatusFormModal';
 
 // Define the props for the page
 interface IndexPageProps {
-  statuses: Paginated<MachineStatus>;
+  statuses: Paginated<TicketStatus>;
+  behaviors: Behavior[];
+  machineStatuses: MachineStatus[];
   filters: Filter & { sort?: string; direction?: 'asc' | 'desc' };
 }
 
@@ -27,36 +31,37 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: route('settings.machine-status.index'),
   },
   {
-    title: 'Machine Statuses',
-    href: route('settings.machine-status.index'),
+    title: 'Ticket Statuses',
+    href: route('settings.ticket-status.index'),
     isCurrent: true,
   },
 ];
 
-export default function Index({ statuses, filters }: IndexPageProps) {
+export default function Index({ statuses, machineStatuses, behaviors, filters }: IndexPageProps) {
   const [isFormModalOpen, setIsFormModalOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [statusToEdit, setStatusToEdit] = React.useState<Partial<MachineStatus> | null>(null);
-  const [statusToDelete, setStatusToDelete] = React.useState<MachineStatus | null>(null);
+  const [statusToEdit, setStatusToEdit] = React.useState<Partial<TicketStatus> | null>(null);
+  const [statusToDelete, setStatusToDelete] = React.useState<TicketStatus | null>(null);
 
   const [search, setSearch] = React.useState(filters.search || '');
   const [sort, setSort] = React.useState<{ id: string; desc: boolean } | null>(
     filters.sort ? { id: filters.sort, desc: filters.direction === 'desc' } : null,
   );
+  const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
 
   const isInitialMount = React.useRef(true);
 
-  const { data, setData, post, put, errors, reset, processing } = useForm({
+  const form = useForm({
     name: '',
-    description: '',
     bg_color: '#dcfce7',
     text_color: '#166534',
+    behaviors: [] as { id: number }[],
   });
 
   const can = {
-    create: useCan('machines.edit'),
-    edit: useCan('machines.edit'),
-    delete: useCan('machines.edit'),
+    create: useCan('tickets.edit'),
+    edit: useCan('tickets.edit'),
+    delete: useCan('tickets.edit'),
   };
 
   React.useEffect(() => {
@@ -66,7 +71,7 @@ export default function Index({ statuses, filters }: IndexPageProps) {
     }
     const timeout = setTimeout(() => {
       router.get(
-        route('settings.machine-status.index'),
+        route('settings.ticket-status.index'),
         {
           search,
           sort: sort?.id,
@@ -85,51 +90,51 @@ export default function Index({ statuses, filters }: IndexPageProps) {
       setSort({ id: columnId, desc: direction === 'desc' });
     }
   };
-  
-  // --- handlers to reset the form state ---
+
   const handleCreate = () => {
-    reset();
+    form.reset();
     setStatusToEdit(null);
     setIsFormModalOpen(true);
   };
 
-  const handleEdit = (status: MachineStatus) => {
-    reset();
-    setData({
+  const handleEdit = (status: TicketStatus) => {
+    form.setData({
       name: status.name,
-      description: status.description || '',
       bg_color: status.bg_color,
       text_color: status.text_color,
+      behaviors: status.behaviors.map((b) => ({
+        id: b.id,
+        machine_status_id: b.pivot?.machine_status_id || null,
+      })),
     });
     setStatusToEdit(status);
     setIsFormModalOpen(true);
   };
 
-  const handleDelete = (status: MachineStatus) => {
+  const handleDelete = (status: TicketStatus) => {
     setStatusToDelete(status);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDelete = (newStatusId: number) => {
     if (!statusToDelete) return;
-    router.delete(route('settings.machine-status.destroy', statusToDelete.id), {
+    router.delete(route('settings.ticket-status.destroy', statusToDelete.id), {
       data: { new_status_id: newStatusId },
       onSuccess: () => setIsDeleteDialogOpen(false),
     });
   };
 
-  // --- ACTION 3: The submit handler now uses the form state from this page ---
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const onSuccess = () => setIsFormModalOpen(false);
     if (statusToEdit && 'id' in statusToEdit) {
-      put(route('settings.machine-status.update', statusToEdit.id!), { ...data, onSuccess });
+      form.put(route('settings.ticket-status.update', statusToEdit.id!), { onSuccess });
     } else {
-      post(route('settings.machine-status.store'), { ...data, onSuccess });
+      form.post(route('settings.ticket-status.store'), { onSuccess });
     }
   };
 
-  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete, handleSort, sort), [sort]);
+  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete, handleSort, sort, machineStatuses), [sort]);
 
   const table = useReactTable({
     data: statuses.data,
@@ -139,22 +144,22 @@ export default function Index({ statuses, filters }: IndexPageProps) {
 
   const otherStatuses = statusToDelete ? statuses.data.filter((s) => s.id !== statusToDelete.id) : [];
 
-  const toolbarAction = can.create ? (
-    <Button onClick={handleCreate}>
-      <PlusCircle className="mr-2 h-4 w-4" />
-      Add Status
-    </Button>
-  ) : null;
-
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <GeneralSettingsLayout>
-        <Head title="Machine Statuses" />
+        <Head title="Ticket Statuses" />
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Machine Statuses</h1>
-              <p className="text-muted-foreground">Manage the statuses that can be assigned to machines.</p>
+              <h1 className="text-2xl font-bold tracking-tight">Ticket Statuses</h1>
+              <p className="text-muted-foreground">Manage the statuses that can be assigned to tickets.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Learn more about{' '}
+                <button onClick={() => setIsInfoModalOpen(true)} className="text-primary italic hover:underline">
+                  behaviors
+                </button>
+                .
+              </p>
             </div>
           </div>
 
@@ -176,16 +181,17 @@ export default function Index({ statuses, filters }: IndexPageProps) {
 
           <Pagination paginated={statuses} />
         </div>
-        {/* --- ACTION 4: Pass the form state and handlers down to the modal --- */}
-        <StatusFormModal
+        <TicketStatusFormModal
           isOpen={isFormModalOpen}
           onOpenChange={setIsFormModalOpen}
           onSubmit={handleSubmit}
           status={statusToEdit}
-          data={data}
-          setData={setData}
-          errors={errors}
-          processing={processing}
+          machineStatuses={machineStatuses}
+          behaviors={behaviors}
+          data={form.data}
+          setData={form.setData}
+          errors={form.errors}
+          processing={form.processing}
         />
         <ReassignAndDeleteStatusModal
           isOpen={isDeleteDialogOpen}
@@ -194,7 +200,7 @@ export default function Index({ statuses, filters }: IndexPageProps) {
           statusToDelete={statusToDelete}
           otherStatuses={otherStatuses}
         />
-        
+        <BehaviorsInfoModal isOpen={isInfoModalOpen} onOpenChange={setIsInfoModalOpen} behaviors={behaviors} />
       </GeneralSettingsLayout>
     </AppLayout>
   );

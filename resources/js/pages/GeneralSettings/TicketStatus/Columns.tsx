@@ -16,6 +16,7 @@ import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { MachineStatus } from '../MachineStatus/Columns';
 
+// Define the shape of the Behavior and TicketStatus data
 export interface Behavior {
   id: number;
   name: string;
@@ -27,23 +28,22 @@ export interface Behavior {
   };
 }
 
-export interface InspectionStatus {
+export interface TicketStatus {
   id: number;
   name: string;
-  severity: number;
   bg_color: string;
   text_color: string;
   behaviors: Behavior[];
 }
 
-// This function will be called from your Index page to generate the columns
+// The function now accepts the sorting state and handler
 export const getColumns = (
-  onEdit: (status: InspectionStatus) => void,
-  onDelete: (status: InspectionStatus) => void,
+  onEdit: (status: TicketStatus) => void,
+  onDelete: (status: TicketStatus) => void,
   onSort: (columnId: string, direction: 'asc' | 'desc' | null) => void,
   currentSort: { id: string; desc: boolean } | null,
   machineStatuses: MachineStatus[],
-): ColumnDef<InspectionStatus>[] => [
+): ColumnDef<TicketStatus>[] => [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" onSort={onSort} currentSort={currentSort} />,
@@ -74,7 +74,6 @@ export const getColumns = (
       const setsMachineStatusBehavior = behaviors.find((b) => b.name === 'sets_machine_status');
       const machineStatusId = setsMachineStatusBehavior?.pivot?.machine_status_id;
       const machineStatusName = machineStatuses.find((ms) => ms.id === machineStatusId)?.name;
-
       return (
         <div className="flex flex-wrap gap-1">
           {behaviors.map((behavior) => (
@@ -92,6 +91,7 @@ export const getColumns = (
     cell: ({ row }) => {
       const status = row.original;
       const [isOpen, setIsOpen] = React.useState(false);
+      const canDelete = status.id !== 1;
 
       return (
         <div className="text-right">
@@ -114,16 +114,18 @@ export const getColumns = (
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  onDelete(status);
-                  setIsOpen(false);
-                }}
-                className="text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+              {canDelete && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onDelete(status);
+                    setIsOpen(false);
+                  }}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

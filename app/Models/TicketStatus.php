@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TicketStatus extends Model
 {
@@ -26,9 +27,16 @@ class TicketStatus extends Model
         'name',
         'bg_color',
         'text_color',
-        'is_closing_status',
     ];
 
+    /**
+     * The behaviors that belong to the ticket status.
+     */
+    public function behaviors(): BelongsToMany
+    {
+        return $this->belongsToMany(Behavior::class, 'ticket_status_has_behaviors')
+            ->withPivot('machine_status_id');
+    }
     /**
      * Get the tickets that have this status.
      */

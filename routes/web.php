@@ -12,6 +12,7 @@ use App\Http\Controllers\InspectionStatusController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketUpdateController;
+use App\Http\Controllers\TicketStatusController;
 
 
 Route::get('/', function () {
@@ -74,10 +75,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['show'])
             ->middleware('permission:machines.edit');
 
-        // --- ACTION 2: Add the resource route for Inspection Statuses ---
+        // ---  Add the resource route for Inspection Statuses ---
         Route::resource('inspection-status', InspectionStatusController::class)
             ->except(['show'])
             ->middleware('permission:inspections.edit');
+
+        Route::resource('ticket-status', TicketStatusController::class)
+            ->except(['show'])
+            ->middleware('permission:tickets.edit');
     });
     //* ***************************** Machines module Routes *****************************
 

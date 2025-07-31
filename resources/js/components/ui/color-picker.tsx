@@ -62,7 +62,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
                         type="button"
                         onClick={() => onChange({ bgColor: color.bgColor, textColor: color.textColor })}
                         className={cn(
-                            'h-8 w-8 rounded-lg border-2 flex items-center justify-center transition-transform hover:scale-110',
+                            'h-8 w-8 rounded-lg border-2 flex items-center justify-center transition-transform hover:scale-140',
                             isSelected ? 'border-black' : 'border-transparent'
                         )}
                         style={{ backgroundColor: color.bgColor }}

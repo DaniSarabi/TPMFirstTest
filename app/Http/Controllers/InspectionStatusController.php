@@ -9,7 +9,7 @@ use App\Models\InspectionReportItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Models\MachineStatus;
-
+use App\Models\Behavior;
 
 class InspectionStatusController extends Controller
 {
@@ -20,7 +20,7 @@ class InspectionStatusController extends Controller
     {
         $filters = $request->only(['search', 'sort', 'direction']);
 
-        $statuses = InspectionStatus::with('machineStatus')
+        $statuses = InspectionStatus::with('behaviors')
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where('name', 'like', '%' . $search . '%');
             })
@@ -28,7 +28,6 @@ class InspectionStatusController extends Controller
                 $direction = $filters['direction'] ?? 'asc';
                 $query->orderBy($sort, $direction);
             }, function ($query) {
-                // Default sort order if none is provided
                 $query->latest();
             })
             ->paginate(15)
@@ -38,6 +37,7 @@ class InspectionStatusController extends Controller
             'statuses' => $statuses,
             'filters' => $filters,
             'machineStatuses' => MachineStatus::all(),
+            'behaviors' => Behavior::where('scope', 'inspection')->orWhere('scope', 'universal')->get(),
         ]);
     }
 
@@ -46,22 +46,43 @@ class InspectionStatusController extends Controller
      */
     public function store(Request $request)
     {
-        // --- ACTION: Update the validation rules ---
         $validated = $request->validate([
             'name' => 'required|string|unique:inspection_statuses,name|max:255',
-            'severity' => 'required|integer|min:0|max:2',
-            'auto_creates_ticket' => 'required|boolean',
-            'machine_status_id' => 'nullable|exists:machine_statuses,id',
             'bg_color' => 'required|string',
             'text_color' => 'required|string',
-            'is_default' => 'required|boolean',
+            'behaviors' => 'present|array',
+            'behaviors.*.id' => 'required|exists:behaviors,id',
+            'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
         ]);
 
-        if ($validated['is_default']) {
-            InspectionStatus::where('is_default', true)->update(['is_default' => false]);
-        }
+        DB::transaction(function () use ($validated) {
+            // Determine severity based on behaviors
+            $behaviorIds = collect($validated['behaviors'])->pluck('id');
+            $behaviors = Behavior::find($behaviorIds);
 
-        InspectionStatus::create($validated);
+            $severity = 0;
+            if ($behaviors->contains('name', 'creates_ticket_sev2')) {
+                $severity = 2;
+            } elseif ($behaviors->contains('name', 'creates_ticket_sev1')) {
+                $severity = 1;
+            }
+
+            // Create the new status
+            $status = InspectionStatus::create([
+                'name' => $validated['name'],
+                'bg_color' => $validated['bg_color'],
+                'text_color' => $validated['text_color'],
+                'severity' => $severity,
+            ]);
+
+            // Prepare the data for the pivot table
+            $behaviorsToSync = collect($validated['behaviors'])->keyBy('id')->map(function ($behavior) {
+                return ['machine_status_id' => $behavior['machine_status_id']];
+            });
+
+            // Sync the behaviors using the many-to-many relationship
+            $status->behaviors()->sync($behaviorsToSync);
+        });
 
         return back()->with('success', 'Inspection status created successfully.');
     }
@@ -71,23 +92,41 @@ class InspectionStatusController extends Controller
      */
     public function update(Request $request, InspectionStatus $inspectionStatus)
     {
-        // --- ACTION: Update the validation rules ---
-        $validated = $request->validate([
+        DB::transaction(function () use ($request, $inspectionStatus) {
+
+            $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('inspection_statuses')->ignore($inspectionStatus->id)],
-            'severity' => 'required|integer|min:0|max:2',
-            'auto_creates_ticket' => 'required|boolean',
-            'machine_status_id' => 'nullable|exists:machine_statuses,id',
-            'bg_color' => 'required|string',
-            'text_color' => 'required|string',
-            'is_default' => 'required|boolean',
-        ]);
+                'bg_color' => 'required|string',
+                'text_color' => 'required|string',
+                'behaviors' => 'present|array',
+                'behaviors.*.id' => 'required|exists:behaviors,id',
+                'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
+            ]);
 
-        if ($validated['is_default']) {
-            InspectionStatus::where('is_default', true)->update(['is_default' => false]);
-        }
+            $behaviorIds = collect($validated['behaviors'])->pluck('id');
+            $behaviors = Behavior::find($behaviorIds);
 
-        $inspectionStatus->update($validated);
+            $severity = 0;
+            if ($behaviors->contains('name', 'creates_ticket_sev2')) {
+                $severity = 2;
+            } elseif ($behaviors->contains('name', 'creates_ticket_sev1')) {
+                $severity = 1;
+            }
 
+
+            $inspectionStatus->update([
+                'name' => $validated['name'],
+                'bg_color' => $validated['bg_color'],
+                'text_color' => $validated['text_color'],
+                'severity' => $severity,
+            ]);
+
+            $behaviorsToSync = collect($validated['behaviors'])->keyBy('id')->map(function ($behavior) {
+                return ['machine_status_id' => $behavior['machine_status_id']];
+            });
+
+            $inspectionStatus->behaviors()->sync($behaviorsToSync);
+        });
         return back()->with('success', 'Inspection status updated successfully.');
     }
 
@@ -96,7 +135,7 @@ class InspectionStatusController extends Controller
      */
     public function destroy(Request $request, InspectionStatus $inspectionStatus)
     {
-        // --- ACTION 2: Update the destroy method logic ---
+        // ---  Update the destroy method logic ---
         $validated = $request->validate([
             'new_status_id' => 'required|exists:inspection_statuses,id',
         ]);

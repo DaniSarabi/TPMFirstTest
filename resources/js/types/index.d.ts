@@ -37,12 +37,19 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  avatar?: string;
+  avatar_url: string | null;
+  avatar_color: string | null;
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
   [key: string]: unknown; // This allows for additional properties...
 }
+
+export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
+    auth: {
+        user: User;
+    };
+};
 
 // Define the shape of a single pagination link
 export interface Link {

@@ -65,6 +65,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // This new route will handle the GET request from the QR code scan
     Route::get('/inspections/start-from-qr/{machine}', [InspectionController::class, 'startFromQr'])->name('inspections.startFromQr');
 
+
+    // --- Add the new API-like route for getting open tickets ---
+    Route::get('/inspection-points/{inspectionPoint}/open-tickets', [InspectionPointController::class, 'getOpenTickets'])
+        ->name('inspection-points.open-tickets');
+
     //* ***************************** Statuses module Routes *****************************
 
     //  Use a Route Group to correctly prefix the names and URLs ---

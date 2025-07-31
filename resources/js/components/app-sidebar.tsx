@@ -47,7 +47,7 @@ const footerNavItems: NavItem[] = [
     icon: Shield,
   },
   {
-    title: 'Settings',
+    title: 'Status Settings ',
     href: route('settings.machine-status.index'),
     icon: Settings,
   },

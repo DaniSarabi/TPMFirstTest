@@ -6,37 +6,36 @@ use App\Models\Ticket;
 use App\Models\TicketStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Behavior;
 
 class TicketController extends Controller
 {
     /**
      * Display a listing of the resource.
-     * This will be the main dashboard for active tickets.
      */
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'view']);
-        $viewMode = $filters['view'] ?? 'grid'; // Default to grid view
+        $viewMode = $filters['view'] ?? 'grid';
 
-        $resolvedStatus = TicketStatus::where('is_closing_status', true)->first();
+        $closingBehavior = Behavior::where('name', 'is_ticket_closing_status')->first();
+        $resolvedStatus = $closingBehavior ? $closingBehavior->ticketStatuses()->first() : null;
 
-        // --- ACTION 1: Conditionally load relationships based on the view ---
         $relations = [
-            'creator:id,name',
+            'creator:id,name,avatar_url,avatar_color', // Load all necessary fields
             'status:id,name,bg_color,text_color',
         ];
 
         if ($viewMode === 'grid') {
-            // Grid view needs richer data
             $relations[] = 'machine:id,name,image_url';
             $relations[] = 'inspectionItem:id,image_url';
         } else {
-            // List view only needs the machine name
             $relations[] = 'machine:id,name';
         }
 
         $ticketsQuery = Ticket::with($relations)->latest();
 
+        // If a closing status exists, exclude tickets with that status.
         if ($resolvedStatus) {
             $ticketsQuery->where('ticket_status_id', '!=', $resolvedStatus->id);
         }
@@ -55,7 +54,6 @@ class TicketController extends Controller
         return Inertia::render('Tickets/Index', [
             'tickets' => $tickets,
             'filters' => $filters,
-            // We will add other filter data here later (e.g., all statuses, priorities)
         ]);
     }
 
@@ -67,21 +65,29 @@ class TicketController extends Controller
         // Eager-load all the necessary relationships for the details page
         $ticket->load([
             'machine.machineStatus',
-            'creator:id,name',
+            'creator', // Load the full creator object
             'status',
-            'inspectionItem.point.subsystem',
+            'inspectionItem:id,image_url,inspection_report_id,inspection_point_id', 
+            'inspectionItem.point:id,name,description,subsystem_id',
+            'inspectionItem.point.subsystem:id,name',
             'updates' => function ($query) {
-                $query->with(['user:id,name', 'oldStatus:id,name,bg_color,text_color', 'newStatus:id,name,bg_color,text_color', 'newMachineStatus:id,name,bg_color,text_color'])->latest();
+                $query->with([
+                    'user', // Load the full user object for each update
+                    'oldStatus:id,name,bg_color,text_color',
+                    'newStatus:id,name,bg_color,text_color',
+                    'newMachineStatus:id,name,bg_color,text_color'
+                ])->latest();
             }
         ]);
 
-        // First, find the single status that is marked as the closing status.
-        $closingStatus = TicketStatus::where('is_closing_status', true)->first();
         $solvedBy = null;
+        // First, find the status that has the closing behavior.
+        $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
+            $query->where('name', 'is_ticket_closing_status');
+        })->first();
 
-        // Only proceed if a closing status actually exists
         if ($closingStatus) {
-            // Then, find the first update for this ticket where the new status matches the closing status ID.
+            // Then, find the first update where the new status matches the closing status ID.
             $closingUpdate = $ticket->updates->first(function ($update) use ($closingStatus) {
                 return $update->new_status_id === $closingStatus->id;
             });

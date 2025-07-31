@@ -1,7 +1,7 @@
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { type ComponentPropsWithoutRef } from 'react';
-// --- ACTION 1: Import the Link and usePage components ---
+// --- Import the Link and usePage components ---
 import { Link, usePage } from '@inertiajs/react';
 
 export function NavFooter({
@@ -11,7 +11,7 @@ export function NavFooter({
 }: ComponentPropsWithoutRef<typeof SidebarGroup> & {
     items: NavItem[];
 }) {
-    // --- ACTION 2: Get the current page to determine active state ---
+    // --- Get the current page to determine active state ---
     const { url } = usePage();
 
     return (
@@ -20,7 +20,7 @@ export function NavFooter({
                 <SidebarMenu>
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title}>
-                            {/* --- ACTION 3: Wrap the button with the Inertia Link component --- */}
+                            {/* --- Wrap the button with the Inertia Link component --- */}
                             <Link href={item.href} prefetch>
                                 <SidebarMenuButton
                                     // Add the isActive prop to highlight the current page

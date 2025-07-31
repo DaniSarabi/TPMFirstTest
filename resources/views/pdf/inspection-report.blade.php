@@ -78,6 +78,12 @@
             font-weight: bold;
         }
 
+        .inspection-image {
+            max-width: 200px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
         .footer {
             position: fixed;
             bottom: 0px;
@@ -143,8 +149,11 @@
                     @if($item->comment)
                     <p><strong>Comment:</strong> {{ $item->comment }}</p>
                     @endif
-                    @if($item->image_url)
-                    <p><em>An image was attached to this point.</em></p>
+                    {{-- --- ACTION: Add the image to the PDF --- --}}
+                    @if(isset($item->full_image_path) && file_exists($item->full_image_path))
+                    <img src="{{ $item->full_image_path }}" class="inspection-image">
+                    @elseif($item->image_url)
+                    <p><em>An image was attached but could not be loaded.</em></p>
                     @endif
                 </td>
             </tr>

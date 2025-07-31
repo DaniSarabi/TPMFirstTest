@@ -27,6 +27,16 @@ class Ticket extends Model
         'priority',
     ];
 
+     /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        // This ensures created_at and updated_at are always Carbon objects
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
     /**
      * Get the inspection item that generated this ticket.
      */

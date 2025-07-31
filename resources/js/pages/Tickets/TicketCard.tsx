@@ -1,6 +1,6 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { UserAvatar } from '@/components/user-avatar';
 import { Link } from '@inertiajs/react';
 import { AlertTriangle, Clock, FileText, ShieldAlert, Wrench } from 'lucide-react';
 import { Ticket } from './Columns';
@@ -51,7 +51,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
       href={route('tickets.show', ticket.id)}
       className="block w-full transform transition-transform duration-300 ease-in-out hover:-translate-y-3"
     >
-      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg p-0 shadow-md drop-shadow-lg ring-0 border-0 ring-white hover:bg-accent">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg border-0 p-0 shadow-md ring-0 ring-white drop-shadow-lg hover:bg-accent">
         {/* --- Use the dynamic image URL and make it touch the top --- */}
         <div className="relative h-32 w-full">
           <img src={imageUrl} alt={ticket.machine.name} className="h-full w-full object-cover" />
@@ -68,41 +68,37 @@ export function TicketCard({ ticket }: TicketCardProps) {
         </div>
 
         <CardContent className="flex flex-grow flex-col px-6 pt-4 pb-4">
-          <div className=''>
-          {/* Title */}
-          <p className="mb-2 line-clamp-2 text-lg font-semibold min-h-[3.5rem] max-h-[3.5rem] ">{ticket.title}</p>
+          <div className="">
+            {/* Title */}
+            <p className="mb-2 line-clamp-2 max-h-[3.5rem] min-h-[3.5rem] text-lg font-semibold">{ticket.title}</p>
 
-          {/* --- Add the ticket description preview --- */}
-          <div className="mb-2 flex items-center text-sm text-muted-foreground min-h-[2.5rem]">
-            <FileText className="mr-2 h-5 w-5 shrink-0" />
-            <span className="line-clamp-2">{ticket.description || 'No description provided.'}</span>
-          </div>
+            {/* --- Add the ticket description preview --- */}
+            <div className="mb-2 flex min-h-[2.5rem] items-center text-sm text-muted-foreground">
+              <FileText className="mr-2 h-5 w-5 shrink-0" />
+              <span className="line-clamp-2">{ticket.description || 'No description provided.'}</span>
+            </div>
 
-          {/* Machine field */}
-          <div className="mb-2 flex items-center text-sm text-muted-foreground min-h-[2rem]">
-            <Wrench className="mr-2 h-5 w-5 shrink-0" />
-            <span className="line-clamp-1">{ticket.machine.name}</span>
-          </div>
+            {/* Machine field */}
+            <div className="mb-2 flex min-h-[2rem] items-center text-sm text-muted-foreground">
+              <Wrench className="mr-2 h-5 w-5 shrink-0" />
+              <span className="line-clamp-1">{ticket.machine.name}</span>
+            </div>
 
-          {/* Time from open */}
-          <div className="mb-3 flex items-center text-sm text-muted-foreground min-h-[1rem]">
-            <Clock className="mr-2 h-5 w-5 shrink-0" />
-            {/* --- Use the formatted date --- */}
-            <span>Reported: {dateOpened}</span>
-          </div>
-
-
+            {/* Time from open */}
+            <div className="mb-3 flex min-h-[1rem] items-center text-sm text-muted-foreground">
+              <Clock className="mr-2 h-5 w-5 shrink-0" />
+              {/* --- Use the formatted date --- */}
+              <span>Reported: {dateOpened}</span>
+            </div>
           </div>
 
           <hr className="my-2" />
 
-          {/* User and Priority Section */}
+          {/* User */}
           <div className="mt-auto flex items-center justify-between pt-2">
             <div className="flex items-center">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>{getInitials(ticket.creator.name)}</AvatarFallback>
-              </Avatar>
-              <span className="px-2 text-sm font-medium text-gray-700">{ticket.creator.name}</span>
+              <UserAvatar user={ticket.creator} className="h-8 w-8" />
+              <span className="px-2 text-lg font-medium text-gray-700">{ticket.creator.name}</span>
             </div>
           </div>
         </CardContent>

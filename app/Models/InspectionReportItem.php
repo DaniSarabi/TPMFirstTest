@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-
-
-
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class InspectionReportItem extends Model
 {
@@ -34,6 +32,7 @@ class InspectionReportItem extends Model
         'inspection_status_id',
         'comment',
         'image_url',
+        'pinged_ticket_id',
     ];
     /**
      * --- ACTION: Add an accessor for the image_url attribute ---
@@ -45,6 +44,21 @@ class InspectionReportItem extends Model
             get: fn($value) => $value ? Storage::url($value) : null
         );
     }
+    /**
+     * An inspection item can have one ticket.
+     */
+    public function ticket(): HasOne
+    {
+        return $this->hasOne(Ticket::class);
+    }
+    /**
+     * An inspection item can belong to one ticket if it was a "ping".
+     */
+    public function pingedTicket(): BelongsTo
+    {
+        return $this->belongsTo(Ticket::class, 'pinged_ticket_id');
+    }
+
     /**
      * Get the main report that this item belongs to.
      */

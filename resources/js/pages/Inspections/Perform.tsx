@@ -2,14 +2,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
+import axios from 'axios';
 import { Circle, CircleAlert, CircleCheck, CircleX, Clock, ClockArrowUp, ListCheck, Send, Wrench } from 'lucide-react';
 import React from 'react';
+import { Ticket } from '../Tickets/Columns';
+import { ExistingTicketsModal } from './Components/ExistingTicketsModal';
 import { ReportProblemModal } from './ReportProblemModal';
 
 // --- Type Definitions for this page ---
@@ -63,6 +65,12 @@ interface InspectionReport {
   id: number;
   machine: Machine;
 }
+type InspectionResult = {
+  status_id?: number;
+  comment?: string;
+  image?: File | null;
+  pinged_ticket_id?: number | null;
+};
 // Define the props for the page
 interface PerformPageProps {
   report: InspectionReport;
@@ -141,55 +149,44 @@ function InspectionPointRow({ point, statuses, selectedValue, onChange }: Inspec
 export default function Perform({ report, inspectionStatuses, uptime }: PerformPageProps) {
   const { machine } = report;
 
-  const [inspectionResults, setInspectionResults] = React.useState<Record<number, { status_id?: number; comment?: string; image?: File | null }>>({});
-
+  const [inspectionResults, setInspectionResults] = React.useState<Record<number, InspectionResult>>({});
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
   const [pointToReport, setPointToReport] = React.useState<InspectionPoint | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isExistingTicketsModalOpen, setIsExistingTicketsModalOpen] = React.useState(false);
+  const [openTicketsForPoint, setOpenTicketsForPoint] = React.useState<Ticket[]>([]);
 
-  const [isDirty, setIsDirty] = React.useState(false);
- 
-  const [isCancelDialogOpen, setIsCancelDialogOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const handleInertiaNavigate = (event: CustomEvent) => {
-      if (isDirty && event.detail.url) {
-        event.preventDefault();
-      }
-    };
-
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isDirty) {
-        event.preventDefault();
-        event.returnValue = '';
-      }
-    };
-
-    const removeInertiaListener = router.on('before', handleInertiaNavigate);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      removeInertiaListener();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isDirty]);
-
-  const handleStatusChange = (pointId: number, statusId: number) => {
+  const handleStatusChange = async (pointId: number, statusId: number) => {
     // First, update the status in the local state
-    setIsDirty(true);
     setInspectionResults((prev) => ({
       ...prev,
       [pointId]: { ...prev[pointId], status_id: statusId },
     }));
 
-    // Then, check the severity to see if we need to open the modal
+    // Then, check the severity to see if we need to open a modal
     const selectedStatus = inspectionStatuses.find((s) => s.id === statusId);
     if (selectedStatus && selectedStatus.severity > 0) {
       const point = machine.subsystems.flatMap((sub) => sub.inspection_points).find((p) => p.id === pointId);
-
       if (point) {
-        setPointToReport(point);
-        setIsReportModalOpen(true);
+        // ---  Check for existing open tickets ---
+        try {
+          const response = await axios.get<Ticket[]>(route('inspection-points.open-tickets', point.id));
+          if (response.data.length > 0) {
+            // If open tickets exist, show the carousel modal
+            setOpenTicketsForPoint(response.data);
+            setPointToReport(point);
+            setIsExistingTicketsModalOpen(true);
+          } else {
+            // Otherwise, show the standard "Report a Problem" modal
+            setPointToReport(point);
+            setIsReportModalOpen(true);
+          }
+        } catch (error) {
+          console.error('Failed to fetch open tickets:', error);
+          // Fallback to the report problem modal on error
+          setPointToReport(point);
+          setIsReportModalOpen(true);
+        }
       }
     }
   };
@@ -197,13 +194,13 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
   //  Create a handler to save the problem details ---
   const handleSaveProblem = ({ comment, image }: { comment: string; image: File | null }) => {
     if (!pointToReport) return;
-
     setInspectionResults((prev) => ({
       ...prev,
       [pointToReport.id]: {
         ...prev[pointToReport.id],
         comment: comment,
         image: image,
+        pinged_ticket_id: null, // Ensure we are not pinging if we report a new problem
       },
     }));
   };
@@ -213,19 +210,36 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
     router.post(
       route('inspections.update', report.id),
       {
-        _method: 'put', // This is the correct way to tunnel a PUT request with files
+        _method: 'put',
         results: inspectionResults,
       },
       {
-        onFinish: () => setIsSubmitting(false), // Reset submitting state on finish
+        onFinish: () => setIsSubmitting(false),
       },
     );
   };
-  const handleCancelInspection = () => {
-    // This will send the DELETE request to the server.
-    // Inertia will automatically follow the redirect to the start page.
-    router.delete(route('inspections.destroy', report.id));
+
+  // It now only updates the local state ("shopping cart").
+  const handlePingTicket = (ticketId: number) => {
+    if (!pointToReport) return;
+    setInspectionResults((prev) => ({
+      ...prev,
+      [pointToReport.id]: {
+        ...prev[pointToReport.id],
+        pinged_ticket_id: ticketId,
+        comment: `Ping to existing Ticket #${ticketId}.`,
+        image: null,
+      },
+    }));
+    console.log(`Ticket ${ticketId} will be pinged on final submission.`);
   };
+
+  const handleReportNewProblem = () => {
+    // This is called when the user chooses to report a new problem
+    // from the existing tickets modal.
+    setIsReportModalOpen(true);
+  };
+
   // Define the breadcrumbs for this page
   const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -257,7 +271,7 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
         </div>
 
         {/* Summary card */}
-        <Card className="flex h-fit w-full flex-col space-y-3 drop-shadow-lg  p-3 shadow-lg md:h-64 md:flex-row md:space-y-0 md:space-x-5">
+        <Card className="flex h-fit w-full flex-col space-y-3 p-3 shadow-lg drop-shadow-lg md:h-64 md:flex-row md:space-y-0 md:space-x-5">
           {/* Image */}
           <div className="flex h-full w-full items-center justify-center md:w-1/3">
             <img
@@ -320,13 +334,13 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
             {/* --- Removed defaultValue and added spacing --- */}
             <Accordion type="single" collapsible className="w-full space-y-4">
               {machine.subsystems.map((subsystem) => (
-                <AccordionItem className='' key={subsystem.id} value={`subsystem-${subsystem.id}`}>
+                <AccordionItem className="" key={subsystem.id} value={`subsystem-${subsystem.id}`}>
                   {/* --- Added styling for open/closed state --- */}
                   <AccordionTrigger className="rounded-md bg-muted/50 px-4 text-lg font-medium hover:bg-primary hover:text-primary-foreground hover:no-underline data-[state=open]:bg-primary data-[state=open]:text-primary-foreground">
                     {subsystem.name}
                   </AccordionTrigger>
-                  <AccordionContent className=''>
-                    <div className="space-y-1 rounded-b-md border-x border-b p-2 drop-shadow-lg shadow-lg">
+                  <AccordionContent className="">
+                    <div className="space-y-1 rounded-b-md border-x border-b p-2 shadow-lg drop-shadow-lg">
                       {subsystem.inspection_points.map((point) => (
                         <InspectionPointRow
                           key={point.id}
@@ -345,24 +359,24 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
         </Card>
 
         {/* Action buttons at the bottom */}
-        <div className="flex justify-end space-x-4 ">
-          <Button className='drop-shadow-lg shadow-lg' variant="secondary" onClick={() => setIsCancelDialogOpen(true)}>
-            <CircleX/>
+        <div className="flex justify-end space-x-4">
+          {/* <Button className="shadow-lg drop-shadow-lg" variant="secondary" onClick={() => setIsCancelDialogOpen(true)}>
+            <CircleX />
             Cancel
-          </Button>
-          <Button className='drop-shadow-lg shadow-lg' onClick={handleSubmitInspection} disabled={isSubmitting}>
-            <Send/>
+          </Button> */}
+          <Button className="shadow-lg drop-shadow-lg" onClick={handleSubmitInspection} disabled={isSubmitting}>
+            <Send />
             {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
           </Button>
         </div>
       </div>
       <ReportProblemModal isOpen={isReportModalOpen} onOpenChange={setIsReportModalOpen} onSave={handleSaveProblem} point={pointToReport} />
-      <ConfirmDeleteDialog
-        isOpen={isCancelDialogOpen}
-        onOpenChange={setIsCancelDialogOpen}
-        onConfirm={handleCancelInspection}
-        title="Cancel Inspection?"
-        description="Are you sure you want to cancel? All progress on this inspection will be permanently deleted."
+      <ExistingTicketsModal
+        isOpen={isExistingTicketsModalOpen}
+        onOpenChange={setIsExistingTicketsModalOpen}
+        onPing={handlePingTicket}
+        onReportNew={handleReportNewProblem}
+        openTickets={openTicketsForPoint}
       />
     </AppLayout>
   );

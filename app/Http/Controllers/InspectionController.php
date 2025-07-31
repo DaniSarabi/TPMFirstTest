@@ -90,10 +90,14 @@ class InspectionController extends Controller
             'user:id,name',
             'machine:id,name',
             'items' => function ($query) {
-                $query->with(['point:id,name,subsystem_id', 'status', 'point.subsystem:id,name']);
+                $query->with([
+                    'point:id,name,subsystem_id',
+                    'status',
+                    'point.subsystem:id,name',
+                    'ticket:id,inspection_report_item_id' // Load the ticket ID
+                ]);
             }
         ]);
-
         // Group the report items by their subsystem
         $groupedItems = $inspectionReport->items->groupBy('point.subsystem.name');
 
@@ -109,6 +113,8 @@ class InspectionController extends Controller
                         'image_url' => $item->image_url,
                         'status' => $item->status,
                         'point' => $item->point,
+                        'ticket' => $item->ticket,
+                        'pinged_ticket' => $item->pingedTicket,
                     ];
                 })->values(),
             ];
@@ -260,13 +266,14 @@ class InspectionController extends Controller
                 'results.*.status_id' => 'required|exists:inspection_statuses,id',
                 'results.*.comment' => 'nullable|string',
                 'results.*.image' => 'nullable|file|image|max:2048',
+                'results.*.pinged_ticket_id' => 'nullable|exists:tickets,id',
             ]);
 
             $highestSeverityStatus = null;
             $openTicketStatus = TicketStatus::where('name', 'Open')->first();
             $newlyCreatedTickets = [];
 
-             // Loop through each inspection point result to save it
+            // Loop through each inspection point result to save it
             foreach ($validated['results'] as $pointId => $result) {
                 $imagePath = null;
                 if ($request->hasFile("results.{$pointId}.image")) {
@@ -278,6 +285,7 @@ class InspectionController extends Controller
                     'inspection_status_id' => $result['status_id'],
                     'comment' => $result['comment'] ?? null,
                     'image_url' => $imagePath,
+                    'pinged_ticket_id' => $result['pinged_ticket_id'] ?? null,
                 ]);
 
                 $status = InspectionStatus::with('behaviors')->find($result['status_id']);
@@ -285,37 +293,50 @@ class InspectionController extends Controller
                     $highestSeverityStatus = $status;
                 }
 
-                if ($openTicketStatus && ($status->behaviors->contains('name', 'creates_ticket_sev1') || $status->behaviors->contains('name', 'creates_ticket_sev2'))) {
-                    $ticket = Ticket::create([
-                        'inspection_report_item_id' => $item->id,
-                        'machine_id' => $inspectionReport->machine_id,
-                        'title' => $item->point->name,
-                        'description' => $item->comment,
-                        'created_by' => Auth::id(),
-                        'ticket_status_id' => $openTicketStatus->id,
-                        'priority' => $status->severity,
-                    ]);
-                    
-                    $ticket->updates()->create([
-                        'user_id' => Auth::id(),
-                        'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
-                        'new_status_id' => $openTicketStatus->id,
-                    ]);
-                    
-                    $newlyCreatedTickets[] = $ticket;
+                if ($status && $status->severity > 0) {
+                    if (!empty($result['pinged_ticket_id'])) {
+                        // --- This is a PING ---
+                        $ticketToPing = Ticket::find($result['pinged_ticket_id']);
+                        if ($ticketToPing) {
+                            $ticketToPing->updates()->create([
+                                'user_id' => Auth::id(),
+                                'comment' => 'Ping: This issue was reported again during inspection #' . $inspectionReport->id,
+                            ]);
+                        }
+                    }
+                } else {
+                    // This is a NEW TICKET
+                    if ($openTicketStatus && ($status->behaviors->contains('name', 'creates_ticket_sev1') || $status->behaviors->contains('name', 'creates_ticket_sev2'))) {
+                        $ticket = Ticket::create([
+                            'inspection_report_item_id' => $item->id,
+                            'machine_id' => $inspectionReport->machine_id,
+                            'title' => $item->point->name,
+                            'description' => $item->comment,
+                            'created_by' => Auth::id(),
+                            'ticket_status_id' => $openTicketStatus->id,
+                            'priority' => $status->severity,
+                        ]);
+                        $ticket->updates()->create([
+                            'user_id' => Auth::id(),
+                            'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
+                            'new_status_id' => $openTicketStatus->id,
+                        ]);
+
+                        $newlyCreatedTickets[] = $ticket;
+                    }
                 }
             }
 
             // Check the behavior of the highest severity status to update the machine
             if ($highestSeverityStatus) {
                 $setStatusBehavior = $highestSeverityStatus->behaviors()->where('name', 'sets_machine_status')->first();
-                
+
                 if ($setStatusBehavior) {
                     $newMachineStatusId = $setStatusBehavior->pivot->machine_status_id;
                     if ($newMachineStatusId) {
                         $inspectionReport->machine()->update(['machine_status_id' => $newMachineStatusId]);
 
-                        // --- ACTION: Log the machine status change on all created tickets ---
+                        // --- Log the machine status change on all created tickets ---
                         $newMachineStatus = MachineStatus::find($newMachineStatusId);
                         foreach ($newlyCreatedTickets as $ticket) {
                             $ticket->updates()->create([
@@ -353,9 +374,11 @@ class InspectionController extends Controller
         // Redirect back to the start page with a success message.
         return to_route('inspections.start')->with('success', 'Inspection has been cancelled.');
     }
+    /**
+     * Generate and download a PDF for the specified inspection report.
+     */
     public function downloadPDF(InspectionReport $inspectionReport)
     {
-        // --- ACTION 2: Load all the necessary data for the report ---
         $inspectionReport->load([
             'user:id,name',
             'machine:id,name',
@@ -364,16 +387,21 @@ class InspectionController extends Controller
             'items.point.subsystem:id,name'
         ]);
 
-        // Group the items by subsystem for easy display in the view
         $groupedItems = $inspectionReport->items->groupBy('point.subsystem.name');
 
-        // ---Load the Blade view and generate the PDF ---
+        // --- ACTION: Add the full image path to each item for the PDF ---
+        $inspectionReport->items->each(function ($item) {
+            if ($item->image_url) {
+                // The public_path() helper gets the absolute server path to the image
+                $item->full_image_path = public_path($item->image_url);
+            }
+        });
+
         $pdf = Pdf::loadView('pdf.inspection-report', [
             'report' => $inspectionReport,
             'groupedItems' => $groupedItems,
         ]);
 
-        // --- Return the PDF as a download ---
         return $pdf->download('inspection-report-' . $inspectionReport->id . '.pdf');
     }
 }

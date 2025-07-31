@@ -5,7 +5,7 @@ import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, Camera, CheckCircle, CircleAlert, CircleX, Download, FileText, Ticket } from 'lucide-react';
 import * as React from 'react';
 
@@ -29,6 +29,9 @@ interface InspectionReportItem {
   image_url: string | null;
   status: InspectionStatus;
   point: InspectionPoint;
+  // --- Add both ticket types to the interface ---
+  ticket: { id: number } | null; // For a newly created ticket
+  pinged_ticket: { id: number } | null; // For a pinged ticket
 }
 
 interface Subsystem {
@@ -110,7 +113,7 @@ export default function Show({ report }: ShowPageProps) {
         </div>
 
         {/* --- Main Content --- */}
-        <Card className='drop-shadow-lg shadow-lg'>
+        <Card className="shadow-lg drop-shadow-lg">
           <CardHeader>
             <CardTitle>Inspection Results</CardTitle>
             <CardDescription>Completed on: {report.completion_date}</CardDescription>
@@ -119,52 +122,58 @@ export default function Show({ report }: ShowPageProps) {
             {report.grouped_items?.map((subsystem) => (
               <div key={subsystem.id}>
                 <h3 className="mb-2 text-lg font-semibold">{subsystem.name}</h3>
-                <div className="rounded-md border drop-shadow-sm shadow-lg">
-                  {subsystem.report_items?.map((item, index) => (
-                    <div key={item.id}>
-                      {/* ---  This container is now responsive --- */}
-                      <div className="flex flex-col gap-4 p-4 ">
-                        {/* Top Row: Point Name and Status */}
-                        <div className="flex w-full items-center justify-between">
-                          <div className="flex items-start gap-4">
-                            <StatusIcon severity={item.status.severity} />
-                            <div>
-                              <p className="font-medium">{item.point.name}</p>
-                              <Badge
-                                className="mt-1"
-                                style={{
-                                  backgroundColor: item.status.bg_color,
-                                  color: item.status.text_color,
-                                }}
-                              >
-                                {item.status.name}
-                              </Badge>
+                <div className="rounded-md border shadow-lg drop-shadow-sm">
+                  {subsystem.report_items?.map((item, index) => {
+                    const ticketToShow = item.ticket || item.pinged_ticket;
+
+                    return (
+                      <div key={item.id}>
+                        {/* ---  This container is now responsive --- */}
+                        <div className="flex flex-col gap-4 p-4">
+                          {/* Top Row: Point Name and Status */}
+                          <div className="flex w-full items-center justify-between">
+                            <div className="flex items-start gap-4">
+                              <StatusIcon severity={item.status.severity} />
+                              <div>
+                                <p className="font-medium">{item.point.name}</p>
+                                <Badge
+                                  className="mt-1"
+                                  style={{
+                                    backgroundColor: item.status.bg_color,
+                                    color: item.status.text_color,
+                                  }}
+                                >
+                                  {item.status.name}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
+                          {/* Bottom Row: Comment and actions */}
+                          <div className="flex w-full flex-wrap items-center justify-end gap-2 md:flex-nowrap">
+                            {item.comment && (
+                              <div className="flex w-full items-start gap-2 rounded-md border bg-muted/50 p-2 text-sm text-muted-foreground md:w-auto md:flex-1">
+                                <FileText className="h-4 w-4 shrink-0" />
+                                <span className="break-all">{item.comment}</span>
+                              </div>
+                            )}
+                            {item.image_url && (
+                              <Button variant="outline" size="sm" onClick={() => handleViewImage(item.image_url!)}>
+                                <Camera className="mr-2 h-4 w-4" /> View Photo
+                              </Button>
+                            )}
+                            {ticketToShow && (
+                              <Button size="sm" asChild>
+                                <Link href={route('tickets.show', ticketToShow.id)}>
+                                  <Ticket className="mr-2 h-4 w-4" /> View Ticket
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        {/* Bottom Row: Comment and actions */}
-                        <div className="flex w-full flex-wrap items-center justify-end gap-2 md:flex-nowrap ">
-                          {item.comment && (
-                            <div className="flex w-full items-start gap-2 rounded-md border bg-muted/50 p-2 text-sm text-muted-foreground md:w-auto md:flex-1">
-                              <FileText className="h-4 w-4 shrink-0" />
-                              <span className="break-all">{item.comment}</span>
-                            </div>
-                          )}
-                          {item.image_url && (
-                            <Button variant="outline" size="sm" onClick={() => handleViewImage(item.image_url!)}>
-                              <Camera className="mr-2 h-4 w-4" /> View Photo
-                            </Button>
-                          )}
-                          {item.status.severity > 0 && (
-                            <Button size="sm">
-                              <Ticket className="mr-2 h-4 w-4" /> View Ticket
-                            </Button>
-                          )}
-                        </div>
+                        {index < subsystem.report_items.length - 1 && <Separator />}
                       </div>
-                      {index < subsystem.report_items.length - 1 && <Separator />}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}

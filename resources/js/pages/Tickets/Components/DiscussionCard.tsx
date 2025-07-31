@@ -1,8 +1,8 @@
 import InputError from '@/components/input-error';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { UserAvatar } from '@/components/user-avatar';
 import { useForm } from '@inertiajs/react';
 import { MessageCircle, Send } from 'lucide-react';
 import * as React from 'react';
@@ -69,25 +69,24 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
   };
 
   return (
-    <Card className="overflow-y-auto shadow-lg drop-shadow-lg hover:-translate-1 ease-in-out transition-transform transition-500">
+    <Card className="transition-500 overflow-y-auto shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-1">
       <CardHeader>
-        <CardTitle className='flex items-center gap-2'>
+        <CardTitle className="flex items-center gap-2">
           <>
-          <MessageCircle className='h-5 w-5'/>
-          Comments
+            <MessageCircle className="h-5 w-5" />
+            Comments
           </>
-          </CardTitle>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* List of comments */}
         <div className="max-h-60 space-y-4 overflow-y-auto pr-2">
           {discussionItems.length > 0 ? (
             discussionItems.map((item) => (
-              <div key={item.id} className="flex items-start gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>{getInitials(item.user.name)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 rounded-md bg-muted p-3 text-sm backdrop-blur-lg shadow">
+              <div key={item.id} className="pl-1.5 pt-1.5 flex items-start gap-3">
+                <UserAvatar user={item.user} className="h-8 w-8" />
+
+                <div className="flex-1 rounded-md bg-muted p-3 text-sm shadow backdrop-blur-lg">
                   <p className="font-semibold text-primary">{item.user.name}</p>
                   <p className="whitespace-pre-wrap">{item.comment}</p>
                   {item.is_initial && <p className="mt-1 text-xs text-muted-foreground">Initial problem description</p>}
@@ -110,7 +109,7 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
             <InputError message={errors.comment} />
           </>
           <div className="flex justify-end">
-            <Button size="sm" disabled={processing} className='hover:bg-primary/60'>
+            <Button size="sm" disabled={processing} className="hover:bg-primary/60">
               <Send />
               {processing ? 'Posting...' : 'Post comment'}
             </Button>

@@ -53,6 +53,8 @@ class PermissionSeeder extends Seeder
             'tickets.edit',
             'tickets.delete',
 
+            // * Email permissions
+            'email-contacts.admin',
         ];
 
         // Create permissions if they don't exist

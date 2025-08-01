@@ -13,7 +13,8 @@ use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketUpdateController;
 use App\Http\Controllers\TicketStatusController;
-
+use App\Http\Controllers\PartRequestController;
+use App\Http\Controllers\EmailContactController;
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -30,10 +31,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit']);
 
+    // This route will handle closing a ticket
+    Route::patch('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
+
+    // This route will handle downloading the ticket PDF
+    Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf');
 
     // ------------------------------------ Ticket Update ------------------------------------ 
+    
     // This route will handle posting new comments to a ticket
     Route::post('/tickets/{ticket}/updates', [TicketUpdateController::class, 'store'])->name('tickets.updates.store');
+    // This route will handle the change of a ticket's status
+    Route::patch('/tickets/{ticket}/status', [TicketUpdateController::class, 'updateStatus'])->name('tickets.status.update');
+
+    // This route will handle sending the part request email
+    Route::post('/tickets/{ticket}/request-parts', [PartRequestController::class, 'send'])->name('tickets.request-parts');
 
     //* ***************************** Inspections module Routes *****************************
 
@@ -70,7 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/inspection-points/{inspectionPoint}/open-tickets', [InspectionPointController::class, 'getOpenTickets'])
         ->name('inspection-points.open-tickets');
 
-    //* ***************************** Statuses module Routes *****************************
+    //* ***************************** General Settings Routes *****************************
 
     //  Use a Route Group to correctly prefix the names and URLs ---
     // --- General Settings Route Group ---
@@ -80,7 +92,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['show'])
             ->middleware('permission:machines.edit');
 
-        // ---  Add the resource route for Inspection Statuses ---
         Route::resource('inspection-status', InspectionStatusController::class)
             ->except(['show'])
             ->middleware('permission:inspections.edit');
@@ -88,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('ticket-status', TicketStatusController::class)
             ->except(['show'])
             ->middleware('permission:tickets.edit');
+
+        Route::resource('email-contacts', EmailContactController::class)
+            ->except(['show'])
+            ->middleware('permission:email-contacts.admin'); // Or a new settings permission
     });
     //* ***************************** Machines module Routes *****************************
 

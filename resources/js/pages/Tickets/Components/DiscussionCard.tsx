@@ -50,7 +50,7 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
     }
 
     ticket.updates.forEach((update) => {
-      if (update.comment && !update.comment.startsWith('Ping:') && !update.comment.startsWith('System:') && update.id !== createdEvent?.id) {
+      if (update.comment && !update.comment.startsWith('Ping:') && !update.comment.startsWith('System:')&& !update.comment.startsWith('Sent a part request') && update.id !== createdEvent?.id) {
         items.push(update);
       }
     });

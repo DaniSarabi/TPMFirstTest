@@ -5,19 +5,21 @@ import { ListToolbar } from '@/components/list-toolbar';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import useCan from '@/lib/useCan';
 import { type BreadcrumbItem, type Filter, type Paginated } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { LayoutGrid, List } from 'lucide-react';
 import * as React from 'react';
-import { getColumns, Ticket } from './Columns';
+import { getColumns, Ticket, TicketStatus } from './Columns';
 import { TicketCard } from './TicketCard';
-import useCan from '@/lib/useCan';
+import { TicketStatusFilter } from './Components/TicketStatusFilter';
 
 // Define the props for the Index page
 interface IndexPageProps {
   tickets: Paginated<Ticket>;
-  filters: Filter & { view?: 'grid' | 'list' } & { sort?: string; direction?: 'asc' | 'desc' };
+  filters: Filter & { statuses?: number[] } & { view?: 'grid' | 'list' } & { sort?: string; direction?: 'asc' | 'desc' };
+  ticketStatuses: TicketStatus[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -28,13 +30,14 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Index({ tickets, filters }: IndexPageProps) {
+export default function Index({ tickets, filters, ticketStatuses }: IndexPageProps) {
   // State to manage the view mode (grid or list)
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>(filters.view || 'grid');
   const [search, setSearch] = React.useState(filters.search || '');
-   const [sort, setSort] = React.useState<{ id: string; desc: boolean } | null>(
-          filters.sort ? { id: filters.sort, desc: filters.direction === 'desc' } : null
-      );
+  const [statusFilter, setStatusFilter] = React.useState<Set<number>>(new Set(filters.statuses || []));
+  const [sort, setSort] = React.useState<{ id: string; desc: boolean } | null>(
+    filters.sort ? { id: filters.sort, desc: filters.direction === 'desc' } : null,
+  );
   const isInitialMount = React.useRef(true);
 
   const can = {
@@ -51,7 +54,7 @@ export default function Index({ tickets, filters }: IndexPageProps) {
     const timeout = setTimeout(() => {
       router.get(
         route('tickets.index'),
-        { search, view: viewMode },
+        { search, view: viewMode, statuses: Array.from(statusFilter) },
         {
           preserveState: true,
           replace: true,
@@ -60,15 +63,15 @@ export default function Index({ tickets, filters }: IndexPageProps) {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, viewMode]);
+  }, [search, viewMode, statusFilter]);
 
   const handleSort = (columnId: string, direction: 'asc' | 'desc' | null) => {
-        if (direction === null) {
-            setSort(null);
-        } else {
-            setSort({ id: columnId, desc: direction === 'desc' });
-        }
-    };
+    if (direction === null) {
+      setSort(null);
+    } else {
+      setSort({ id: columnId, desc: direction === 'desc' });
+    }
+  };
   const columns = React.useMemo(() => getColumns(can, handleSort, sort), [can, sort]);
 
   // Create the table instance for the DataTable and View Options
@@ -102,7 +105,7 @@ export default function Index({ tickets, filters }: IndexPageProps) {
           searchPlaceholder="Search by machine name..."
           viewOptionsAction={viewMode === 'list' ? <DataTableViewOptions table={table} /> : null}
         >
-          {/* We will add filters for status, priority, etc. here later */}
+          <TicketStatusFilter title="Status" options={ticketStatuses} selectedValues={statusFilter} onSelectedValuesChange={setStatusFilter} />{' '}
         </ListToolbar>
 
         {/* --- Conditional Rendering based on viewMode --- */}

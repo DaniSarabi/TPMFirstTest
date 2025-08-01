@@ -76,7 +76,7 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
               </Button>
             )}
             <Button asChild>
-              <a href="#">
+              <a href={route('tickets.pdf', ticket.id)} target="_blank">
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF
               </a>

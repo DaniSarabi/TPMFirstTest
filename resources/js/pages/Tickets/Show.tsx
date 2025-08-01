@@ -2,11 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Ticket, User } from './Columns';
+import { Ticket, TicketStatus, User } from './Columns';
+import { ActionsCard } from './Components/ActionsCard';
 import { ActivityLogCard } from './Components/ActivityLogCard';
 import { DiscussionCard } from './Components/DiscussionCard';
 import { FullDetailsCard } from './Components/FullDetailsCard';
 import { KeyInfoCard } from './Components/KeyInfoCard';
+import { EmailContact } from '../GeneralSettings/EmailContacts/Columns';
 
 // --- Type Definitions for this page ---
 // These should match the data sent from your TicketController@show method
@@ -15,9 +17,11 @@ interface ShowPageProps {
   ticket: Ticket;
   timeOpen: string;
   solvedBy: User | null;
+  statuses: TicketStatus[];
+  purchasingContacts: EmailContact[];
 }
 
-export default function Show({ ticket, timeOpen, solvedBy }: ShowPageProps) {
+export default function Show({ ticket, timeOpen, solvedBy, statuses, purchasingContacts }: ShowPageProps) {
   const breadcrumbs: BreadcrumbItem[] = [
     {
       title: 'Tickets',
@@ -40,15 +44,8 @@ export default function Show({ ticket, timeOpen, solvedBy }: ShowPageProps) {
           {/* --- Left Column (Main Details) --- */}
           <div className="space-y-6 lg:col-span-2">
             <KeyInfoCard ticket={ticket} timeOpen={timeOpen} solvedBy={solvedBy} />
+            <ActionsCard ticket={ticket} statuses={statuses} purchasingContacts={purchasingContacts} />
             <FullDetailsCard ticket={ticket} />
-            <Card>
-              <CardHeader>
-                <CardTitle>Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Actions Card...</p>
-              </CardContent>
-            </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Parts Log</CardTitle>

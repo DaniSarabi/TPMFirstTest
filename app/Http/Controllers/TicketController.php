@@ -7,6 +7,10 @@ use App\Models\TicketStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Behavior;
+use App\Models\EmailContact;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TicketController extends Controller
 {
@@ -15,7 +19,7 @@ class TicketController extends Controller
      */
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'view']);
+        $filters = $request->only(['search', 'view', 'statuses']);
         $viewMode = $filters['view'] ?? 'grid';
 
         $closingBehavior = Behavior::where('name', 'is_ticket_closing_status')->first();
@@ -35,10 +39,18 @@ class TicketController extends Controller
 
         $ticketsQuery = Ticket::with($relations)->latest();
 
-        // If a closing status exists, exclude tickets with that status.
-        if ($resolvedStatus) {
-            $ticketsQuery->where('ticket_status_id', '!=', $resolvedStatus->id);
-        }
+        $ticketsQuery->when($filters['statuses'] ?? null, function ($query, $statusFilter) {
+            // If specific statuses are requested, use them.
+            $query->whereIn('ticket_status_id', $statusFilter);
+        }, function ($query) {
+            // Otherwise, show all tickets that are NOT resolved by default.
+            $resolvedStatus = TicketStatus::whereHas('behaviors', function ($q) {
+                $q->where('name', 'is_ticket_closing_status');
+            })->first();
+            if ($resolvedStatus) {
+                $query->where('ticket_status_id', '!=', $resolvedStatus->id);
+            }
+        });
 
         $ticketsQuery->when($filters['search'] ?? null, function ($query, $search) {
             $query->where(function ($q) use ($search) {
@@ -54,6 +66,8 @@ class TicketController extends Controller
         return Inertia::render('Tickets/Index', [
             'tickets' => $tickets,
             'filters' => $filters,
+            'ticketStatuses' => TicketStatus::all(),
+
         ]);
     }
 
@@ -67,7 +81,7 @@ class TicketController extends Controller
             'machine.machineStatus',
             'creator', // Load the full creator object
             'status',
-            'inspectionItem:id,image_url,inspection_report_id,inspection_point_id', 
+            'inspectionItem:id,image_url,inspection_report_id,inspection_point_id',
             'inspectionItem.point:id,name,description,subsystem_id',
             'inspectionItem.point.subsystem:id,name',
             'updates' => function ($query) {
@@ -98,10 +112,100 @@ class TicketController extends Controller
 
         $timeOpen = $ticket->created_at->diffForHumans(null, true);
 
+        $availableStatuses = TicketStatus::whereDoesntHave('behaviors', function ($query) {
+            $query->where('name', 'is_ticket_closing_status');
+        })->get();
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'timeOpen' => $timeOpen,
             'solvedBy' => $solvedBy,
+            'statuses' => $availableStatuses,
+            'purchasingContacts' => EmailContact::where('department', 'Purchasing')->get(),
         ]);
+    }
+
+    /**
+     * Close a ticket and log the resolution details.
+     */
+    public function close(Request $request, Ticket $ticket)
+    {
+        $validated = $request->validate([
+            'action_taken' => 'required|string',
+            'parts_used' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($validated, $ticket) {
+            // Find the "Resolved" status using its behavior
+            $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
+                $query->where('name', 'is_ticket_closing_status');
+            })->firstOrFail(); // Use firstOrFail to ensure it exists
+
+            // 1. Create the final "Resolution" log entry
+            $ticket->updates()->create([
+                'user_id' => Auth::id(),
+                'action_taken' => $validated['action_taken'],
+                'parts_used' => $validated['parts_used'],
+                'old_status_id' => $ticket->ticket_status_id,
+                'new_status_id' => $closingStatus->id,
+            ]);
+
+            // 2. Update the ticket's main status
+            $ticket->update(['ticket_status_id' => $closingStatus->id]);
+
+            // 3. Check if we should put the machine back in service
+            $this->attemptToPutMachineInService($ticket->machine);
+        });
+
+        return back()->with('success', 'Ticket closed successfully.');
+    }
+
+    /**
+     * Check for other open tickets and put the machine in service if none exist.
+     */
+    private function attemptToPutMachineInService($machine)
+    {
+        // Find the "Resolved" status ID
+        $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
+            $query->where('name', 'is_ticket_closing_status');
+        })->first();
+
+        if (!$closingStatus) return;
+
+        // Check if there are any OTHER open tickets for this machine
+        $otherOpenTickets = Ticket::where('machine_id', $machine->id)
+            ->where('ticket_status_id', '!=', $closingStatus->id)
+            ->exists();
+
+        // If there are no other open tickets, find the "In Service" machine status and apply it
+        if (!$otherOpenTickets) {
+            $inServiceStatus = \App\Models\MachineStatus::where('name', 'In Service')->first();
+            if ($inServiceStatus) {
+                $machine->update(['machine_status_id' => $inServiceStatus->id]);
+            }
+        }
+    }
+    /**
+     * Generate and download a PDF for the specified ticket.
+     */
+    public function downloadPDF(Ticket $ticket)
+    {
+        // Eager-load all the necessary relationships for the PDF report
+        $ticket->load([
+            'machine',
+            'creator',
+            'status',
+            'inspectionItem.point.subsystem',
+            'updates.user',
+            'updates.oldStatus',
+            'updates.newStatus',
+            'updates.newMachineStatus'
+        ]);
+
+        // Load the Blade view and generate the PDF
+        $pdf = Pdf::loadView('pdf.ticket-report', ['ticket' => $ticket]);
+
+        // Return the PDF as a download
+        return $pdf->download('ticket-report-' . $ticket->id . '.pdf');
     }
 }

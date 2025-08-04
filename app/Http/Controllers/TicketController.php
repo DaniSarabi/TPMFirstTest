@@ -110,6 +110,40 @@ class TicketController extends Controller
             $solvedBy = $closingUpdate ? $closingUpdate->user : null;
         }
 
+        $relatedTickets = collect();
+        $limit = 5;
+
+        $relationsForMiniCard = ['creator', 'status', 'machine', 'inspectionItem'];
+
+        if ($ticket->inspectionItem) {
+            // 1. Find by same inspection point
+            $pointTickets = Ticket::with($relationsForMiniCard) // Eager-load relations
+                ->whereHas('inspectionItem', function ($query) use ($ticket) {
+                    $query->where('inspection_point_id', $ticket->inspectionItem->inspection_point_id);
+                })
+                ->where('id', '!=', $ticket->id)
+                ->latest()
+                ->limit($limit)
+                ->get();
+
+            $relatedTickets = $relatedTickets->merge($pointTickets);
+        }
+
+        // 2. Si aún no tenemos 5, buscar por la misma máquina
+        $remainingLimit = $limit - $relatedTickets->count();
+        if ($remainingLimit > 0) {
+            $machineTickets = Ticket::with($relationsForMiniCard) // Eager-load relations
+                ->where('machine_id', $ticket->machine_id)
+                ->where('id', '!=', $ticket->id)
+                ->whereNotIn('id', $relatedTickets->pluck('id'))
+                ->latest()
+                ->limit($remainingLimit)
+                ->get();
+
+            $relatedTickets = $relatedTickets->merge($machineTickets);
+        }
+
+
         $timeOpen = $ticket->created_at->diffForHumans(null, true);
 
         $availableStatuses = TicketStatus::whereDoesntHave('behaviors', function ($query) {
@@ -122,6 +156,7 @@ class TicketController extends Controller
             'solvedBy' => $solvedBy,
             'statuses' => $availableStatuses,
             'purchasingContacts' => EmailContact::where('department', 'Purchasing')->get(),
+            'relatedTickets' => $relatedTickets,
         ]);
     }
 

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\MachineStatus;
 use App\Models\TicketStatus;
 use App\Models\Ticket;
+use Illuminate\Support\Facades\Validator; // --- ACTION 1: Import the Validator facade ---
 
 class InspectionController extends Controller
 {
@@ -260,14 +261,36 @@ class InspectionController extends Controller
      */
     public function update(Request $request, InspectionReport $inspectionReport)
     {
-        DB::transaction(function () use ($request, $inspectionReport) {
-            $validated = $request->validate([
-                'results' => 'required|array',
-                'results.*.status_id' => 'required|exists:inspection_statuses,id',
-                'results.*.comment' => 'nullable|string',
-                'results.*.image' => 'nullable|file|image|max:2048',
-                'results.*.pinged_ticket_id' => 'nullable|exists:tickets,id',
-            ]);
+
+        $results = $request->input('results', []);
+        $rules = [
+            'results' => 'required|array',
+            'results.*.status_id' => 'required|exists:inspection_statuses,id',
+            'results.*.pinged_ticket_id' => 'nullable|exists:tickets,id',
+        ];
+
+        // Build conditional rules for comments and mandatory photos
+        foreach ($results as $pointId => $result) {
+            // Every point now requires an image, unless it's a ping
+            if (empty($result['pinged_ticket_id'])) {
+                $rules["results.{$pointId}.image"] = 'required|file|image|max:2048';
+            }
+
+            // Find the selected status to check its severity
+            $status = InspectionStatus::find($result['status_id'] ?? null);
+            if ($status && $status->severity > 0) {
+                // The comment is required if the severity is 1 or 2
+                $rules["results.{$pointId}.comment"] = 'required|string';
+            } else {
+                $rules["results.{$pointId}.comment"] = 'nullable|string';
+            }
+        }
+
+        $validated = Validator::make($request->all(), $rules)->validate();
+
+        DB::transaction(function () use ($request, $inspectionReport, $validated) {
+            
+            
 
             $highestSeverityStatus = null;
             $openTicketStatus = TicketStatus::where('name', 'Open')->first();
@@ -295,7 +318,7 @@ class InspectionController extends Controller
 
                 if ($status && $status->severity > 0) {
                     if (!empty($result['pinged_ticket_id'])) {
-                        // --- This is a PING ---
+                        // This is a PING
                         $ticketToPing = Ticket::find($result['pinged_ticket_id']);
                         if ($ticketToPing) {
                             $ticketToPing->updates()->create([
@@ -303,26 +326,25 @@ class InspectionController extends Controller
                                 'comment' => 'Ping: This issue was reported again during inspection #' . $inspectionReport->id,
                             ]);
                         }
-                    }
-                } else {
-                    // This is a NEW TICKET
-                    if ($openTicketStatus && ($status->behaviors->contains('name', 'creates_ticket_sev1') || $status->behaviors->contains('name', 'creates_ticket_sev2'))) {
-                        $ticket = Ticket::create([
-                            'inspection_report_item_id' => $item->id,
-                            'machine_id' => $inspectionReport->machine_id,
-                            'title' => $item->point->name,
-                            'description' => $item->comment,
-                            'created_by' => Auth::id(),
-                            'ticket_status_id' => $openTicketStatus->id,
-                            'priority' => $status->severity,
-                        ]);
-                        $ticket->updates()->create([
-                            'user_id' => Auth::id(),
-                            'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
-                            'new_status_id' => $openTicketStatus->id,
-                        ]);
-
-                        $newlyCreatedTickets[] = $ticket;
+                    } else {
+                        // This is a NEW TICKET
+                        if ($openTicketStatus && ($status->behaviors->contains('name', 'creates_ticket_sev1') || $status->behaviors->contains('name', 'creates_ticket_sev2'))) {
+                            $ticket = Ticket::create([
+                                'inspection_report_item_id' => $item->id,
+                                'machine_id' => $inspectionReport->machine_id,
+                                'title' => $item->point->name,
+                                'description' => $item->comment,
+                                'created_by' => Auth::id(),
+                                'ticket_status_id' => $openTicketStatus->id,
+                                'priority' => $status->severity,
+                            ]);
+                            $ticket->updates()->create([
+                                'user_id' => Auth::id(),
+                                'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
+                                'new_status_id' => $openTicketStatus->id,
+                            ]);
+                            $newlyCreatedTickets[] = $ticket;
+                        }
                     }
                 }
             }

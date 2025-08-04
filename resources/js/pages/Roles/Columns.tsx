@@ -11,6 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { Link, router } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
@@ -27,6 +28,21 @@ export interface Role {
     name: string;
     permissions: Permission[];
 }
+export const permissionColorMap: Record<string, string> = {
+    users: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    roles: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
+    machines: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    inspections: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+    tickets: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    'email-contacts': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    default: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+};
+
+// --- Create a helper function to get the correct color class ---
+export const getPermissionColor = (permissionName: string): string => {
+    const prefix = permissionName.split('.')[0];
+    return permissionColorMap[prefix] || permissionColorMap.default;
+};
 
 // The function now accepts the sorting state and handler
 export const getColumns = (
@@ -66,7 +82,7 @@ export const getColumns = (
                     {permissions.map((permission) => (
                         <span
                             key={permission.id}
-                            className="rounded bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-800 dark:text-blue-300"
+                            className={cn('rounded px-2.5 py-0.5 text-xs font-medium', getPermissionColor(permission.name))}
                         >
                             {permission.name}
                         </span>

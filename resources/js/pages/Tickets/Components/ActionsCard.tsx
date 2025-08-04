@@ -22,7 +22,7 @@ export function ActionsCard({ ticket, statuses, purchasingContacts }: ActionsCar
 
   return (
     <>
-      <Card className="shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <Card className="shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-accent">
         <CardContent className="flex flex-col items-center justify-between gap-3 md:flex-row">
           <div className="flex w-full gap-3">
             <Button className="flex-1" variant="default" onClick={() => setIsChangeStatusModalOpen(true)}>

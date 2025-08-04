@@ -9,6 +9,7 @@ import { DiscussionCard } from './Components/DiscussionCard';
 import { FullDetailsCard } from './Components/FullDetailsCard';
 import { KeyInfoCard } from './Components/KeyInfoCard';
 import { EmailContact } from '../GeneralSettings/EmailContacts/Columns';
+import { RelatedTicketsCard } from './Components/RelatedTicketsCard';
 
 // --- Type Definitions for this page ---
 // These should match the data sent from your TicketController@show method
@@ -19,9 +20,10 @@ interface ShowPageProps {
   solvedBy: User | null;
   statuses: TicketStatus[];
   purchasingContacts: EmailContact[];
+  relatedTickets: Ticket[];
 }
 
-export default function Show({ ticket, timeOpen, solvedBy, statuses, purchasingContacts }: ShowPageProps) {
+export default function Show({ ticket, timeOpen, solvedBy, statuses, purchasingContacts, relatedTickets }: ShowPageProps) {
   const breadcrumbs: BreadcrumbItem[] = [
     {
       title: 'Tickets',
@@ -46,22 +48,7 @@ export default function Show({ ticket, timeOpen, solvedBy, statuses, purchasingC
             <KeyInfoCard ticket={ticket} timeOpen={timeOpen} solvedBy={solvedBy} />
             <ActionsCard ticket={ticket} statuses={statuses} purchasingContacts={purchasingContacts} />
             <FullDetailsCard ticket={ticket} />
-            <Card>
-              <CardHeader>
-                <CardTitle>Parts Log</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Parts Log Card...</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Related Tickets</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Related Tickets Card...</p>
-              </CardContent>
-            </Card>
+            <RelatedTicketsCard relatedTickets={relatedTickets} />
           </div>
 
           {/* --- Right Column (History & Discussion) --- */}

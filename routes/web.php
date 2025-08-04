@@ -29,7 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //* ***************************** Tickets module Routes *****************************
 
 
-    Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit']);
+    Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
 
     // This route will handle closing a ticket
     Route::patch('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
@@ -50,13 +50,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //* ***************************** Inspections module Routes *****************************
 
     // This route will display the "Start Inspection" page
-    Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start');
+    Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start')->middleware('permission:inspections.perform');
 
     // This route will create a new in-progress inspection report
     Route::post('/inspections', [InspectionController::class, 'store'])->name('inspections.store');
 
     // This route now accepts an InspectionReport model
-    Route::get('/inspections/{inspectionReport}/perform', [InspectionController::class, 'perform'])->name('inspections.perform');
+    Route::get('/inspections/{inspectionReport}/perform', [InspectionController::class, 'perform'])->name('inspections.perform')->middleware('permission:inspections.perform');
 
     // This route will handle submitting the completed inspection
     Route::put('/inspections/{inspectionReport}', [InspectionController::class, 'update'])->name('inspections.update');

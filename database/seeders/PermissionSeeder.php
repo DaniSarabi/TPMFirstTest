@@ -43,15 +43,12 @@ class PermissionSeeder extends Seeder
             // * Inspections Permissions
             'inspections.view',
             'inspections.perform',
-            'inspections.edit',
-            'inspections.delete',
             'inspections.administration',
 
             // * Tickets Permissions
             'tickets.view',
-            'tickets.create',
             'tickets.edit',
-            'tickets.delete',
+            'tickets.close',
 
             // * Email permissions
             'email-contacts.admin',

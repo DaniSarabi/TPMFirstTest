@@ -1,26 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Ticket Report #{{ $ticket->id }}</title>
     <style>
-        body { font-family: 'Helvetica', sans-serif; font-size: 12px; color: #333; }
-        .header { width: 100%; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        .header .logo { width: 150px; float: left; }
-        .header .report-title { text-align: right; }
-        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .details-table td { padding: 8px; border: 1px solid #ddd; vertical-align: middle; }
-        .details-table .label { font-weight: bold; background-color: #f9f9f9; width: 25%; }
-        .section-header { background-color: #eee; padding: 10px; font-size: 14px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
-        .activity-log { width: 100%; border-collapse: collapse; }
-        .activity-log th, .activity-log td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .activity-log th { background-color: #f2f2f2; }
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 9999px; color: white; font-weight: bold; font-size: 10px; }
-        .description-box { background-color: #fffbe6; border: 1px solid #fde68a; padding: 15px; margin-top: 10px; border-radius: 5px; }
-        .ticket-image {  max-width: 400px; max-height: 300px; margin-top: 10px; border-radius: 5px; border: 1px solid #ddd; }
-        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 10px; color: #777; }
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .header {
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .header .logo {
+            width: 150px;
+            float: left;
+        }
+
+        .header .report-title {
+            text-align: right;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .details-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        .details-table .label {
+            font-weight: bold;
+            background-color: #f9f9f9;
+            width: 25%;
+        }
+
+        .section-header {
+            background-color: #eee;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .activity-log {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .activity-log th,
+        .activity-log td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .activity-log th {
+            background-color: #f2f2f2;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .description-box {
+            background-color: #fffbe6;
+            border: 1px solid #fde68a;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .ticket-image {
+            max-width: 400px;
+            max-height: 300px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #777;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="header">
@@ -43,7 +128,8 @@
             <td>{{ $ticket->machine->name }}</td>
             <td class="label">Current Status:</td>
             <td>
-                <span class="status-badge" style="background-color: {{ $ticket->status->bg_color }}; color: {{ $ticket->status->text_color }};">
+                <span class="status-badge"
+                    style="background-color: {{ $ticket->status->bg_color }}; color: {{ $ticket->status->text_color }};">
                     {{ $ticket->status->name }}
                 </span>
             </td>
@@ -81,11 +167,11 @@
     <div class="section-header">Problem Description & Photo</div>
     <div class="description-box">
         <p>{{ $ticket->description ?? 'No description provided.' }}</p>
-        @if($ticket->inspectionItem && $ticket->inspectionItem->image_url)
+        @if ($ticket->inspectionItem && $ticket->inspectionItem->image_url)
             @php
                 $imagePath = public_path($ticket->inspectionItem->image_url);
             @endphp
-            @if(file_exists($imagePath))
+            @if (file_exists($imagePath))
                 <img src="{{ $imagePath }}" alt="Ticket Image" class="ticket-image">
             @endif
         @endif
@@ -106,23 +192,25 @@
                     <td width="25%">{{ $update->created_at->format('M d, Y, h:i A') }}</td>
                     <td width="20%">{{ $update->user->name }}</td>
                     <td>
-                        @if($update->new_status_id && !$update->old_status_id)
-                            Ticket created and set to status: 
-                            <span class="status-badge" style="background-color: {{ $update->newStatus->bg_color }}; color: {{ $update->newStatus->text_color }};">{{ $update->newStatus->name }}</span>
+                        @if ($update->new_status_id && !$update->old_status_id)
+                            Ticket created and set to status:
+                            <span class="status-badge"
+                                style="background-color: {{ $update->newStatus->bg_color }}; color: {{ $update->newStatus->text_color }};">{{ $update->newStatus->name }}</span>
                         @elseif($update->new_status_id && $update->old_status_id)
                             Status changed from <strong>{{ $update->oldStatus->name }}</strong> to pm
-                            <span class="status-badge" style="background-color: {{ $update->newStatus->bg_color }}; color: {{ $update->newStatus->text_color }};">{{ $update->newStatus->name }}</span>
+                            <span class="status-badge"
+                                style="background-color: {{ $update->newStatus->bg_color }}; color: {{ $update->newStatus->text_color }};">{{ $update->newStatus->name }}</span>
                         @endif
-                        
-                        @if($update->action_taken)
+
+                        @if ($update->action_taken)
                             <p><strong>Action Taken:</strong> {{ $update->action_taken }}</p>
                         @endif
 
-                        @if($update->parts_used)
+                        @if ($update->parts_used)
                             <p><strong>Parts Used:</strong> {{ $update->parts_used }}</p>
                         @endif
 
-                        @if($update->comment)
+                        @if ($update->comment)
                             <p><strong>Comment:</strong> {{ $update->comment }}</p>
                         @endif
                     </td>
@@ -136,4 +224,5 @@
     </div>
 
 </body>
+
 </html>

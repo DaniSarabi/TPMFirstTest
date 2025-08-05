@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TicketStatus extends Model
 {
@@ -37,6 +37,7 @@ class TicketStatus extends Model
         return $this->belongsToMany(Behavior::class, 'ticket_status_has_behaviors')
             ->withPivot('machine_status_id');
     }
+
     /**
      * Get the tickets that have this status.
      */

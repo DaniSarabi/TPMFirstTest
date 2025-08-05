@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\MachineStatus;
 use App\Models\Machine;
+use App\Models\MachineStatus;
 use App\Models\MachineStatusLog;
-use App\Models\InspectionStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class MachineStatusController extends Controller
 {
@@ -18,13 +17,13 @@ class MachineStatusController extends Controller
      *
      * @return \Inertia\Response
      */
-       public function index(Request $request)
+    public function index(Request $request)
     {
         $filters = $request->only(['search', 'sort', 'direction']);
 
         $statuses = MachineStatus::query()
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -65,7 +64,7 @@ class MachineStatusController extends Controller
     public function update(Request $request, MachineStatus $machineStatus)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:machine_statuses,name,' . $machineStatus->id,
+            'name' => 'required|string|max:255|unique:machine_statuses,name,'.$machineStatus->id,
             'description' => 'nullable|string',
             'bg_color' => 'required|string',
             'text_color' => 'required|string',
@@ -75,6 +74,7 @@ class MachineStatusController extends Controller
 
         return back()->with('success', 'Status updated successfully.');
     }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -98,7 +98,7 @@ class MachineStatusController extends Controller
 
             MachineStatusLog::where('machine_status_id', $machineStatus->id)
                 ->update(['machine_status_id' => $newStatusId]);
-                
+
             // This finds all the pivot table entries that are using the old machine status ID
             // and updates them to point to the new one.
             DB::table('inspection_status_has_behaviors')

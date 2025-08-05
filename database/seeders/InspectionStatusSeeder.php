@@ -2,13 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
+use App\Models\Behavior;
 use App\Models\InspectionStatus;
 use App\Models\MachineStatus;
-use App\Models\Behavior;
-
-
+use Illuminate\Database\Seeder;
 
 class InspectionStatusSeeder extends Seeder
 {
@@ -38,7 +35,7 @@ class InspectionStatusSeeder extends Seeder
         $needsAttention->behaviors()->sync([
             $behaviors['creates_ticket_sev1']->id => [], // No extra data needed for this one
             $behaviors['sets_machine_status']->id => [
-                'machine_status_id' => $machineStatuses['Needs Maintenance']->id
+                'machine_status_id' => $machineStatuses['Needs Maintenance']->id,
             ],
         ]);
 
@@ -51,7 +48,7 @@ class InspectionStatusSeeder extends Seeder
         $criticalFailure->behaviors()->sync([
             $behaviors['creates_ticket_sev2']->id => [],
             $behaviors['sets_machine_status']->id => [
-                'machine_status_id' => $machineStatuses['Out of Service']->id
+                'machine_status_id' => $machineStatuses['Out of Service']->id,
             ],
         ]);
 

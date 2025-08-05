@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\EmailContact;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class EmailContactController extends Controller
 {
@@ -18,9 +18,9 @@ class EmailContactController extends Controller
 
         $contacts = EmailContact::query()
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('department', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('department', 'like', '%'.$search.'%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';

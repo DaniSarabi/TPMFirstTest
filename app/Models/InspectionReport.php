@@ -29,6 +29,7 @@ class InspectionReport extends Model
         'status',
         'completed_at',
     ];
+
     /**
      * The attributes that should be cast.
      *
@@ -38,6 +39,7 @@ class InspectionReport extends Model
         // --- ACTION: Add this cast to ensure completed_at is always a Carbon date object ---
         'completed_at' => 'datetime',
     ];
+
     /**
      * Get the user who performed the inspection.
      */

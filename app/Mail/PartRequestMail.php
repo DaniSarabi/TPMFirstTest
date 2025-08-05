@@ -2,14 +2,13 @@
 
 namespace App\Mail;
 
+use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Ticket;
-use App\Models\User;
 
 class PartRequestMail extends Mailable
 {
@@ -32,7 +31,7 @@ class PartRequestMail extends Mailable
         return new Envelope(
             // The reply-to address will be the user who sent the request
             replyTo: $this->requester->email,
-            subject: 'Part Request for Ticket #' . $this->ticket->id . ': ' . $this->ticket->title,
+            subject: 'Part Request for Ticket #'.$this->ticket->id.': '.$this->ticket->title,
         );
     }
 

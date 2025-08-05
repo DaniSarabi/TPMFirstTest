@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -19,8 +19,8 @@ class UserController extends Controller
 
         $users = User::with('roles')
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                      ->orWhere('email', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -37,14 +37,15 @@ class UserController extends Controller
             'filters' => $filters,
         ]);
     }
+
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
 
-        return Inertia::render("Users/Create", [
-            "roles" => Role::pluck("name")
+        return Inertia::render('Users/Create', [
+            'roles' => Role::pluck('name'),
         ]);
     }
 
@@ -54,24 +55,23 @@ class UserController extends Controller
     public function store(Request $request)
     {
         //
-        //dd($request->all());
+        // dd($request->all());
 
         $request->validate([
-            "name" => "required",
-            "email" => "required",
-            "password" => "required",
+            'name' => 'required',
+            'email' => 'required',
+            'password' => 'required',
         ]);
 
         $user = User::create(
-            $request->only(["name", "email"])
+            $request->only(['name', 'email'])
                 +
-                ["password" => Hash::make($request->password)]
+                ['password' => Hash::make($request->password)]
         );
 
         $user->syncRoles($request->roles);
 
-
-        return to_route("users.index");
+        return to_route('users.index');
     }
 
     /**
@@ -95,10 +95,10 @@ class UserController extends Controller
         //
         $user = User::find($id);
 
-        return Inertia::render("Users/Edit", [
-            "user" => $user,
-            "userRoles" => $user->roles()->pluck("name"),
-            "roles" => Role::pluck("name"),
+        return Inertia::render('Users/Edit', [
+            'user' => $user,
+            'userRoles' => $user->roles()->pluck('name'),
+            'roles' => Role::pluck('name'),
         ]);
     }
 
@@ -109,8 +109,8 @@ class UserController extends Controller
     {
         //
         $request->validate([
-            "name" => "required",
-            "email" => "required",
+            'name' => 'required',
+            'email' => 'required',
         ]);
         $user = User::find($id);
 
@@ -124,8 +124,7 @@ class UserController extends Controller
 
         $user->syncRoles($request->roles);
 
-
-        return to_route("users.index");
+        return to_route('users.index');
     }
 
     /**
@@ -133,7 +132,7 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-         $user->delete();
+        $user->delete();
 
         // Redirect the user back to the index page with a success message.
         return to_route('users.index')->with('success', 'User deleted successfully.');

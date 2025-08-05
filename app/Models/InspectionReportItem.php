@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class InspectionReportItem extends Model
 {
@@ -34,6 +34,7 @@ class InspectionReportItem extends Model
         'image_url',
         'pinged_ticket_id',
     ];
+
     /**
      * --- ACTION: Add an accessor for the image_url attribute ---
      * This method will automatically format the image_url whenever it's accessed.
@@ -41,9 +42,10 @@ class InspectionReportItem extends Model
     protected function imageUrl(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ? Storage::url($value) : null
+            get: fn ($value) => $value ? Storage::url($value) : null
         );
     }
+
     /**
      * An inspection item can have one ticket.
      */
@@ -51,6 +53,7 @@ class InspectionReportItem extends Model
     {
         return $this->hasOne(Ticket::class);
     }
+
     /**
      * An inspection item can belong to one ticket if it was a "ping".
      */

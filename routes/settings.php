@@ -1,7 +1,8 @@
 <?php
 
+use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\PasswordController;
-use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\ProfileController; // Asegúrate de importar el nuevo controlador
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,11 +15,14 @@ Route::middleware('auth')->group(function () {
 
     Route::post('settings/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
-
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])->name('password.update');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
     })->name('appearance');
+
+    // --- Rutas para las Preferencias de Notificación ---
+    Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('profile.notifications.edit')->middleware('permission:notifications.admin');
+    Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('profile.notifications.update')->middleware('permission:notifications.admin');
 });

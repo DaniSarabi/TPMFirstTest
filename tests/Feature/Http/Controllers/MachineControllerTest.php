@@ -1,14 +1,13 @@
 <?php
 
-use App\Models\User;
 use App\Models\Machine;
 use App\Models\MachineStatus;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Auth; 
-
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -17,7 +16,7 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 test('guests cannot view the machines index page', function () {
     // --- ACTION: Log out any existing user to ensure this test runs as a guest ---
     Auth::logout();
-    
+
     $response = $this->get(route('machines.index'));
 
     // This assertion is more robust for test environments.
@@ -25,7 +24,6 @@ test('guests cannot view the machines index page', function () {
 });
 
 // --- AUTHENTICATED USER TESTS ---
-
 
 beforeEach(function () {
     // Use firstOrCreate to prevent errors on repeated test runs
@@ -70,7 +68,7 @@ test('a machine can be created successfully', function () {
     ]);
 
     $machine = Machine::firstWhere('name', 'New Test Machine');
-    
+
     // ---  Get the raw image path from the model to bypass the accessor ---
     $imagePath = $machine->getRawOriginal('image_url');
     $this->assertTrue(Storage::disk('public')->exists($imagePath));

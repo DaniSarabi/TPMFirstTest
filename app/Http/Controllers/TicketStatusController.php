@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Models\Behavior;
+use App\Models\MachineStatus;
+use App\Models\Ticket;
 use App\Models\TicketStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use App\Models\Behavior;
-use App\Models\Ticket;
-use App\Models\MachineStatus;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class TicketStatusController extends Controller
 {
@@ -23,7 +23,7 @@ class TicketStatusController extends Controller
 
         $statuses = TicketStatus::with('behaviors')
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -87,7 +87,6 @@ class TicketStatusController extends Controller
             $status->behaviors()->sync($behaviorsToSync);
         });
 
-
         return back()->with('success', 'Ticket status created successfully.');
     }
 
@@ -104,7 +103,6 @@ class TicketStatusController extends Controller
             'behaviors.*.id' => 'required|exists:behaviors,id',
             'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
         ]);
-
 
         DB::transaction(function () use ($validated, $ticketStatus) {
             $behaviorsToSyncData = collect($validated['behaviors']);
@@ -139,6 +137,7 @@ class TicketStatusController extends Controller
 
         return back()->with('success', 'Ticket status updated successfully.');
     }
+
     /**
      * Remove the specified resource from storage.
      */

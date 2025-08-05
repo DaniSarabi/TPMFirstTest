@@ -5,10 +5,10 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\InspectionPoint;
 use App\Models\Subsystem;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class InspectionPointControllerTest extends TestCase
 {
@@ -20,7 +20,6 @@ class InspectionPointControllerTest extends TestCase
 
         Permission::firstOrCreate(['name' => 'machines.edit']);
         Permission::firstOrCreate(['name' => 'machines.delete']);
-
 
         $role = Role::firstOrCreate(['name' => 'test-role']);
         $role->givePermissionTo('machines.edit', 'machines.delete');

@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Machine;
 use App\Models\Subsystem;
-
+use Illuminate\Http\Request;
 
 class SubsystemController extends Controller
 {
-    //used by the Create Wizard
+    // used by the Create Wizard
 
     public function store(Request $request, Machine $machine)
     {
@@ -40,12 +39,11 @@ class SubsystemController extends Controller
             'subsystems' => $machine->subsystems,
         ]);
     }
+
     /**
      * Add a new subsystem to an existing machine.
      * This will be used by the "Add Subsystem" modal on the details page.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Machine  $machine
      * @return \Illuminate\Http\JsonResponse
      */
     public function add(Request $request, Machine $machine)
@@ -60,12 +58,11 @@ class SubsystemController extends Controller
 
         return response()->json($subsystem);
     }
+
     /**
      * Update a subsystem for when there's alredy one create.
      * This will be used by the "Add Subsystem" modal on the details page for when user goes back and forward.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Subsystem  $subsystem
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, Subsystem $subsystem)
@@ -78,7 +75,6 @@ class SubsystemController extends Controller
 
         return response()->json($subsystem);
     }
-
 
     /**
      * Update a subsystem from the details page.
@@ -97,13 +93,10 @@ class SubsystemController extends Controller
         // with a success message for the toast notification.
         return back()->with('success', 'Subsystem updated successfully.');
     }
-    
 
-    
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Subsystem  $subsystem
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Subsystem $subsystem)

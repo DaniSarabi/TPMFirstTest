@@ -2,12 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Machine;
-use App\Models\Subsystem;
-use App\Models\InspectionPoint;
-
+use Illuminate\Database\Seeder;
 
 class SubsystemAndPointsSeeder extends Seeder
 {

@@ -19,7 +19,7 @@ class MachineFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->company() . ' Press',
+            'name' => $this->faker->company().' Press',
             'description' => $this->faker->sentence(),
             // Ensure a user and a status exist before creating the machine
             'created_by' => User::factory(),

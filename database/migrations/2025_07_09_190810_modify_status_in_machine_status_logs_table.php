@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('machine_status_logs', function (Blueprint $table) {
             //
-              // Add the new foreign key column.
+            // Add the new foreign key column.
             $table->foreignId('machine_status_id')->after('machine_id')->constrained('machine_statuses');
             // Drop the old string-based status column.
             $table->dropColumn('status');

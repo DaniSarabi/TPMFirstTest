@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\Machine;
+use App\Models\MachineStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\MachineStatus;
+use Inertia\Inertia;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
+use App\Events\MachineStatusChanged;
 
 class MachineController extends Controller
 {
@@ -24,7 +24,7 @@ class MachineController extends Controller
         // --- ACTION: Update the 'with' clause to include nested relationships ---
         $machines = Machine::with('creator', 'subsystems.inspectionPoints', 'machineStatus')
             ->when($searchQuery, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->when($statusFilter && count($statusFilter) > 0, function ($query) use ($statusFilter) {
                 $query->whereIn('machine_status_id', $statusFilter);
@@ -75,7 +75,7 @@ class MachineController extends Controller
         return back()->with('flash', [
             'machine' => [
                 'id' => $machine->id,
-            ]
+            ],
         ]);
     }
 
@@ -139,7 +139,7 @@ class MachineController extends Controller
         ]);
 
         // Check if the status has changed to create a log entry
-        $statusChanged = $machine->machine_status_id !== (int)$validated['machine_status_id'];
+        $statusChanged = $machine->machine_status_id !== (int) $validated['machine_status_id'];
 
         // Handle file upload...
         if ($request->hasFile('image')) {
@@ -152,15 +152,17 @@ class MachineController extends Controller
         $machine->update($validated);
 
         if ($statusChanged) {
-            // --- ACTION: Use the correct ID to create the log ---
+            //  Use the correct ID to create the log ---
             $machine->statusLogs()->create([
                 'machine_status_id' => $validated['machine_status_id'],
             ]);
+            event(new MachineStatusChanged($machine));
         }
 
         return to_route('machines.show', $machine->id)
             ->with('success', 'Machine updated successfully.');
     }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -173,10 +175,10 @@ class MachineController extends Controller
         // Redirect the user back to the index page with a success message.
         return to_route('machines.index')->with('success', 'Machine deleted successfully.');
     }
+
     /**
      * Generate a QR code for starting an inspection for the specified machine.
      *
-     * @param  \App\Models\Machine  $machine
      * @return \Illuminate\Http\Response
      */
     public function generateQrCode(Machine $machine)
@@ -187,13 +189,13 @@ class MachineController extends Controller
 
         $logoPath = public_path('images/jstlogo.png');
 
-
         // --- Generate the QR code as an SVG image ---
         // We use SVG because it's high quality and perfect for printing.
         $qrCode = QrCode::format('svg')
             ->size(300)
             ->merge($logoPath, 0.5, true) // The 'true' makes the background of the logo transparent
             ->generate($url);
+
         // --- Return the image directly to the browser ---
         // The browser will display this as an image, which the user can save or print.
         return response($qrCode)->header('Content-Type', 'image/svg+xml');

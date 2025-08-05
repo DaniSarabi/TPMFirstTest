@@ -5,10 +5,10 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\Machine;
 use App\Models\Subsystem;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class SubsystemControllerTest extends TestCase
 {

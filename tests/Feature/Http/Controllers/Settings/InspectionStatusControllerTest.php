@@ -3,14 +3,12 @@
 namespace Tests\Feature\Http\Controllers\Settings;
 
 use App\Models\InspectionStatus;
+use App\Models\MachineStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
-use App\Models\MachineStatus;
-
-
 
 class InspectionStatusControllerTest extends TestCase
 {
@@ -40,7 +38,7 @@ class InspectionStatusControllerTest extends TestCase
         $response = $this->get(route('settings.inspection-status.index'));
 
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('GeneralSettings/InspectionStatus/Index'));
+        $response->assertInertia(fn ($page) => $page->component('GeneralSettings/InspectionStatus/Index'));
     }
 
     public function test_can_create_a_new_inspection_status(): void

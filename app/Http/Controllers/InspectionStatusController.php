@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\InspectionStatus;
+use App\Models\Behavior;
 use App\Models\InspectionReportItem;
+use App\Models\InspectionStatus;
+use App\Models\MachineStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use App\Models\MachineStatus;
-use App\Models\Behavior;
+use Inertia\Inertia;
 
 class InspectionStatusController extends Controller
 {
@@ -22,7 +22,7 @@ class InspectionStatusController extends Controller
 
         $statuses = InspectionStatus::with('behaviors')
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -95,7 +95,7 @@ class InspectionStatusController extends Controller
         DB::transaction(function () use ($request, $inspectionStatus) {
 
             $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('inspection_statuses')->ignore($inspectionStatus->id)],
+                'name' => ['required', 'string', 'max:255', Rule::unique('inspection_statuses')->ignore($inspectionStatus->id)],
                 'bg_color' => 'required|string',
                 'text_color' => 'required|string',
                 'behaviors' => 'present|array',
@@ -113,7 +113,6 @@ class InspectionStatusController extends Controller
                 $severity = 1;
             }
 
-
             $inspectionStatus->update([
                 'name' => $validated['name'],
                 'bg_color' => $validated['bg_color'],
@@ -127,6 +126,7 @@ class InspectionStatusController extends Controller
 
             $inspectionStatus->behaviors()->sync($behaviorsToSync);
         });
+
         return back()->with('success', 'Inspection status updated successfully.');
     }
 

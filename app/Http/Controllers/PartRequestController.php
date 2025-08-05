@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ticket;
-use App\Mail\PartRequestMail; // Import the new Mailable
+use App\Mail\PartRequestMail;
+use App\Models\Ticket; // Import the new Mailable
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -24,13 +24,13 @@ class PartRequestController extends Controller
         ]);
 
         $ccEmails = [];
-        if (!empty($validated['cc'])) {
+        if (! empty($validated['cc'])) {
             // Split the string by commas and trim whitespace
             $ccEmails = array_map('trim', explode(',', $validated['cc']));
         }
 
         $mail = Mail::to($validated['to']);
-        if (!empty($ccEmails)) {
+        if (! empty($ccEmails)) {
             $mail->cc($ccEmails);
         }
         $mail->send(new PartRequestMail(
@@ -42,7 +42,7 @@ class PartRequestController extends Controller
         // Create a new ticket update to log that the request was sent
         $ticket->updates()->create([
             'user_id' => Auth::id(),
-            'comment' => "Sent a part request to: " . implode(', ', $validated['to']),
+            'comment' => 'Sent a part request to: '.implode(', ', $validated['to']),
         ]);
 
         return back()->with('success', 'Part request sent successfully.');

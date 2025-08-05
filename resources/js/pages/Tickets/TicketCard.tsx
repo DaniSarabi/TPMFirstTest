@@ -4,6 +4,7 @@ import { UserAvatar } from '@/components/user-avatar';
 import { Link } from '@inertiajs/react';
 import { AlertTriangle, Clock, FileText, ShieldAlert, Wrench } from 'lucide-react';
 import { Ticket } from './Columns';
+import { Separator } from '@/components/ui/separator';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -92,7 +93,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
             </div>
           </div>
 
-          <hr className="my-2" />
+          <Separator className="my-2 border-1 border-primary" />
 
           {/* User */}
           <div className="mt-auto flex items-center justify-between pt-2">

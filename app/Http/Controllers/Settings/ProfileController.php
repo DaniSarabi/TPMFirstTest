@@ -8,10 +8,9 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Storage;
-
 
 class ProfileController extends Controller
 {
@@ -41,6 +40,7 @@ class ProfileController extends Controller
 
         return to_route('profile.edit');
     }
+
     /**
      * Update the user's avatar and color.
      */
@@ -71,6 +71,7 @@ class ProfileController extends Controller
 
         return back()->with('success', 'Avatar settings updated.');
     }
+
     /**
      * Delete the user's account.
      */

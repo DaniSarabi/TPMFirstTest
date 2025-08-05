@@ -27,7 +27,7 @@ class Ticket extends Model
         'priority',
     ];
 
-     /**
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
@@ -37,6 +37,7 @@ class Ticket extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
     /**
      * Get the inspection item that generated this ticket.
      */

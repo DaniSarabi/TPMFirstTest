@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ticket;
-use App\Models\TicketStatus;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\Behavior;
 use App\Models\EmailContact;
+use App\Models\Ticket;
+use App\Models\TicketStatus;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
 
 class TicketController extends Controller
 {
@@ -54,9 +54,9 @@ class TicketController extends Controller
 
         $ticketsQuery->when($filters['search'] ?? null, function ($query, $search) {
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
+                $q->where('title', 'like', '%'.$search.'%')
                     ->orWhereHas('machine', function ($q2) use ($search) {
-                        $q2->where('name', 'like', '%' . $search . '%');
+                        $q2->where('name', 'like', '%'.$search.'%');
                     });
             });
         });
@@ -89,9 +89,9 @@ class TicketController extends Controller
                     'user', // Load the full user object for each update
                     'oldStatus:id,name,bg_color,text_color',
                     'newStatus:id,name,bg_color,text_color',
-                    'newMachineStatus:id,name,bg_color,text_color'
+                    'newMachineStatus:id,name,bg_color,text_color',
                 ])->latest();
-            }
+            },
         ]);
 
         $solvedBy = null;
@@ -142,7 +142,6 @@ class TicketController extends Controller
 
             $relatedTickets = $relatedTickets->merge($machineTickets);
         }
-
 
         $timeOpen = $ticket->created_at->diffForHumans(null, true);
 
@@ -205,7 +204,9 @@ class TicketController extends Controller
             $query->where('name', 'is_ticket_closing_status');
         })->first();
 
-        if (!$closingStatus) return;
+        if (! $closingStatus) {
+            return;
+        }
 
         // Check if there are any OTHER open tickets for this machine
         $otherOpenTickets = Ticket::where('machine_id', $machine->id)
@@ -213,13 +214,14 @@ class TicketController extends Controller
             ->exists();
 
         // If there are no other open tickets, find the "In Service" machine status and apply it
-        if (!$otherOpenTickets) {
+        if (! $otherOpenTickets) {
             $inServiceStatus = \App\Models\MachineStatus::where('name', 'In Service')->first();
             if ($inServiceStatus) {
                 $machine->update(['machine_status_id' => $inServiceStatus->id]);
             }
         }
     }
+
     /**
      * Generate and download a PDF for the specified ticket.
      */
@@ -234,13 +236,13 @@ class TicketController extends Controller
             'updates.user',
             'updates.oldStatus',
             'updates.newStatus',
-            'updates.newMachineStatus'
+            'updates.newMachineStatus',
         ]);
 
         // Load the Blade view and generate the PDF
         $pdf = Pdf::loadView('pdf.ticket-report', ['ticket' => $ticket]);
 
         // Return the PDF as a download
-        return $pdf->download('ticket-report-' . $ticket->id . '.pdf');
+        return $pdf->download('ticket-report-'.$ticket->id.'.pdf');
     }
 }

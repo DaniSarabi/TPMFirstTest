@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use App\Events\RoleEdit;
 
 class RoleController extends Controller
 {
@@ -18,7 +19,7 @@ class RoleController extends Controller
 
         $roles = Role::with('permissions')
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%');
             })
             ->latest()
             ->paginate(15)
@@ -36,8 +37,8 @@ class RoleController extends Controller
     public function create()
     {
         //
-        return Inertia::render("Roles/Create", [
-            "permissions" => Permission::pluck("name")
+        return Inertia::render('Roles/Create', [
+            'permissions' => Permission::pluck('name'),
         ]);
     }
 
@@ -48,14 +49,14 @@ class RoleController extends Controller
     {
         //
         $request->validate([
-            "name" => "required",
-            "permissions" => "required",
+            'name' => 'required',
+            'permissions' => 'required',
         ]);
-        $role = Role::create(["name" => $request->name]);
+        $role = Role::create(['name' => $request->name]);
 
         $role->syncPermissions($request->permissions);
 
-        return to_route("roles.index");
+        return to_route('roles.index');
 
         dd($request->all());
     }
@@ -67,9 +68,10 @@ class RoleController extends Controller
     {
         //
         $role = Role::find($id);
-        return Inertia::render("Roles/Show", [
-            "role" => $role,
-            "permissions" => $role->permissions()->pluck("name")
+
+        return Inertia::render('Roles/Show', [
+            'role' => $role,
+            'permissions' => $role->permissions()->pluck('name'),
         ]);
     }
 
@@ -81,10 +83,11 @@ class RoleController extends Controller
         //
         //
         $role = Role::find($id);
-        return Inertia::render("Roles/Edit", [
-            "role" => $role,
-            "rolePermissions" => $role->permissions->pluck("name"),
-            "permissions" => Permission::pluck("name")
+
+        return Inertia::render('Roles/Edit', [
+            'role' => $role,
+            'rolePermissions' => $role->permissions->pluck('name'),
+            'permissions' => Permission::pluck('name'),
         ]);
     }
 
@@ -95,18 +98,19 @@ class RoleController extends Controller
     {
         //
         $request->validate([
-            "name" => "required",
-            "permissions" => "required",
+            'name' => 'required',
+            'permissions' => 'required',
         ]);
         $role = Role::find($id);
 
         $role->name = $request->name;
         $role->save();
 
-
         $role->syncPermissions($request->permissions);
 
-        return to_route("roles.index");
+        event(new RoleEdit($role));
+
+        return to_route('roles.index');
     }
 
     /**

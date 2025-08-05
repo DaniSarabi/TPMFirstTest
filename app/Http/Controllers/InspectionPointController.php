@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Subsystem;
 use App\Models\InspectionPoint;
+use App\Models\Subsystem;
 use App\Models\Ticket;
 use App\Models\TicketStatus;
-
+use Illuminate\Http\Request;
 
 class InspectionPointController extends Controller
 {
-    //Used by the Create Wizard
+    // Used by the Create Wizard
     public function store(Request $request)
     {
         // Validate that we receive an object where keys are subsystem IDs
@@ -28,7 +27,7 @@ class InspectionPointController extends Controller
             $subsystem = Subsystem::findOrFail($subsystemId);
 
             foreach ($pointNames as $pointName) {
-                //dd($request->all());
+                // dd($request->all());
                 // Create the inspection point associated with the correct subsystem
                 $subsystem->inspectionPoints()->create([
                     'name' => $pointName,
@@ -39,6 +38,7 @@ class InspectionPointController extends Controller
         // Return a success response
         return response()->json(['message' => 'Inspection points created successfully.'], 201);
     }
+
     /**
      * Add a new inspection point to a subsystem.
      */
@@ -87,7 +87,6 @@ class InspectionPointController extends Controller
     /**
      * Get all open tickets for a specific inspection point.
      *
-     * @param  \App\Models\InspectionPoint  $inspectionPoint
      * @return \Illuminate\Http\JsonResponse
      */
     public function getOpenTickets(InspectionPoint $inspectionPoint)
@@ -101,7 +100,7 @@ class InspectionPointController extends Controller
         $openTickets = Ticket::with([
             // We only need a few fields for the mini-card
             'creator:id,name',
-            'inspectionItem:id,image_url'
+            'inspectionItem:id,image_url',
         ])
             ->whereHas('inspectionItem', function ($query) use ($inspectionPoint) {
                 $query->where('inspection_point_id', $inspectionPoint->id);

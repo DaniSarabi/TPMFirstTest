@@ -8,16 +8,15 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-
 class TicketActionService
 {
     /**
      * Change the status of a ticket and trigger any associated behaviors.
      *
-     * @param Ticket $ticket The ticket to update.
-     * @param int $newStatusId The ID of the new status.
-     * @param string|null $comment An optional comment for the update.
-     * @param User $user The user performing the action.
+     * @param  Ticket  $ticket  The ticket to update.
+     * @param  int  $newStatusId  The ID of the new status.
+     * @param  string|null  $comment  An optional comment for the update.
+     * @param  User  $user  The user performing the action.
      */
     public function changeStatus(Ticket $ticket, int $newStatusId, ?string $comment, User $user): void
     {
@@ -58,12 +57,11 @@ class TicketActionService
             case 'triggers_downtime_maintenance':
                 $this->logDowntime($ticket, 'Maintenance');
                 break;
-            
-            // We can add cases for other behaviors here in the future
+
+                // We can add cases for other behaviors here in the future
         }
     }
 
-    
     /**
      * Placeholder for the logic to log machine downtime.
      */

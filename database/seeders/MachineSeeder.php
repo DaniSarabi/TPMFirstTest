@@ -2,12 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 use App\Models\Machine;
 use App\Models\MachineStatus;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class MachineSeeder extends Seeder
 {
@@ -21,8 +19,9 @@ class MachineSeeder extends Seeder
         $maintenanceUser = User::where('email', 'maintenance@tpm.com')->first();
         $statuses = MachineStatus::all()->keyBy('name');
 
-        if (!$maintenanceUser || $statuses->isEmpty()) {
+        if (! $maintenanceUser || $statuses->isEmpty()) {
             $this->command->error('Prerequisite data not found. Please run UserSeeder and MachineStatusSeeder first.');
+
             return;
         }
 

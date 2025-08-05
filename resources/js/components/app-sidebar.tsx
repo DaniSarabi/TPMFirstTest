@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
   },
   {
     title: 'Tickets',
-    href: route('tickets.index'), 
+    href: '/tickets', 
     icon: Ticket,
   },
 ];

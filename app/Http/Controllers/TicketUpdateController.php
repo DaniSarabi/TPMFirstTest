@@ -2,24 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Ticket;
-use App\Models\TicketUpdate;
-use Illuminate\Support\Facades\Auth;
 use App\Services\TicketActionService;
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Events\TicketStatusChanged;
+use App\Events\TicketCommentAdded;
 
 class TicketUpdateController extends Controller
 {
-    //Inject the service to the Controller
-    public function __construct(protected TicketActionService $ticketActionService)
-    {
-    }
+    // Inject the service to the Controller
+    public function __construct(protected TicketActionService $ticketActionService) {}
+
     /**
      * Store a new update (comment) for a ticket.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Ticket  $ticket
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request, Ticket $ticket)
@@ -29,10 +26,11 @@ class TicketUpdateController extends Controller
         ]);
 
         // Create a new ticket update associated with the ticket and the current user
-        $ticket->updates()->create([
+        $update =$ticket->updates()->create([
             'user_id' => Auth::id(),
             'comment' => $validated['comment'],
         ]);
+        event(new TicketCommentAdded($update));
 
         // Redirect back to the ticket page. Inertia will automatically refresh the props.
         return back()->with('success', 'Comment posted successfully.');
@@ -54,6 +52,11 @@ class TicketUpdateController extends Controller
             $validated['comment'],
             $request->user()
         );
+
+        $latestUpdate = $ticket->updates()->latest()->first();
+        if($latestUpdate) {
+            event(new TicketStatusChanged($latestUpdate));
+        }
 
         return back()->with('success', 'Ticket status updated successfully.');
     }

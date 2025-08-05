@@ -2,19 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Machine extends Model
 {
     //
     use HasFactory, SoftDeletes;
-
 
     /**
      * The attributes that are mass assignable.
@@ -28,6 +27,7 @@ class Machine extends Model
         'machine_status_id', // Use the new foreign key
         'image_url',
     ];
+
     /**
      * This method will automatically format the image_url whenever it's accessed.
      */
@@ -41,6 +41,7 @@ class Machine extends Model
             }
         );
     }
+
     /**
      * The "booted" method of the model.
      *
@@ -72,6 +73,7 @@ class Machine extends Model
     {
         return $this->hasMany(Subsystem::class);
     }
+
     /**
      * Get the status logs for the machine.
      */
@@ -79,6 +81,7 @@ class Machine extends Model
     {
         return $this->hasMany(MachineStatusLog::class);
     }
+
     /**
      * Get the status for the machine.
      * This is the relationship method that was missing.

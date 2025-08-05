@@ -2,18 +2,16 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Models\InspectionPoint;
 use App\Models\InspectionReport;
 use App\Models\InspectionStatus;
 use App\Models\Machine;
-use App\Models\MachineStatus;
+use App\Models\Subsystem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
-use App\Models\Subsystem;
-use App\Models\InspectionPoint;
-
 
 class InspectionControllerTest extends TestCase
 {
@@ -31,7 +29,7 @@ class InspectionControllerTest extends TestCase
         // Create a standard operator role
         $operatorRole = Role::firstOrCreate(['name' => 'operator']);
         $operatorRole->givePermissionTo(['inspections.view', 'inspections.perform']);
-        
+
         // Create an admin role
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $adminRole->givePermissionTo(Permission::all());
@@ -59,19 +57,19 @@ class InspectionControllerTest extends TestCase
         ]);
     }
 
-   public function test_can_submit_a_completed_inspection(): void
+    public function test_can_submit_a_completed_inspection(): void
     {
         // --- ACTION: Be more explicit in the test setup ---
         // 1. Arrange
         $machine = Machine::factory()->create();
         $subsystem = Subsystem::factory()->create(['machine_id' => $machine->id]);
         $point = InspectionPoint::factory()->create(['subsystem_id' => $subsystem->id]);
-        
+
         $report = InspectionReport::factory()->create(['machine_id' => $machine->id]);
         $status = InspectionStatus::factory()->create();
 
         $results = [
-            $point->id => ['status_id' => $status->id]
+            $point->id => ['status_id' => $status->id],
         ];
 
         // 2. Act
@@ -125,7 +123,7 @@ class InspectionControllerTest extends TestCase
         // The user from setUp() has created these reports
         InspectionReport::factory()->count(2)->create([
             'user_id' => $this->app['auth']->user()->id,
-            'status' => 'completed'
+            'status' => 'completed',
         ]);
         // A report from another user
         InspectionReport::factory()->create(['user_id' => User::factory()->create(), 'status' => 'completed']);

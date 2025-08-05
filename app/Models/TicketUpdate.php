@@ -30,7 +30,7 @@ class TicketUpdate extends Model
         'parts_used',
         'old_status_id',
         'new_status_id',
-        'new_machine_status_id', 
+        'new_machine_status_id',
     ];
 
     /**

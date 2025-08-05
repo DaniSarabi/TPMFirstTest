@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
@@ -33,7 +32,7 @@ class PermissionSeeder extends Seeder
             'roles.create',
             'roles.edit',
             'roles.delete',
-            
+
             // * Machine Permissions
             'machines.view',
             'machines.create',
@@ -52,6 +51,10 @@ class PermissionSeeder extends Seeder
 
             // * Email permissions
             'email-contacts.admin',
+
+            // * Notifications permissions
+            'notifications.view',
+            'notifications.admin',
         ];
 
         // Create permissions if they don't exist

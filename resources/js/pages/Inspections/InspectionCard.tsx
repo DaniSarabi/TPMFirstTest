@@ -81,7 +81,7 @@ export function InspectionCard({ report }: InspectionCardProps) {
           </div>
 
           
-          <Separator className="my-2" />
+          <Separator className="my-2 border-primary border-1" />
 
           {/* Total */}
           <p className="text-sm font-medium text-gray-800">

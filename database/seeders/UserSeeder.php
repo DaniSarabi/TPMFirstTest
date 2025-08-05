@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
@@ -25,7 +24,7 @@ class UserSeeder extends Seeder
 
         // --- 2. Assign Permissions to Roles ---
         $adminRole->syncPermissions(Permission::all());
-        
+
         $managerRole->syncPermissions([
             'users.view', 'users.create',
             'roles.view', 'roles.create',
@@ -39,7 +38,7 @@ class UserSeeder extends Seeder
         $userRole->syncPermissions([
             'machines.view',
         ]);
-        
+
         $this->command->info('Roles created and permissions assigned successfully.');
 
         // --- 3. Create Users and Assign Roles ---
@@ -52,7 +51,7 @@ class UserSeeder extends Seeder
             ['email' => 'manager@tpm.com'],
             ['name' => 'Manager User', 'password' => Hash::make('password')]
         )->assignRole($managerRole);
-        
+
         User::firstOrCreate(
             ['email' => 'maintenance@tpm.com'],
             ['name' => 'Maintenance User', 'password' => Hash::make('password')]

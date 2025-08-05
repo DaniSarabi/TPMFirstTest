@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Settings;
 
+use App\Models\InspectionStatus;
 use App\Models\Machine;
 use App\Models\MachineStatus;
 use App\Models\User;
@@ -9,8 +10,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
-use App\Models\InspectionStatus;
-
 
 class MachineStatusControllerTest extends TestCase
 {
@@ -40,7 +39,7 @@ class MachineStatusControllerTest extends TestCase
         $response = $this->get(route('settings.machine-status.index'));
 
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('GeneralSettings/MachineStatus/Index'));
+        $response->assertInertia(fn ($page) => $page->component('GeneralSettings/MachineStatus/Index'));
     }
 
     public function test_can_create_a_new_machine_status(): void
@@ -116,11 +115,10 @@ class MachineStatusControllerTest extends TestCase
         $this->assertDatabaseHas('machine_statuses', ['id' => 1]);
     }
 
-
     public function test_it_reassigns_inspection_statuses_when_a_machine_status_is_deleted(): void
     {
-         // 1. Arrange
-         
+        // 1. Arrange
+
         MachineStatus::factory()->create(['id' => 1, 'name' => 'Default']);
         $statusToDelete = MachineStatus::factory()->create();
         $newStatus = MachineStatus::factory()->create();

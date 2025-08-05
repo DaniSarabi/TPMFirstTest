@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
 
 class MachineStatusLog extends Model
 {
@@ -29,6 +28,7 @@ class MachineStatusLog extends Model
     {
         return $this->belongsTo(Machine::class);
     }
+
     public function machineStatus(): BelongsTo
     {
         return $this->belongsTo(MachineStatus::class);

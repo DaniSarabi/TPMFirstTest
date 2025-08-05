@@ -1,20 +1,21 @@
 <?php
 
+use App\Http\Controllers\EmailContactController;
+use App\Http\Controllers\InspectionController;
+use App\Http\Controllers\InspectionPointController;
+use App\Http\Controllers\InspectionStatusController;
+use App\Http\Controllers\MachineController;
+use App\Http\Controllers\MachineStatusController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PartRequestController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SubsystemController;
+use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketStatusController;
+use App\Http\Controllers\TicketUpdateController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\MachineController;
-use App\Http\Controllers\SubsystemController;
-use App\Http\Controllers\InspectionPointController;
-use App\Http\Controllers\MachineStatusController;
-use App\Http\Controllers\InspectionStatusController;
-use App\Http\Controllers\InspectionController;
-use App\Http\Controllers\TicketController;
-use App\Http\Controllers\TicketUpdateController;
-use App\Http\Controllers\TicketStatusController;
-use App\Http\Controllers\PartRequestController;
-use App\Http\Controllers\EmailContactController;
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -26,8 +27,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    //* ***************************** Tickets module Routes *****************************
+    // * ***************************** Notifications Routes *****************************
+    // --- Rutas para el sistema de notificaciones en la aplicación ---
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
 
+    // * ***************************** Tickets module Routes *****************************
 
     Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
 
@@ -37,8 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // This route will handle downloading the ticket PDF
     Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf');
 
-    // ------------------------------------ Ticket Update ------------------------------------ 
-    
+    // ------------------------------------ Ticket Update ------------------------------------
+
     // This route will handle posting new comments to a ticket
     Route::post('/tickets/{ticket}/updates', [TicketUpdateController::class, 'store'])->name('tickets.updates.store');
     // This route will handle the change of a ticket's status
@@ -47,7 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // This route will handle sending the part request email
     Route::post('/tickets/{ticket}/request-parts', [PartRequestController::class, 'send'])->name('tickets.request-parts');
 
-    //* ***************************** Inspections module Routes *****************************
+    // * ***************************** Inspections module Routes *****************************
 
     // This route will display the "Start Inspection" page
     Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start')->middleware('permission:inspections.perform');
@@ -77,12 +83,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // This new route will handle the GET request from the QR code scan
     Route::get('/inspections/start-from-qr/{machine}', [InspectionController::class, 'startFromQr'])->name('inspections.startFromQr');
 
-
     // --- Add the new API-like route for getting open tickets ---
     Route::get('/inspection-points/{inspectionPoint}/open-tickets', [InspectionPointController::class, 'getOpenTickets'])
         ->name('inspection-points.open-tickets');
 
-    //* ***************************** General Settings Routes *****************************
+    // * ***************************** General Settings Routes *****************************
 
     //  Use a Route Group to correctly prefix the names and URLs ---
     // --- General Settings Route Group ---
@@ -104,7 +109,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['show'])
             ->middleware('permission:email-contacts.admin'); // Or a new settings permission
     });
-    //* ***************************** Machines module Routes *****************************
+    // * ***************************** Machines module Routes *****************************
 
     // Routes for viewing machines (list and details)
     Route::resource('machines', MachineController::class)
@@ -124,7 +129,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Routes for adding a single inspection point (from the details page)
     Route::post('/inspection-points/add', [InspectionPointController::class, 'add'])->name('inspection-points.add');
-
 
     // Routes for editing/updating a machine and its components
     Route::resource('machines', MachineController::class)
@@ -147,43 +151,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/machines/{machine}/qr-code', [MachineController::class, 'generateQrCode'])
         ->name('machines.qr-code')
         ->middleware('permission:machines.view');
-    //Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');
+    // Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');
 
-    //* ***************************** Users Routes *****************************
-    Route::resource("users", UserController::class)
-        ->only(["create", "store"])
-        ->middleware("permission:users.create");
+    // * ***************************** Users Routes *****************************
+    Route::resource('users', UserController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:users.create');
 
-    Route::resource("users", UserController::class)
-        ->only(["edit", "update"])
-        ->middleware("permission:users.edit");
+    Route::resource('users', UserController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:users.edit');
 
-    Route::resource("users", UserController::class)
-        ->only(["destroy"])
-        ->middleware("permission:users.delete");
+    Route::resource('users', UserController::class)
+        ->only(['destroy'])
+        ->middleware('permission:users.delete');
 
-    Route::resource("users", UserController::class)
-        ->only(["index", "show"])
-        ->middleware("permission:users.view|users.create|users.edit|users.delete");
+    Route::resource('users', UserController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:users.view|users.create|users.edit|users.delete');
 
-    //* ***************************** Roles Routes *****************************
-    Route::resource("roles", RoleController::class)
-        ->only(["create", "store"])
-        ->middleware("permission:roles.create");
+    // * ***************************** Roles Routes *****************************
+    Route::resource('roles', RoleController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:roles.create');
 
-    Route::resource("roles", RoleController::class)
-        ->only(["edit", "update"])
-        ->middleware("permission:roles.edit");
+    Route::resource('roles', RoleController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:roles.edit');
 
-    Route::resource("roles", RoleController::class)
-        ->only(["destroy"])
-        ->middleware("permission:roles.delete");
+    Route::resource('roles', RoleController::class)
+        ->only(['destroy'])
+        ->middleware('permission:roles.delete');
 
-    Route::resource("roles", RoleController::class)
-        ->only(["index", "show"])
-        ->middleware("permission:roles.view|roles.create|roles.edit|roles.delete");
+    Route::resource('roles', RoleController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:roles.view|roles.create|roles.edit|roles.delete');
 });
 
-
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

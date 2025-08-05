@@ -18,7 +18,7 @@ class SubsystemFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->word() . ' System',
+            'name' => $this->faker->word().' System',
             'description' => $this->faker->sentence(),
             // Ensure a machine exists before creating the subsystem
             'machine_id' => Machine::factory(),

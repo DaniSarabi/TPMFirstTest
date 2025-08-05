@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Machine;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\InspectionStatus;
+use App\Events\InspectionCompleted;
+use App\Events\TicketCreated;
 use App\Models\InspectionReport;
-use Illuminate\Support\Facades\Auth;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\InspectionReportItem;
+use App\Models\InspectionStatus;
+use App\Models\Machine;
+use App\Models\MachineStatus;
+use App\Models\Ticket;
+use App\Models\TicketStatus;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Models\MachineStatus;
-use App\Models\TicketStatus;
-use App\Models\Ticket;
-use Illuminate\Support\Facades\Validator; // --- ACTION 1: Import the Validator facade ---
+use Illuminate\Support\Facades\Validator;
+use Inertia\Inertia;
 
 class InspectionController extends Controller
 {
@@ -34,7 +35,7 @@ class InspectionController extends Controller
             ->where('status', 'completed')
             ->latest('completed_at');
 
-        if (!$request->user()->can('inspections.administration')) {
+        if (! $request->user()->can('inspections.administration')) {
             $query->where('user_id', $request->user()->id);
         }
 
@@ -53,6 +54,7 @@ class InspectionController extends Controller
 
         $reports = $query->paginate(12)->through(function ($report) {
             $severityCounts = $report->items->countBy('status.severity');
+
             return [
                 'id' => $report->id,
                 'status' => $report->status,
@@ -66,7 +68,7 @@ class InspectionController extends Controller
                     'ok_count' => $severityCounts->get(0, 0),
                     'warning_count' => $severityCounts->get(1, 0),
                     'critical_count' => $severityCounts->get(2, 0),
-                ]
+                ],
             ];
         });
 
@@ -78,10 +80,10 @@ class InspectionController extends Controller
             'users' => $request->user()->can('inspections.administration') ? User::select('id', 'name')->get() : [],
         ]);
     }
+
     /**
      * Display the specified inspection report.
      *
-     * @param  \App\Models\InspectionReport  $inspectionReport
      * @return \Inertia\Response
      */
     public function show(InspectionReport $inspectionReport)
@@ -95,9 +97,9 @@ class InspectionController extends Controller
                     'point:id,name,subsystem_id',
                     'status',
                     'point.subsystem:id,name',
-                    'ticket:id,inspection_report_item_id' // Load the ticket ID
+                    'ticket:id,inspection_report_item_id', // Load the ticket ID
                 ]);
-            }
+            },
         ]);
         // Group the report items by their subsystem
         $groupedItems = $inspectionReport->items->groupBy('point.subsystem.name');
@@ -137,7 +139,7 @@ class InspectionController extends Controller
             // Find the name of the machine status that was set
             $newMachineStatus = MachineStatus::find($statusThatTriggeredChange->machine_status_id);
             if ($newMachineStatus) {
-                $statusChangeInfo = "Set machine status to: " . $newMachineStatus->name;
+                $statusChangeInfo = 'Set machine status to: ' . $newMachineStatus->name;
             }
         }
 
@@ -157,12 +159,13 @@ class InspectionController extends Controller
             'report' => $reportData,
         ]);
     }
+
     /**
      * Show the form for creating a new resource.
      * This will be our "Start Inspection" page.
      *
      * @return \Inertia\Response
-     * 
+     *
      * QR FUNCCIONALITY MISSING
      */
     public function create()
@@ -195,10 +198,10 @@ class InspectionController extends Controller
         // Redirect to the "Perform Inspection" page for the new report
         return to_route('inspections.perform', $report->id);
     }
+
     /**
      * Create a new in-progress inspection report from a QR code scan.
      *
-     * @param  \App\Models\Machine  $machine
      * @return \Illuminate\Http\RedirectResponse
      */
     public function startFromQr(Machine $machine)
@@ -213,6 +216,7 @@ class InspectionController extends Controller
         // Redirect to the "Perform Inspection" page for the new report
         return to_route('inspections.perform', $report->id);
     }
+
     /**
      * Show the main inspection page for a specific report.
      */
@@ -223,7 +227,7 @@ class InspectionController extends Controller
             'machine.subsystems.inspectionPoints',
             'machine.creator',
             'machine.machineStatus',
-            'machine.statusLogs.machineStatus'
+            'machine.statusLogs.machineStatus',
         ]);
 
         // ---  Calculate uptime information for the associated machine ---
@@ -255,6 +259,7 @@ class InspectionController extends Controller
             'uptime' => $uptimeData,
         ]);
     }
+
     /**
      * Update the specified resource in storage.
      * This method is called when the user submits the full inspection.
@@ -289,8 +294,6 @@ class InspectionController extends Controller
         $validated = Validator::make($request->all(), $rules)->validate();
 
         DB::transaction(function () use ($request, $inspectionReport, $validated) {
-            
-            
 
             $highestSeverityStatus = null;
             $openTicketStatus = TicketStatus::where('name', 'Open')->first();
@@ -317,8 +320,8 @@ class InspectionController extends Controller
                 }
 
                 if ($status && $status->severity > 0) {
-                    if (!empty($result['pinged_ticket_id'])) {
-                        // This is a PING
+                    if (! empty($result['pinged_ticket_id'])) {
+                        // **************** This is a PING
                         $ticketToPing = Ticket::find($result['pinged_ticket_id']);
                         if ($ticketToPing) {
                             $ticketToPing->updates()->create([
@@ -327,7 +330,7 @@ class InspectionController extends Controller
                             ]);
                         }
                     } else {
-                        // This is a NEW TICKET
+                        // *************** This is a NEW TICKET
                         if ($openTicketStatus && ($status->behaviors->contains('name', 'creates_ticket_sev1') || $status->behaviors->contains('name', 'creates_ticket_sev2'))) {
                             $ticket = Ticket::create([
                                 'inspection_report_item_id' => $item->id,
@@ -343,6 +346,9 @@ class InspectionController extends Controller
                                 'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
                                 'new_status_id' => $openTicketStatus->id,
                             ]);
+
+                            event(new TicketCreated($ticket));
+
                             $newlyCreatedTickets[] = $ticket;
                         }
                     }
@@ -371,11 +377,13 @@ class InspectionController extends Controller
                 }
             }
 
+
             // Mark the main report as completed
             $inspectionReport->update([
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
+            event(new InspectionCompleted($inspectionReport));
         });
 
         return to_route('inspections.start')->with('success', 'Inspection submitted successfully!');
@@ -396,6 +404,7 @@ class InspectionController extends Controller
         // Redirect back to the start page with a success message.
         return to_route('inspections.start')->with('success', 'Inspection has been cancelled.');
     }
+
     /**
      * Generate and download a PDF for the specified inspection report.
      */
@@ -406,7 +415,7 @@ class InspectionController extends Controller
             'machine:id,name',
             'items.point:id,name,subsystem_id',
             'items.status',
-            'items.point.subsystem:id,name'
+            'items.point.subsystem:id,name',
         ]);
 
         $groupedItems = $inspectionReport->items->groupBy('point.subsystem.name');

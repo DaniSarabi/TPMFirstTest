@@ -18,7 +18,7 @@ class InspectionPointFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'Check ' . $this->faker->word(),
+            'name' => 'Check '.$this->faker->word(),
             'description' => $this->faker->sentence(),
             // Ensure a subsystem exists before creating the inspection point
             'subsystem_id' => Subsystem::factory(),

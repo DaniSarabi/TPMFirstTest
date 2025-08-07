@@ -22,6 +22,8 @@ export interface MachineStatus {
   description: string | null;
   bg_color: string;
   text_color: string;
+  is_protected: boolean;
+  is_operational_default: boolean;
 }
 
 // The function now accepts the sorting state and handler

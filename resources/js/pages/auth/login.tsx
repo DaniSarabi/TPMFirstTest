@@ -42,10 +42,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
       <Head title="Log in" />
 
-      {/* --- ACTION 1: Use the new Card-based layout --- */}
-      <Card className="w-full max-w-4xl">
-        <CardContent className="grid p-0 md:grid-cols-2">
-          {/* --- ACTION 2: Connect your form logic to the new design --- */}
+      <Card className="w-full max-w-4xl ">
+        <CardContent className="grid p-0 md:grid-cols-2 pr-4">
           <form className="flex flex-col justify-center p-6 md:p-8" onSubmit={submit}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
@@ -99,12 +97,11 @@ export default function Login({ status, canResetPassword }: LoginProps) {
               </div>
             </div>
           </form>
-          {/* --- ACTION 3: Keep the image column --- */}
-          <div className="relative hidden bg-muted md:block">
+          <div className="relative hidden bg-muted md:block rounded-lg ring-ring ring-1">
             <img
               src={loginImg}
               alt="TPM application visual"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover rounded-lg"
               //onError={(e) => (e.currentTarget.src = 'https://placehold.co/1080x1920/e2e8f0/e2e8f0?text=Image')}
             />
           </div>

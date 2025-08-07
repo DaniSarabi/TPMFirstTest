@@ -16,6 +16,7 @@ use App\Http\Controllers\TicketUpdateController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\TicketActionsController;
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -37,9 +38,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
 
-    // This route will handle closing a ticket
-    Route::patch('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
+    Route::patch('/tickets/{ticket}/start-work', [TicketActionsController::class, 'startWork'])->name('tickets.start-work');
+    Route::patch('/tickets/{ticket}/resume-work', [TicketActionsController::class, 'resumeWork'])->name('tickets.resume-work');
+    // --- ACTION: Add the new route for closing a ticket ---
+    Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close');
 
+    
     // This route will handle downloading the ticket PDF
     Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf');
 
@@ -188,5 +192,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:roles.view|roles.create|roles.edit|roles.delete');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import * as React from 'react';
 import { Machine, MachineStatus } from './Columns';
+import { Info } from 'lucide-react';
 
 // Define the props for the modal
 interface EditMachineModalProps {
@@ -18,23 +19,18 @@ interface EditMachineModalProps {
 }
 
 export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: EditMachineModalProps) {
-  const { data, setData, post, errors, processing, reset } = useForm({
+  const { data, setData, post, processing, errors, reset } = useForm({
+    _method: 'PUT',
     name: machine.name,
     description: machine.description || '',
     machine_status_id: machine.machine_status.id,
     image: null as File | null,
-    _method: 'PUT',
   });
 
-  // This useEffect hook resets the form when the modal opens.
+  // Reset the form when the modal opens or the machine prop changes
   React.useEffect(() => {
     if (isOpen) {
-      // --- ACTION: Call reset() FIRST ---
-      // This clears any validation errors from previous attempts.
       reset();
-
-      // --- ACTION: Call setData() SECOND ---
-      // This now correctly populates the form with the latest machine data.
       setData({
         name: machine.name,
         description: machine.description || '',
@@ -43,65 +39,71 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
         _method: 'PUT',
       });
     }
-  }, [isOpen, machine]); // This effect runs only when the modal is opened or the machine data changes.
+  }, [isOpen, machine]);
 
-  // Handle the form submission
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     post(route('machines.update', machine.id), {
-      forceFormData: true,
-      // This ensures the modal only closes after a successful submission.
-      onSuccess: () => {
-        onOpenChange(false);
-      },
+      onSuccess: () => onOpenChange(false),
     });
   };
 
+  // --- ACTION: Update the filter logic to use the boolean flag ---
+  const availableStatuses = React.useMemo(() => {
+    // Find the status that is marked as the operational default
+    const operationalDefaultStatus = statuses.find((s) => s.is_operational_default);
+    const currentStatus = statuses.find((s) => s.id === machine.machine_status.id);
+
+    // Use a Map to prevent duplicate statuses in the dropdown
+    const options = new Map<number, MachineStatus>();
+    if (currentStatus) {
+      options.set(currentStatus.id, currentStatus);
+    }
+    if (operationalDefaultStatus) {
+      options.set(operationalDefaultStatus.id, operationalDefaultStatus);
+    }
+
+    return Array.from(options.values());
+  }, [statuses, machine.machine_status.id]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Machine: {machine.name}</DialogTitle>
-          <DialogDescription>Make changes to your machine here. Click save when you're done.</DialogDescription>
+          <DialogDescription>
+            Update the details for this machine.
+            <br />
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-500/50 bg-blue-50 p-3 text-sm text-blue-800">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Note: The status can only be manually changed to the operational status.</p>
+            </div>
+          </DialogDescription>
         </DialogHeader>
-        {/* Add name and autocomplete attributes for accessibility */}
-        <form id="edit-machine-form" onSubmit={submit} className="grid gap-4 py-4" autoComplete='off'>
+        <form id="edit-machine-form" onSubmit={submit} className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Machine Name</Label>
-            <Input
-              id="edit-name"
-              name="name"
-              autoComplete="off"
-              value={data.name}
-              onChange={(e) => setData('name', e.target.value)}
-              required
-              className="hover:bg-accent hover:text-accent-foreground bg-gray-100"
-            />
+            <Label htmlFor="name">Name</Label>
+            <Input className='ring-1 ring-ring hover:bg-accent' id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
             <InputError message={errors.name} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-description">Description</Label>
-            <Textarea
-              id="edit-description"
-              name="description"
-              autoComplete="off"
-              value={data.description}
-              onChange={(e) => setData('description', e.target.value)}
-              className="hover:bg-accent hover:text-accent-foreground bg-gray-100"
-            />
+            <Label htmlFor="description">Description</Label>
+            <Textarea className='ring-1 ring-ring hover:bg-accent' id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
             <InputError message={errors.description} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-status">Status</Label>
+            <Label htmlFor="machine_status_id">Status</Label>
             <Select value={String(data.machine_status_id)} onValueChange={(value) => setData('machine_status_id', Number(value))}>
-              <SelectTrigger className="hover:bg-accent hover:text-accent-foreground bg-gray-100" id="edit-status" name="machine_status_id">
-                <SelectValue placeholder="Select a status" />
+              <SelectTrigger className='ring-1 ring-ring hover:bg-accent' id="machine_status_id">
+                <SelectValue placeholder="Select a status..." />
               </SelectTrigger>
-              <SelectContent >
-                {/* Map over the statuses from props to create the options */}
-                {statuses.map((status) => (
-                  <SelectItem className="hover:bg-primary hover:text-primary-foreground" key={status.id} value={String(status.id)}>
-                    {status.name}
+              <SelectContent>
+                {availableStatuses.map((status) => (
+                  <SelectItem className='hover:bg-accent' key={status.id} value={String(status.id)}>
+                    <div className="flex items-center">
+                      <div className="mr-2 h-3 w-3 rounded-full border" style={{ backgroundColor: status.bg_color }} />
+                      <span>{status.name}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -109,14 +111,8 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
             <InputError message={errors.machine_status_id} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-image">Change Machine Image (Optional)</Label>
-            <Input
-              className="hover:bg-accent hover:text-accent-foreground bg-gray-100"
-              id="edit-image"
-              name="image"
-              type="file"
-              onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)}
-            />
+            <Label htmlFor="image">Update Image (Optional)</Label>
+            <Input className='ring-1 ring-ring hover:bg-accent' id="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
             <InputError message={errors.image} />
           </div>
         </form>

@@ -8,6 +8,7 @@ use App\Models\MachineStatusLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class MachineStatusController extends Controller
 {
@@ -23,7 +24,7 @@ class MachineStatusController extends Controller
 
         $statuses = MachineStatus::query()
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%'.$search.'%');
+                $query->where('name', 'like', '%' . $search . '%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -51,10 +52,15 @@ class MachineStatusController extends Controller
             'description' => 'nullable|string',
             'bg_color' => 'required|string',
             'text_color' => 'required|string',
+            'is_operational_default' => 'required|boolean',
         ]);
 
-        MachineStatus::create($validated);
-
+        DB::transaction(function () use ($validated) {
+            if ($validated['is_operational_default']) {
+                MachineStatus::where('is_operational_default', true)->update(['is_operational_default' => false]);
+            }
+            MachineStatus::create($validated);
+        });
         return back()->with('success', 'Status created successfully.');
     }
 
@@ -64,14 +70,24 @@ class MachineStatusController extends Controller
     public function update(Request $request, MachineStatus $machineStatus)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:machine_statuses,name,'.$machineStatus->id,
+            'name' => ['required', 'string', 'max:255', Rule::unique('machine_statuses')->ignore($machineStatus->id)],
             'description' => 'nullable|string',
             'bg_color' => 'required|string',
             'text_color' => 'required|string',
+            'is_operational_default' => 'required|boolean',
         ]);
 
-        $machineStatus->update($validated);
+        DB::transaction(function () use ($validated, $machineStatus) {
+            // If this status is being set as the default,
+            // first ensure no other status has the flag.
+            if ($validated['is_operational_default']) {
+                MachineStatus::where('is_operational_default', true)
+                    ->where('id', '!=', $machineStatus->id)
+                    ->update(['is_operational_default' => false]);
+            }
 
+            $machineStatus->update($validated);
+        });
         return back()->with('success', 'Status updated successfully.');
     }
 
@@ -80,6 +96,10 @@ class MachineStatusController extends Controller
      */
     public function destroy(Request $request, MachineStatus $machineStatus)
     {
+        if ($machineStatus->is_operational_default) {
+            return back()->with('error', 'The default operational status cannot be deleted.');
+        }
+
         $validated = $request->validate([
             'new_status_id' => 'required|exists:machine_statuses,id',
         ]);

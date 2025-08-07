@@ -160,69 +160,6 @@ class TicketController extends Controller
     }
 
     /**
-     * Close a ticket and log the resolution details.
-     */
-    public function close(Request $request, Ticket $ticket)
-    {
-        $validated = $request->validate([
-            'action_taken' => 'required|string',
-            'parts_used' => 'nullable|string',
-        ]);
-
-        DB::transaction(function () use ($validated, $ticket) {
-            // Find the "Resolved" status using its behavior
-            $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
-                $query->where('name', 'is_ticket_closing_status');
-            })->firstOrFail(); // Use firstOrFail to ensure it exists
-
-            // 1. Create the final "Resolution" log entry
-            $ticket->updates()->create([
-                'user_id' => Auth::id(),
-                'action_taken' => $validated['action_taken'],
-                'parts_used' => $validated['parts_used'],
-                'old_status_id' => $ticket->ticket_status_id,
-                'new_status_id' => $closingStatus->id,
-            ]);
-
-            // 2. Update the ticket's main status
-            $ticket->update(['ticket_status_id' => $closingStatus->id]);
-
-            // 3. Check if we should put the machine back in service
-            $this->attemptToPutMachineInService($ticket->machine);
-        });
-
-        return back()->with('success', 'Ticket closed successfully.');
-    }
-
-    /**
-     * Check for other open tickets and put the machine in service if none exist.
-     */
-    private function attemptToPutMachineInService($machine)
-    {
-        // Find the "Resolved" status ID
-        $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
-            $query->where('name', 'is_ticket_closing_status');
-        })->first();
-
-        if (! $closingStatus) {
-            return;
-        }
-
-        // Check if there are any OTHER open tickets for this machine
-        $otherOpenTickets = Ticket::where('machine_id', $machine->id)
-            ->where('ticket_status_id', '!=', $closingStatus->id)
-            ->exists();
-
-        // If there are no other open tickets, find the "In Service" machine status and apply it
-        if (! $otherOpenTickets) {
-            $inServiceStatus = \App\Models\MachineStatus::where('name', 'In Service')->first();
-            if ($inServiceStatus) {
-                $machine->update(['machine_status_id' => $inServiceStatus->id]);
-            }
-        }
-    }
-
-    /**
      * Generate and download a PDF for the specified ticket.
      */
     public function downloadPDF(Ticket $ticket)

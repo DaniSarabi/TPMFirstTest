@@ -1,12 +1,13 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { EmailContact } from '@/pages/GeneralSettings/EmailContacts/Columns';
-import { BookmarkCheck, CheckCircle, Mail } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { BookmarkCheck, Mail, Play } from 'lucide-react';
 import * as React from 'react';
 import { Ticket, TicketStatus } from '../Columns';
 import { ChangeStatusModal } from './ChangeStatusModal';
 import { CloseTicketModal } from './CloseTicketModal';
 import { RequestPartsModal } from './RequestPartsModal';
+import { ResumeWorkModal } from './ResumeWorkModal';
 
 interface ActionsCardProps {
   ticket: Ticket;
@@ -19,28 +20,65 @@ export function ActionsCard({ ticket, statuses, purchasingContacts }: ActionsCar
   const [isChangeStatusModalOpen, setIsChangeStatusModalOpen] = React.useState(false);
   const [isRequestPartsModalOpen, setIsRequestPartsModalOpen] = React.useState(false);
   const [isCloseTicketModalOpen, setIsCloseTicketModalOpen] = React.useState(false);
+  const [isResumeWorkModalOpen, setIsResumeWorkModalOpen] = React.useState(false);
+  
+  const handleStartWork = () => {
+    router.patch(
+      route('tickets.start-work', ticket.id),
+      {},
+      {
+        preserveScroll: true,
+      },
+    );
+  };
 
-  return (
-    <>
-      <Card className="shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-accent border-0 pt-2 pb-2">
-        <CardContent className="flex flex-col items-center justify-between gap-3 md:flex-row">
-          <div className="flex w-full gap-3">
-            <Button className="flex-1" variant="default" onClick={() => setIsChangeStatusModalOpen(true)}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Change Status
-            </Button>
-            <Button className="flex-1" variant="secondary" onClick={() => setIsRequestPartsModalOpen(true)}>
+  const renderActions = () => {
+    switch (ticket.status.name) {
+      case 'Open':
+        return (
+          <Button className="w-full flex-1 bg-green-600 transition-all duration-300 hover:-translate-y-1" onClick={handleStartWork}>
+            <Play className="mr-2 h-4 w-4" />
+            Start Work
+          </Button>
+        );
+      case 'In progress':
+        return (
+          <>
+            <Button
+              className="w-full flex-1 transition-all duration-300 hover:-translate-y-1"
+              variant="default"
+              onClick={() => setIsRequestPartsModalOpen(true)}
+            >
               <Mail className="mr-2 h-4 w-4" />
               Request Parts
             </Button>
-            <Button className="flex-1" variant="destructive" onClick={() => setIsCloseTicketModalOpen(true)}>
+            <Button
+              className="w-full flex-1 transition-all duration-300 hover:-translate-y-1"
+              variant="destructive"
+              onClick={() => setIsCloseTicketModalOpen(true)}
+            >
               <BookmarkCheck className="mr-2 h-4 w-4" />
               Close Ticket
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </>
+        );
+      case 'Awaiting Parts':
+      case 'Awaiting Critical Parts':
+        return (
+          <Button className="w-full bg-green-600 transition-all duration-300 hover:-translate-y-1" onClick={() => setIsResumeWorkModalOpen(true)}>
+            <Play className="mr-2 h-4 w-4" />
+            Resume Work
+          </Button>
+        );
+      default:
+        // For "Resolved" or other statuses, show no primary actions
+        return;
+    }
+  };
 
+  return (
+    <>
+      <div className="flex flex-row items-center gap-2">{renderActions()}</div>
       <ChangeStatusModal isOpen={isChangeStatusModalOpen} onOpenChange={setIsChangeStatusModalOpen} ticket={ticket} statuses={statuses} />
       <RequestPartsModal
         isOpen={isRequestPartsModalOpen}
@@ -49,6 +87,7 @@ export function ActionsCard({ ticket, statuses, purchasingContacts }: ActionsCar
         purchasingContacts={purchasingContacts}
       />
       <CloseTicketModal isOpen={isCloseTicketModalOpen} onOpenChange={setIsCloseTicketModalOpen} ticket={ticket} />
+      <ResumeWorkModal isOpen={isResumeWorkModalOpen} onOpenChange={setIsResumeWorkModalOpen} ticket={ticket} />
     </>
   );
 }

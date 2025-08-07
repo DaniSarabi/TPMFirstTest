@@ -11,9 +11,9 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
-import { ReassignAndDeleteStatusModal } from './ReassingAndDeleteModal';
 import { getColumns, MachineStatus } from './Columns';
 import { StatusFormModal } from './MachineStatusFormModal';
+import { ReassignAndDeleteStatusModal } from './ReassingAndDeleteModal';
 
 // Define the props for the page
 interface IndexPageProps {
@@ -46,11 +46,18 @@ export default function Index({ statuses, filters }: IndexPageProps) {
 
   const isInitialMount = React.useRef(true);
 
-  const { data, setData, post, put, errors, reset, processing } = useForm({
+  const { data, setData, post, put, errors, reset, processing } = useForm<{
+    name: string;
+    description: string;
+    bg_color: string;
+    text_color: string;
+    is_operational_default: boolean;
+  }>({
     name: '',
     description: '',
     bg_color: '#dcfce7',
     text_color: '#166534',
+    is_operational_default: false,
   });
 
   const can = {
@@ -85,7 +92,7 @@ export default function Index({ statuses, filters }: IndexPageProps) {
       setSort({ id: columnId, desc: direction === 'desc' });
     }
   };
-  
+
   // --- handlers to reset the form state ---
   const handleCreate = () => {
     reset();
@@ -100,6 +107,7 @@ export default function Index({ statuses, filters }: IndexPageProps) {
       description: status.description || '',
       bg_color: status.bg_color,
       text_color: status.text_color,
+      is_operational_default: status.is_operational_default,
     });
     setStatusToEdit(status);
     setIsFormModalOpen(true);
@@ -194,7 +202,6 @@ export default function Index({ statuses, filters }: IndexPageProps) {
           statusToDelete={statusToDelete}
           otherStatuses={otherStatuses}
         />
-        
       </GeneralSettingsLayout>
     </AppLayout>
   );

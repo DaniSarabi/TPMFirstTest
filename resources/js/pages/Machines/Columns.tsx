@@ -36,6 +36,7 @@ export interface MachineStatus {
   name: string;
   bg_color: string;
   text_color: string;
+  is_operational_default: boolean;
 }
 export interface Machine {
   id: number;

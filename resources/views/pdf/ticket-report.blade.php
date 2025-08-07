@@ -197,7 +197,7 @@
                             <span class="status-badge"
                                 style="background-color: {{ $update->newStatus->bg_color }}; color: {{ $update->newStatus->text_color }};">{{ $update->newStatus->name }}</span>
                         @elseif($update->new_status_id && $update->old_status_id)
-                            Status changed from <strong>{{ $update->oldStatus->name }}</strong> to pm
+                            Status changed from <strong>{{ $update->oldStatus->name }}</strong> to 
                             <span class="status-badge"
                                 style="background-color: {{ $update->newStatus->bg_color }}; color: {{ $update->newStatus->text_color }};">{{ $update->newStatus->name }}</span>
                         @endif

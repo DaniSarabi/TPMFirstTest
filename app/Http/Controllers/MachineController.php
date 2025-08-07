@@ -21,10 +21,9 @@ class MachineController extends Controller
         $searchQuery = $request->input('search');
         $statusFilter = $request->input('statuses');
 
-        // --- ACTION: Update the 'with' clause to include nested relationships ---
         $machines = Machine::with('creator', 'subsystems.inspectionPoints', 'machineStatus')
             ->when($searchQuery, function ($query, $search) {
-                $query->where('name', 'like', '%'.$search.'%');
+                $query->where('name', 'like', '%' . $search . '%');
             })
             ->when($statusFilter && count($statusFilter) > 0, function ($query) use ($statusFilter) {
                 $query->whereIn('machine_status_id', $statusFilter);
@@ -60,7 +59,6 @@ class MachineController extends Controller
             $imagePath = $request->file('image')->store('images', 'public');
         }
 
-        // --- ACTION: Explicitly set the machine_status_id ---
         // This ensures the model event has the correct data.
         $machine = Machine::create([
             'name' => $validated['name'],

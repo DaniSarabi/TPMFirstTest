@@ -21,6 +21,8 @@ class MachineStatus extends Model
         'bg_color',
         'text_color',
         'description',
+        'is_protected',
+        'is_operational_default',
     ];
 
     /**

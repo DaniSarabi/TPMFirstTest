@@ -11,6 +11,7 @@ use App\Models\MachineStatus;
 use App\Models\Ticket;
 use App\Models\TicketStatus;
 use App\Models\User;
+use App\Services\TicketActionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ use Inertia\Inertia;
 
 class InspectionController extends Controller
 {
+    public function __construct(protected TicketActionService $ticketActionService) {}
     //
     /**
      * Display a listing of the resource.
@@ -350,6 +352,9 @@ class InspectionController extends Controller
                             event(new TicketCreated($ticket));
 
                             $newlyCreatedTickets[] = $ticket;
+                            if ($ticket->priority === 2) { // Priority 2 is High
+                                $this->ticketActionService->startDowntimeLog($ticket, 'Maintenance', Auth::user());
+                            }
                         }
                     }
                 }

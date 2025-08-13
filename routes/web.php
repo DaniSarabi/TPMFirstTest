@@ -43,7 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- ACTION: Add the new route for closing a ticket ---
     Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close');
 
-    
+
     // This route will handle downloading the ticket PDF
     Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf');
 
@@ -151,12 +151,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy')->middleware('permission:machines.delete');
     Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy')->middleware('permission:machines.delete');
 
-    // Route for generating a QR code for a machine
-    Route::get('/machines/{machine}/qr-code', [MachineController::class, 'generateQrCode'])
-        ->name('machines.qr-code')
-        ->middleware('permission:machines.view');
-    // Route::post('/machines', [MachineController::class, 'store'])->name('machines.store_api');
+    // ---//? *********************** QR Code Generation Routes *********************** ---
 
+    Route::get('/machines/{machine}/qr-code', [MachineController::class, 'generateQrCode'])
+        ->name('machines.qr-code');
+
+    Route::get('/machines/{machine}/qr-code/pdf', [MachineController::class, 'downloadQrPdf'])
+        ->name('machines.pdf.qr-code');
+
+    Route::get('/machines/{machine}/qr-code/print', [MachineController::class, 'printQr'])
+        ->name('machines.print.qr-code');
     // * ***************************** Users Routes *****************************
     Route::resource('users', UserController::class)
         ->only(['create', 'store'])

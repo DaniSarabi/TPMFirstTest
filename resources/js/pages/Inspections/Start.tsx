@@ -8,6 +8,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Camera, Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
+import { QrScannerModal } from './Components/QrScannerModal';
 
 // Define the shape of the machine data passed from the controller
 interface Machine {
@@ -75,6 +76,17 @@ function MachineCombobox({ machines }: { machines: Machine[] }) {
 }
 
 export default function Start({ machines }: StartPageProps) {
+  const [isScannerOpen, setIsScannerOpen] = React.useState(false);
+
+  // ---  Create a handler for the scan result ---
+  const handleScan = (url: string) => {
+    if (url) {
+      // Use router.visit() to navigate to the scanned URL.
+      // This will trigger our backend flow and take the user to the inspection.
+      router.visit(url);
+    }
+  };
+
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Start Inspection" />
@@ -89,8 +101,8 @@ export default function Start({ machines }: StartPageProps) {
               {/* Left Column: Scan QR Code */}
               <div className="flex flex-col items-center justify-center space-y-4 border-r-0 p-6 md:border-r">
                 <h3 className="text-lg font-semibold">Scan QR Code</h3>
-                <Button size="lg" className="h-24 w-full text-2xl font-bold">
-                  <Camera className="mr-4 !h-10 !w-10" />
+                <Button size="lg" className="h-24 w-full text-lg" onClick={() => setIsScannerOpen(true)}>
+                  <Camera className="mr-4 h-8 w-8" />
                   Open Camera
                 </Button>
               </div>
@@ -104,6 +116,7 @@ export default function Start({ machines }: StartPageProps) {
           </CardContent>
         </Card>
       </div>
+      <QrScannerModal isOpen={isScannerOpen} onOpenChange={setIsScannerOpen} onScan={handleScan} />
     </AppLayout>
   );
 }

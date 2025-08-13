@@ -1,6 +1,6 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { InspectionStatus, Machine } from '../Perform';
+import { InspectionPoint, InspectionStatus, Machine } from '../Perform';
 import { InspectionPointRow, InspectionResult } from './InspectionPointRow';
 import { Check, ListTodo } from 'lucide-react';
 
@@ -10,9 +10,10 @@ interface ChecklistCardProps {
   inspectionResults: Record<number, InspectionResult>;
   onResultChange: (pointId: number, newResult: InspectionResult) => void;
   onStatusChange: (pointId: number, statusId: number) => void;
+      onTakePhoto: (point: InspectionPoint) => void; // The handler now accepts the point
 }
 
-export function ChecklistCard({ machine, inspectionStatuses, inspectionResults, onResultChange, onStatusChange }: ChecklistCardProps) {
+export function ChecklistCard({ machine, inspectionStatuses, inspectionResults, onResultChange, onStatusChange, onTakePhoto }: ChecklistCardProps) {
   return (
     <Card className="border-0 drop-shadow-lg shadow-lg shadow-primary">
       <CardHeader>
@@ -41,6 +42,7 @@ export function ChecklistCard({ machine, inspectionStatuses, inspectionResults, 
                       result={inspectionResults[point.id] || {}}
                       onResultChange={(newResult) => onResultChange(point.id, newResult)}
                       onStatusChange={onStatusChange}
+                      onTakePhoto={() => onTakePhoto(point)}
                     />
                   ))}
                 </div>

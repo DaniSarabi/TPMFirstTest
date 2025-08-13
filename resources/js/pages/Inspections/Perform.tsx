@@ -8,6 +8,7 @@ import { ChecklistCard } from './Components/CheckListCard';
 import { ExistingTicketsModal } from './Components/ExistingTicketsModal';
 import { InspectionResult } from './Components/InspectionPointRow';
 import { SummaryCard } from './Components/SummaryCard';
+import { CameraModal } from './Components/CameraModal';
 
 // --- Type Definitions for this page ---
 export interface InspectionPoint {
@@ -72,6 +73,8 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
   const [isExistingTicketsModalOpen, setIsExistingTicketsModalOpen] = React.useState(false);
   const [openTicketsForPoint, setOpenTicketsForPoint] = React.useState<Ticket[]>([]);
   const [pointToReport, setPointToReport] = React.useState<InspectionPoint | null>(null);
+  const [isCameraModalOpen, setIsCameraModalOpen] = React.useState(false);
+  const [pointToPhotograph, setPointToPhotograph] = React.useState<InspectionPoint | null>(null);
 
   const handleResultChange = (pointId: number, newResult: InspectionResult) => {
     setInspectionResults((prev) => ({ ...prev, [pointId]: newResult }));
@@ -99,15 +102,31 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
     }
   };
 
- const handlePingTicket = (ticketToPing: Ticket) => {
-        if (!pointToReport) return;
-        handleResultChange(pointToReport.id, {
-            ...inspectionResults[pointToReport.id],
-            pinged_ticket_id: ticketToPing.id,
-            comment: `Ping to existing Ticket #${ticketToPing.id}.`,
-            image: null,
-        });
-    };
+  const handlePingTicket = (ticketToPing: Ticket) => {
+    if (!pointToReport) return;
+    handleResultChange(pointToReport.id, {
+      ...inspectionResults[pointToReport.id],
+      pinged_ticket_id: ticketToPing.id,
+      comment: `Ping to existing Ticket #${ticketToPing.id}.`,
+      image: null,
+    });
+  };
+
+  const handleTakePhoto = (point: InspectionPoint) => {
+    setPointToPhotograph(point);
+    setIsCameraModalOpen(true);
+  };
+
+  // --- ACTION 4: Create the handler for when a photo is captured ---
+  const handleCapturePhoto = (file: File) => {
+    if (pointToPhotograph) {
+      handleResultChange(pointToPhotograph.id, {
+        ...inspectionResults[pointToPhotograph.id],
+        image: file,
+      });
+    }
+  };
+
   const handleSubmitInspection = () => {
     // Client-side validation before submitting
     for (const point of machine.subsystems.flatMap((s) => s.inspection_points)) {
@@ -153,6 +172,7 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
           inspectionResults={inspectionResults}
           onResultChange={handleResultChange}
           onStatusChange={handleStatusChange}
+          onTakePhoto={handleTakePhoto}
         />
 
         <div className="flex justify-end space-x-4">
@@ -170,6 +190,7 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
         onReportNew={() => {}}
         openTickets={openTicketsForPoint}
       />
+      <CameraModal isOpen={isCameraModalOpen} onOpenChange={setIsCameraModalOpen} onCapture={handleCapturePhoto} />
     </AppLayout>
   );
 }

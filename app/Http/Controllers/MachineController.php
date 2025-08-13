@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Events\MachineStatusChanged;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class MachineController extends Controller
 {
@@ -185,17 +187,32 @@ class MachineController extends Controller
         // This URL points to the 'startFromQr' method we created earlier.
         $url = route('inspections.startFromQr', $machine->id);
 
-        $logoPath = public_path('images/jstlogo.png');
+        $logoPath = public_path('images/jstlogo.jpg');
 
-        // --- Generate the QR code as an SVG image ---
-        // We use SVG because it's high quality and perfect for printing.
         $qrCode = QrCode::format('svg')
             ->size(300)
-            ->merge($logoPath, 0.5, true) // The 'true' makes the background of the logo transparent
+            ->errorCorrection('H') // High error correction for durability
             ->generate($url);
 
-        // --- Return the image directly to the browser ---
-        // The browser will display this as an image, which the user can save or print.
         return response($qrCode)->header('Content-Type', 'image/svg+xml');
+    }
+    /**
+     * Generate a printable Blade view for the QR code.
+     */
+    public function printQr(Machine $machine)
+    {
+        // This method simply renders a Blade view designed for printing.
+        return view('pdf.qr-code', ['machine' => $machine]);
+    }
+
+    /**
+     * Generate a downloadable PDF for the QR code.
+     */
+    public function downloadQrPdf(Machine $machine)
+    {
+        // This method uses dompdf to convert the same Blade view into a PDF.
+        $pdf = Pdf::loadView('print.qr-code', ['machine' => $machine]);
+
+        return $pdf->download('qr-code-' . $machine->name . '.pdf');
     }
 }

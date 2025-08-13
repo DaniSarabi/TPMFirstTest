@@ -1,8 +1,8 @@
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Circle, CircleAlert, CircleCheck, CircleX, ImagePlus } from 'lucide-react';
+import { Camera, Circle, CircleAlert, CircleCheck, CircleX } from 'lucide-react';
 import * as React from 'react';
 import { InspectionPoint, InspectionStatus } from '../Perform'; // Assuming types are exported from Perform.tsx
 
@@ -12,6 +12,7 @@ export type InspectionResult = {
   comment?: string;
   image?: File | null;
   pinged_ticket_id?: number | null;
+  original_image_url?: string | null;
 };
 
 interface InspectionPointRowProps {
@@ -20,6 +21,7 @@ interface InspectionPointRowProps {
   result: InspectionResult;
   onResultChange: (newResult: InspectionResult) => void;
   onStatusChange: (pointId: number, statusId: number) => void; // Add this prop
+  onTakePhoto: () => void; // Add a handler for opening the camera
 }
 
 // Component for the dynamic status icon
@@ -37,20 +39,26 @@ const StatusIcon = ({ status }: { status: InspectionStatus | undefined }) => {
   }
 };
 
-export function InspectionPointRow({ point, statuses, result, onResultChange, onStatusChange }: InspectionPointRowProps) {
+export function InspectionPointRow({ point, statuses, result, onResultChange, onStatusChange, onTakePhoto }: InspectionPointRowProps) {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const selectedStatus = statuses.find((s) => s.id === result.status_id);
+
+  const isPing = !!result.pinged_ticket_id;
 
   const isPhotoRequired = !result.pinged_ticket_id;
   const isCommentRequired = selectedStatus && selectedStatus.severity > 0;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onResultChange({ ...result, image: file });
-      setImagePreview(URL.createObjectURL(file));
+  // Update the preview when the result.image changes
+  React.useEffect(() => {
+    if (result.image) {
+      const url = URL.createObjectURL(result.image);
+      setImagePreview(url);
+      // Clean up the object URL when the component unmounts or the image changes
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setImagePreview(null);
     }
-  };
+  }, [result.image]);
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onResultChange({ ...result, comment: e.target.value });
@@ -89,7 +97,7 @@ export function InspectionPointRow({ point, statuses, result, onResultChange, on
       {/* Inline Details Section (conditionally shown) */}
       {selectedStatus && (
         <div className="mt-4 grid grid-cols-1 gap-4 pl-7 md:grid-cols-2">
-          <div className="space-y-2 ">
+          <div className="space-y-2">
             <Label htmlFor={`comment-${point.id}`}>
               Comment <span className={isCommentRequired ? 'text-red-500' : 'text-blue-500'}>{isCommentRequired ? '(Required)' : '(Optional)'}</span>
             </Label>{' '}
@@ -99,28 +107,23 @@ export function InspectionPointRow({ point, statuses, result, onResultChange, on
               onChange={handleCommentChange}
               placeholder="Describe the situation or issue..."
               required={isCommentRequired}
-              className="ring-1 hover:bg-accent hover:ring-primary hover:text-accent-foreground"
+              className="ring-1 hover:bg-accent hover:text-accent-foreground hover:ring-primary"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`image-${point.id}`}>Photo <span className={isPhotoRequired ? 'text-red-500' : 'text-blue-500'}>{isPhotoRequired ? '(Required)' : ''}</span>
-                
+            <Label htmlFor={`image-${point.id}`}>
+              Photo <span className={isPhotoRequired ? 'text-red-500' : 'text-blue-500'}>{isPhotoRequired ? '(Required)' : ''}</span>
             </Label>
             <div className="flex items-center gap-4">
-              <Input
-                id={`image-${point.id}`}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="flex-1 ring-1 hover:bg-accent hover:ring-primary"
-                required={isPhotoRequired}
-              />
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="h-24 w-24 rounded-md object-cover" />
-              ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-md border-0 ">
-                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                </div>
+              {/* --- ACTION: Replaced Input with a Button --- */}
+              <Button type="button" variant="outline" className="flex-1" onClick={onTakePhoto} disabled={isPing}>
+                <Camera className="mr-2 h-4 w-4" />
+                {result.image || result.original_image_url ? 'Change Photo' : 'Take Photo'}
+              </Button>
+
+              {/* --- Preview --- */}
+              {(imagePreview || result.original_image_url) && (
+                <img src={imagePreview || result.original_image_url} alt="Preview" className="h-16 w-16 rounded-md object-cover" />
               )}
             </div>
           </div>

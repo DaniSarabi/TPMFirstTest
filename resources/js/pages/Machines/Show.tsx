@@ -10,11 +10,11 @@ import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, QrCode, Ticket, 
 import React from 'react';
 import { AddSubsystemWizard } from './AddSubsystemWizard';
 import { Machine, MachineStatus, Subsystem } from './Columns'; // Import the Machine type from your columns file
+import { QrCodeModal } from './Components/QrCodeModal';
 import { EditMachineModal } from './EditMachineModal';
 import { EditSubsystemModal } from './EditSubsystemModal';
 import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
 import { SubsystemAccordion } from './SubsystemAccordion';
-
 
 // Define the props for the Show page
 interface ShowPageProps {
@@ -45,6 +45,8 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
   const [subsystemToManage, setSubsystemToManage] = React.useState<Subsystem | null>(null);
 
   const [isMachineDeleteDialogOpen, setIsMachineDeleteDialogOpen] = React.useState(false);
+
+  const [isQrModalOpen, setIsQrModalOpen] = React.useState(false);
 
   const can = {
     create: useCan('machines.create'),
@@ -105,7 +107,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
       <Head title={`Machine: ${machine.name}`} />
       <div className="space-y-6 p-6">
         {/* --- Main Machine Details Card --- */}
-        <Card className='drop-shadow-lg shadow-lg'>
+        <Card className="shadow-lg drop-shadow-lg">
           <div className="grid md:grid-cols-2">
             {/* Left Column: Details */}
             <div className="flex flex-col p-6">
@@ -121,10 +123,8 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
                     {machine.machine_status.name}
                   </Badge>
                   <div className="flex items-center gap-2">
-                    <Button variant="secondary" size="icon" asChild>
-                      <a href={route('machines.qr-code', machine.id)} target="_blank">
-                        <QrCode className="h-4 w-4" />
-                      </a>
+                    <Button variant="secondary" size="icon" onClick={() => setIsQrModalOpen(true)}>
+                      <QrCode className="h-4 w-4" />
                     </Button>
                     {can.edit && (
                       <Button variant="default" size="icon" onClick={() => setEditModalIsOpen(true)}>
@@ -210,7 +210,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
         </Card>
 
         {/* --- Subsystems Section --- */}
-        <Card className='drop-shadow-lg shadow-lg'>
+        <Card className="shadow-lg drop-shadow-lg">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Subsystems for {machine.name}</CardTitle>
@@ -261,6 +261,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
         title={`Delete Machine: ${machine.name}`}
         description="This action cannot be undone. This will permanently delete the entire machine, including all of its subsystems and inspection points."
       />
+      <QrCodeModal machine={machine} isOpen={isQrModalOpen} onOpenChange={setIsQrModalOpen} />
     </AppLayout>
   );
 }

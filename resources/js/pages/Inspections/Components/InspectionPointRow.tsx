@@ -1,3 +1,4 @@
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +20,7 @@ interface InspectionPointRowProps {
   point: InspectionPoint;
   statuses: InspectionStatus[];
   result: InspectionResult;
+  errors: any;
   onResultChange: (newResult: InspectionResult) => void;
   onStatusChange: (pointId: number, statusId: number) => void; // Add this prop
   onTakePhoto: () => void; // Add a handler for opening the camera
@@ -39,7 +41,7 @@ const StatusIcon = ({ status }: { status: InspectionStatus | undefined }) => {
   }
 };
 
-export function InspectionPointRow({ point, statuses, result, onResultChange, onStatusChange, onTakePhoto }: InspectionPointRowProps) {
+export function InspectionPointRow({ point, statuses, result, errors, onResultChange, onStatusChange, onTakePhoto }: InspectionPointRowProps) {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const selectedStatus = statuses.find((s) => s.id === result.status_id);
 
@@ -77,7 +79,7 @@ export function InspectionPointRow({ point, statuses, result, onResultChange, on
         </div>
         <div className="flex items-center gap-2">
           <Select value={result.status_id ? String(result.status_id) : ''} onValueChange={(value) => onStatusChange(point.id, Number(value))}>
-            <SelectTrigger className="w-[180px] bg-accent shadow-sm">
+            <SelectTrigger className="w-[380px] border-0 bg-accent text-accent-foreground shadow-sm">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
             <SelectContent>
@@ -109,6 +111,7 @@ export function InspectionPointRow({ point, statuses, result, onResultChange, on
               required={isCommentRequired}
               className="ring-1 hover:bg-accent hover:text-accent-foreground hover:ring-primary"
             />
+            <InputError message={errors?.[`results.${point.id}.comment`]} />
           </div>
           <div className="space-y-2">
             <Label htmlFor={`image-${point.id}`}>
@@ -126,6 +129,7 @@ export function InspectionPointRow({ point, statuses, result, onResultChange, on
                 <img src={imagePreview || result.original_image_url} alt="Preview" className="h-16 w-16 rounded-md object-cover" />
               )}
             </div>
+            <InputError message={errors?.[`results.${point.id}.image`]} />
           </div>
         </div>
       )}

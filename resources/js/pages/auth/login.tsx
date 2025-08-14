@@ -42,13 +42,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
       <Head title="Log in" />
 
-      <Card className="w-full max-w-4xl ">
-        <CardContent className="grid p-0 md:grid-cols-2 pr-4">
+      <Card className="w-full max-w-4xl">
+        <CardContent className="grid p-0 pr-4 md:grid-cols-2">
           <form className="flex flex-col justify-center p-6 md:p-8" onSubmit={submit}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold">Welcome Back</h1>
                 <p className="text-balance text-muted-foreground">Login to your TPM account</p>
+                <p className="text-xs text-muted-foreground">v0.8</p>
               </div>
               <div className="grid gap-4">
                 <div className="grid gap-2">
@@ -97,11 +98,11 @@ export default function Login({ status, canResetPassword }: LoginProps) {
               </div>
             </div>
           </form>
-          <div className="relative hidden bg-muted md:block rounded-lg ring-ring ring-1">
+          <div className="relative hidden rounded-lg bg-muted ring-1 ring-ring md:block">
             <img
               src={loginImg}
               alt="TPM application visual"
-              className="absolute inset-0 h-full w-full object-cover rounded-lg"
+              className="absolute inset-0 h-full w-full rounded-lg object-cover"
               //onError={(e) => (e.currentTarget.src = 'https://placehold.co/1080x1920/e2e8f0/e2e8f0?text=Image')}
             />
           </div>

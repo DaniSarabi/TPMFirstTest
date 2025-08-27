@@ -1,12 +1,9 @@
 // resources/js/types/inertia.d.ts
+import { User } from './user';
 
 // Estas interfaces definen la forma de nuestros datos. Las exportamos para
 // poder usarlas en otras partes de nuestra aplicación si es necesario.
-export interface User {
-    id: number;
-    name: string;
-    email: string;
-}
+
 
 export interface Auth {
     user: User | null;

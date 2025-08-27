@@ -1,20 +1,19 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import useCan from '@/lib/useCan';
 import { type BreadcrumbItem } from '@/types';
+import { Machine, MachineStatus, Subsystem } from '@/types/machine';
 import { Head, router } from '@inertiajs/react';
-import { BadgeAlert, ClockArrowUp, History, Pencil, PlusCircle, QrCode, Ticket, Trash2, Wrench } from 'lucide-react';
 import React from 'react';
 import { AddSubsystemWizard } from './AddSubsystemWizard';
-import { Machine, MachineStatus, Subsystem } from './Columns'; // Import the Machine type from your columns file
+import { MachineHeader } from './Components/MachineHeader';
+import { MaintenanceTab } from './Components/MaintenanceTab';
 import { QrCodeModal } from './Components/QrCodeModal';
+import { SubsystemsTab } from './Components/SubsystemsTab';
 import { EditMachineModal } from './EditMachineModal';
 import { EditSubsystemModal } from './EditSubsystemModal';
 import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
-import { SubsystemAccordion } from './SubsystemAccordion';
 
 // Define the props for the Show page
 interface ShowPageProps {
@@ -24,10 +23,7 @@ interface ShowPageProps {
     since: string | null;
     duration: string | null;
   };
-  stats: {
-    subsystems_count: number;
-    inspection_points_count: number;
-  };
+  stats: any;
 }
 
 export default function Show({ machine, statuses, uptime, stats }: ShowPageProps) {
@@ -107,131 +103,43 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
       <Head title={`Machine: ${machine.name}`} />
       <div className="space-y-6 p-6">
         {/* --- Main Machine Details Card --- */}
-        <Card className="shadow-lg drop-shadow-lg">
-          <div className="grid md:grid-cols-2">
-            {/* Left Column: Details */}
-            <div className="flex flex-col p-6">
-              <div className="flex flex-col pb-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <Badge
-                    className="text-sm"
-                    style={{
-                      backgroundColor: machine.machine_status.bg_color,
-                      color: machine.machine_status.text_color,
-                    }}
-                  >
-                    {machine.machine_status.name}
-                  </Badge>
-                  <div className="flex items-center gap-2">
-                    <Button variant="secondary" size="icon" onClick={() => setIsQrModalOpen(true)}>
-                      <QrCode className="h-4 w-4" />
-                    </Button>
-                    {can.edit && (
-                      <Button variant="default" size="icon" onClick={() => setEditModalIsOpen(true)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {can.delete && (
-                      <Button variant="destructive" size="icon" onClick={() => setIsMachineDeleteDialogOpen(true)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <h1 className="mb-2 text-3xl font-bold">{machine.name}</h1>
-                <p className="mb-6 leading-relaxed text-muted-foreground">{machine.description || 'No description provided.'}</p>
-                <div className="mt-4 gap-2">
-                  {uptime.since && (
-                    <div className="flex items-center text-sm">
-                      <History className="mr-2 h-4 w-4 text-muted-foreground" />
-
-                      <span className="text-muted-foreground">In Service Since:</span>
-
-                      <span className="ml-auto font-semibold">{uptime.since}</span>
-                    </div>
-                  )}
-
-                  {uptime.duration && (
-                    <div className="flex items-center text-sm">
-                      <ClockArrowUp className="mr-2 h-4 w-4 text-muted-foreground" />
-
-                      <span className="text-muted-foreground">Uptime Duration:</span>
-
-                      <span className="ml-auto font-semibold">{uptime.duration}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/*   stats grid --- */}
-              <div className="mt-auto grid grid-cols-2 gap-4 border-t pt-6">
-                <div className="flex items-center gap-3">
-                  <Wrench className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Subsystems</p>
-                    <p className="text-lg font-bold">{stats.subsystems_count}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Ticket className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Open Tickets</p>
-                    <p className="text-lg font-bold">0</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <BadgeAlert className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Points</p>
-                    <p className="text-lg font-bold">{stats.inspection_points_count}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <History className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Last Inspected</p>
-                    <p className="text-lg font-bold">N/A</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Image */}
-            <div className="flex items-center justify-center p-6">
-              {machine.image_url ? (
-                <img src={machine.image_url} alt={`Image of ${machine.name}`} className="max-h-96 w-full rounded-lg object-contain" />
-              ) : (
-                <div className="flex h-64 w-full items-center justify-center rounded-md bg-muted">
-                  <p className="text-muted-foreground">No image available</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* --- Subsystems Section --- */}
-        <Card className="shadow-lg drop-shadow-lg">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Subsystems for {machine.name}</CardTitle>
-              {can.create && (
-                <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setAddSubsystemWizardIsOpen(true)}>
-                  <PlusCircle className="h-4 w-4" />
-                  Add Subsystem
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SubsystemAccordion
+        <MachineHeader
+          machine={machine}
+          stats={stats}
+          uptime={uptime}
+          onEdit={() => setEditModalIsOpen(true)}
+          onDelete={() => setIsMachineDeleteDialogOpen(true)}
+          onQrCode={() => setIsQrModalOpen(true)}
+          can={can}
+        />
+        <Tabs defaultValue="subsystems" className="w-full">
+          <TabsList>
+            <TabsTrigger value="subsystems">Subsystems</TabsTrigger>
+            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+          </TabsList>
+          <TabsContent value="subsystems">
+            <SubsystemsTab
               machine={machine}
-              onDelete={handleDeleteSubsystem}
-              onEdit={handleEditSubsystem}
+              onDeleteSubsystem={handleDeleteSubsystem}
+              onEditSubsystem={handleEditSubsystem}
               onManagePoints={handleManagePoints}
+              onAddSubsystem={() => setAddSubsystemWizardIsOpen(true)}
               can={can}
             />
-          </CardContent>
-        </Card>
+          </TabsContent>
+          <TabsContent value="maintenance">
+            <MaintenanceTab maintenances={machine.all_maintenances} />
+          </TabsContent>
+          <TabsContent value='reports'>
+            <div>
+              <span>
+                Reports tab
+              </span>
+            </div>
+            {/* <ReportsTab /> */}
+          </TabsContent>
+        </Tabs>
       </div>
       <EditMachineModal machine={machine} statuses={statuses} isOpen={editModalIsOpen} onOpenChange={setEditModalIsOpen} />
       <AddSubsystemWizard

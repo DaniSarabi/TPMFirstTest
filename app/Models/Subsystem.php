@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Subsystem extends Model
 {
@@ -38,5 +39,13 @@ class Subsystem extends Model
     public function inspectionPoints(): HasMany
     {
         return $this->hasMany(InspectionPoint::class);
+    }
+    /**
+     * Get all of the subsystem's scheduled maintenances.
+     * This is the missing relationship method.
+     */
+    public function scheduledMaintenances(): MorphMany
+    {
+        return $this->morphMany(ScheduledMaintenance::class, 'schedulable');
     }
 }

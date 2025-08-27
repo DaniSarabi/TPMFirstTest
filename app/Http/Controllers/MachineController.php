@@ -11,7 +11,8 @@ use Inertia\Inertia;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Events\MachineStatusChanged;
 use Barryvdh\DomPDF\Facade\Pdf;
-
+use App\Models\TicketStatus;
+use Carbon\Carbon;
 
 class MachineController extends Controller
 {
@@ -84,44 +85,60 @@ class MachineController extends Controller
      */
     public function show(Machine $machine)
     {
-        // Eager-load all necessary relationships for the details page.
-        $machine->load('creator', 'subsystems.inspectionPoints', 'statusLogs', 'machineStatus');
 
-        // Calculate uptime information ---
-        $uptimeData = [
-            'since' => null,
-            'duration' => null,
-        ];
+        // Cargar las relaciones necesarias de forma eficiente
+        $machine->load([
+            'subsystems.inspectionPoints',
+            'statusLogs.machineStatus',
+            'creator',
+            'machineStatus',
+            'scheduledMaintenances.template',
+            'scheduledMaintenances.report',
+            'scheduledMaintenances.schedulable', // Load for machine's own maintenances
+            'subsystems.scheduledMaintenances.template',
+            'subsystems.scheduledMaintenances.report',
+            'subsystems.scheduledMaintenances.schedulable',
+        ]);
 
-        // Find the most recent log entry where the status was set to "In Service".
-        $inServiceLog = $machine->statusLogs()
-            ->whereHas('machineStatus', function ($query) {
-                $query->where('name', 'In Service');
-            })
-            ->latest()
-            ->first();
+        // --- Combine all maintenances into a single, sorted list ---
+        $machineMaintenances = $machine->scheduledMaintenances;
+        $subsystemMaintenances = $machine->subsystems->flatMap->scheduledMaintenances;
+        $allMaintenances = $machineMaintenances->merge($subsystemMaintenances)->sortByDesc('scheduled_date');
 
-        if ($inServiceLog) {
-            $uptimeData['since'] = $inServiceLog->created_at->format('M d, Y, h:i A');
-            $uptimeData['duration'] = $inServiceLog->created_at->diffForHumans(null, true, true);
-        }
+        // We will add this merged list to the machine object for the frontend
+        $machine->all_maintenances = $allMaintenances->values()->all();
+
+
+        $closingStatusIds = TicketStatus::whereHas('behaviors', function ($query) {
+            $query->where('name', 'is_ticket_closing_status');
+        })->pluck('id');
+
+        $lastInspection = $machine->inspectionReports()->whereNotNull('completed_at')->latest('completed_at')->first();
+        $lastMaintenance = $machine->scheduledMaintenances()->where('status', 'completed')->latest('scheduled_date')->first();
 
         $stats = [
             'subsystems_count' => $machine->subsystems->count(),
-            // --- ACTION: Update this line to be safer ---
             'inspection_points_count' => $machine->subsystems->reduce(function ($carry, $subsystem) {
-                // Use the null-safe operator (?->) to prevent an error if the relationship is null.
-                // The null coalescing operator (?? 0) ensures we add 0 if it's null.
                 return $carry + ($subsystem->inspectionPoints?->count() ?? 0);
             }, 0),
+            'open_tickets_count' => $machine->tickets()->whereNotIn('ticket_status_id', $closingStatusIds)->count(),
+            'last_inspection_date' => $lastInspection ? $lastInspection->completed_at->format('M d, Y') : null,
+            'last_maintenance_date' => $lastMaintenance ? $lastMaintenance->scheduled_date->format('M d, Y') : null,
+        ];
+
+        // Calcular el Uptime
+        $lastOperationalLog = $machine->statusLogs->where('machineStatus.is_operational_default', true)->sortByDesc('created_at')->first();
+        $uptime = [
+            'since' => $lastOperationalLog ? Carbon::parse($lastOperationalLog->created_at)->format('M d, Y') : null,
+            'duration' => $lastOperationalLog ? Carbon::parse($lastOperationalLog->created_at)->diffForHumans(null, true) : null,
         ];
 
         // Render the 'Show' page component and pass both the machine and uptime data.
         return Inertia::render('Machines/Show', [
             'machine' => $machine,
-            'uptime' => $uptimeData,
-            'stats' => $stats,
             'statuses' => MachineStatus::all(),
+            'uptime' => $uptime,
+            'stats' => $stats,
 
         ]);
     }

@@ -8,11 +8,11 @@ import { Head, router } from '@inertiajs/react';
 import { Row } from '@tanstack/react-table';
 import { CirclePlus } from 'lucide-react';
 import * as React from 'react';
-import { Machine, MachineStatus } from './Columns'; // Import from your new columns file
 import { CreateMachineWizard } from './CreateMachineWizard';
 import { MachineCard } from './MachineCard';
 import { MachineListToolbar } from './MachineListToolbar';
 import { SubsystemList } from './SubsystemList';
+import { Machine, MachineStatus } from '@/types/machine';
 
 // Define the props for the Index page
 interface IndexPageProps {

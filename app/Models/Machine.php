@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\MorphMany; // Import MorphMany
+
 
 class Machine extends Model
 {
@@ -89,5 +91,28 @@ class Machine extends Model
     public function machineStatus(): BelongsTo
     {
         return $this->belongsTo(MachineStatus::class);
+    }
+    /**
+     * Get all of the machine's scheduled maintenances.
+     * This is the missing relationship method.
+     */
+    public function scheduledMaintenances(): MorphMany
+    {
+        return $this->morphMany(ScheduledMaintenance::class, 'schedulable');
+    }
+    /**
+     * Get all of the machine's tickets.
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+     /**
+     * Get all of the inspection reports for the machine.
+     * This is the missing relationship.
+     */
+    public function inspectionReports(): HasMany
+    {
+        return $this->hasMany(InspectionReport::class);
     }
 }

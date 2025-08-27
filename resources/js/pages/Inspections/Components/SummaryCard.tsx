@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Machine } from '@/types/machine';
 import { Clock, ClockArrowUp, ListCheck, Wrench } from 'lucide-react'
 import React from 'react'
-import { Machine } from '../Perform';
 
 
 interface SummaryCardProps {
@@ -30,7 +30,6 @@ export function SummaryCard({ machine, uptime }: SummaryCardProps) {
               className="h-full max-h-58 w-full rounded-xl object-cover"
             />
           </div>
-
           {/* Info Content */}
           <CardContent className="flex w-full flex-col justify-between p-3 md:w-2/3">
             {/* Top Row Stats */}

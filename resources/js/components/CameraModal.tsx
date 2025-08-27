@@ -113,7 +113,7 @@ export function CameraModal({ isOpen, onOpenChange, onCapture }: CameraModalProp
                 <DialogHeader>
                     <DialogTitle>Take Photo</DialogTitle>
                     <DialogDescription>
-                        Capture a photo for the inspection point.
+                        Capture a photo.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 flex items-center justify-center bg-black rounded-md">

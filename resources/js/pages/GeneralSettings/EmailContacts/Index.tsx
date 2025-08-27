@@ -7,12 +7,12 @@ import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import AppLayout from '@/layouts/app-layout';
 import GeneralSettingsLayout from '@/layouts/general-settings-layout';
 import { useCan } from '@/lib/useCan';
-import { type BreadcrumbItem, type Filter, type Paginated } from '@/types';
+import { EmailContact, type BreadcrumbItem, type Filter, type Paginated } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
-import { EmailContact, getColumns } from './Columns';
+import {  getColumns } from './Columns';
 import { EmailContactFormModal } from './EmailContactFormModal';
 
 // Define the props for the page

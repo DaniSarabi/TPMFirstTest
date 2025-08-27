@@ -83,9 +83,9 @@ export function NotificationBell() {
         <div className="max-h-96 overflow-y-auto">
           {notifications.length > 0 ? (
             notifications.map((notification) => (
-              <>
+              <React.Fragment key={notification.id}>
                 <DropdownMenuItem
-                  key={notification.id}
+                  
                   asChild
                   className={cn(
                     // Apply a primary background color if the notification is unread
@@ -105,7 +105,7 @@ export function NotificationBell() {
                   </Link>
                 </DropdownMenuItem>
                 <Separator className="border-1 border-primary" />
-              </>
+              </React.Fragment>
             ))
           ) : (
             <p className="p-4 text-center text-sm text-muted-foreground">No new notifications.</p>

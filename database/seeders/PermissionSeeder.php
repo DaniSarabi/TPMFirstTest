@@ -55,6 +55,10 @@ class PermissionSeeder extends Seeder
             // * Notifications permissions
             'notifications.view',
             'notifications.admin',
+
+            // * Policies permissions
+            'policies.view',
+            'policies.edit',
         ];
 
         // Create permissions if they don't exist

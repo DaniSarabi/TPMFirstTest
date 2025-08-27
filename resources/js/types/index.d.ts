@@ -5,6 +5,13 @@ export interface Auth {
   user: User;
 }
 
+export interface EmailContact {
+    id: number;
+    name: string;
+    email: string;
+    department: string;
+}
+
 export interface BreadcrumbItem {
   title: string;
   href: string;

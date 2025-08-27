@@ -17,6 +17,15 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\TicketActionsController;
+use App\Http\Controllers\Settings\MaintenanceTemplateController;
+use App\Http\Controllers\MaintenanceCalendarController;
+use App\Http\Controllers\ScheduledMaintenanceController;
+use App\Http\Controllers\PerformMaintenanceController;
+use App\Http\Controllers\MaintenancePhotoController;
+use App\Http\Controllers\MaintenanceReportController;
+use App\Http\Controllers\Settings\EscalationPolicyController;
+use App\Http\Controllers\Settings\EscalationLevelController;
+
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -27,6 +36,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+
+    // * ***************************** Maintenance Calendar Routes *****************************
+
+    // Maintenance Calendar Route
+    Route::get('/maintenance-calendar', [MaintenanceCalendarController::class, 'index'])
+        ->name('maintenance-calendar.index');
+
+    // This should go with your other main application routes
+    Route::resource('scheduled-maintenances', ScheduledMaintenanceController::class)->only(['store']);
+
+    // Update this line to include the 'update' method
+    Route::resource('scheduled-maintenances', ScheduledMaintenanceController::class)->only(['store', 'update', 'destroy']);
+
+
+    // ---//? *********************** Perform Maintenance Routes *********************** ---
+
+    // Routes for the "Perform Maintenance" workflow
+    Route::get('/perform-maintenance/{scheduledMaintenance}', [PerformMaintenanceController::class, 'show'])
+        ->name('maintenance.perform.show');
+
+    // --- New, separate routes for saving and submitting ---
+    Route::post('/perform-maintenance/{scheduledMaintenance}/save', [PerformMaintenanceController::class, 'saveProgress'])
+        ->name('maintenance.perform.save');
+
+    Route::post('/perform-maintenance/{scheduledMaintenance}/submit', [PerformMaintenanceController::class, 'submitReport'])
+        ->name('maintenance.perform.submit');
+
+    // Route for deleting a single maintenance photo
+    Route::delete('/maintenance-photos/{maintenancePhoto}', [MaintenancePhotoController::class, 'destroy'])
+        ->name('maintenance-photos.destroy');
+
+
+
+    // Route for viewing a single maintenance report
+    Route::get('/maintenance-reports/{maintenanceReport}', [MaintenanceReportController::class, 'show'])
+        ->name('maintenance-reports.show');
+
 
     // * ***************************** Notifications Routes *****************************
     // --- Rutas para el sistema de notificaciones en la aplicación ---
@@ -112,6 +158,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('email-contacts', EmailContactController::class)
             ->except(['show'])
             ->middleware('permission:email-contacts.admin'); // Or a new settings permission
+
+        Route::resource('maintenance-templates', MaintenanceTemplateController::class)
+            ->except(['show']);
+        // This route is specifically for updating the tasks of a template.
+        Route::put(
+            'maintenance-templates/{maintenanceTemplate}/sync-tasks',
+            [MaintenanceTemplateController::class, 'syncTasks']
+        )->name('maintenance-templates.sync-tasks');
+
+        Route::resource('escalation-policies', EscalationPolicyController::class)->except(['show']);
+
+        Route::resource('escalation-levels', EscalationLevelController::class)->only(['store', 'update', 'destroy']);
+        Route::post('escalation-levels/{escalationLevel}/sync-contacts', [EscalationLevelController::class, 'syncContacts'])
+            ->name('escalation-levels.sync-contacts');
+
+        Route::resource('escalation-policies', EscalationPolicyController::class)->except(['show']);
+        // Nueva ruta para cambiar el estado de una política
+        Route::patch('escalation-policies/{escalationPolicy}/toggle-status', [EscalationPolicyController::class, 'toggleStatus'])
+            ->name('escalation-policies.toggle-status');
     });
     // * ***************************** Machines module Routes *****************************
 

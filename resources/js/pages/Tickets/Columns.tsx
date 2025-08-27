@@ -9,6 +9,7 @@ import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { AlertTriangle, Eye, MoreHorizontal, ShieldAlert } from 'lucide-react';
 import { MachineStatus } from '../GeneralSettings/MachineStatus/Columns';
+import { InspectionPoint, Machine } from '@/types/machine';
 
 // --- Type Definitions for the Tickets Module ---
 // These must match the data sent from the TicketController
@@ -20,24 +21,6 @@ export interface TicketStatus {
   text_color: string;
 }
 
-export interface User {
-  id: number;
-  name: string;
-  avatar_url: string | null;
-  avatar_color: string | null;
-}
-
-export interface Subsystem {
-  id: number;
-  name: string;
-}
-
-export interface InspectionPoint {
-  id: number;
-  name: string;
-  description: string | null;
-  subsystem: Subsystem;
-}
 
 export interface InspectionReportItem {
   id: number;
@@ -46,12 +29,6 @@ export interface InspectionReportItem {
   inspection_report_id: number;
 }
 
-export interface Machine {
-  id: number;
-  name: string;
-  image_url: string | null;
-  machine_status: { name: string };
-}
 
 export interface TicketUpdate {
   id: number;

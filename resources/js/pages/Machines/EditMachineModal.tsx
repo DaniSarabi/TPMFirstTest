@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Machine, MachineStatus } from '@/types/machine';
 import { useForm } from '@inertiajs/react';
-import * as React from 'react';
-import { Machine, MachineStatus } from './Columns';
 import { Info } from 'lucide-react';
+import * as React from 'react';
 
 // Define the props for the modal
 interface EditMachineModalProps {
@@ -71,35 +71,44 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Machine: {machine.name}</DialogTitle>
-          <DialogDescription>
             Update the details for this machine.
             <br />
             <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-500/50 bg-blue-50 p-3 text-sm text-blue-800">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>Note: The status can only be manually changed to the operational status.</p>
+              <span>Note: The status can only be manually changed to the operational status.</span>
             </div>
-          </DialogDescription>
         </DialogHeader>
         <form id="edit-machine-form" onSubmit={submit} className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input className='ring-1 ring-ring hover:bg-accent' id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+            <Input
+              className="ring-1 ring-ring hover:bg-accent"
+              id="name"
+              value={data.name}
+              onChange={(e) => setData('name', e.target.value)}
+              required
+            />
             <InputError message={errors.name} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea className='ring-1 ring-ring hover:bg-accent' id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
+            <Textarea
+              className="ring-1 ring-ring hover:bg-accent"
+              id="description"
+              value={data.description}
+              onChange={(e) => setData('description', e.target.value)}
+            />
             <InputError message={errors.description} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="machine_status_id">Status</Label>
             <Select value={String(data.machine_status_id)} onValueChange={(value) => setData('machine_status_id', Number(value))}>
-              <SelectTrigger className='ring-1 ring-ring hover:bg-accent' id="machine_status_id">
+              <SelectTrigger className="ring-1 ring-ring hover:bg-accent" id="machine_status_id">
                 <SelectValue placeholder="Select a status..." />
               </SelectTrigger>
               <SelectContent>
                 {availableStatuses.map((status) => (
-                  <SelectItem className='hover:bg-accent' key={status.id} value={String(status.id)}>
+                  <SelectItem className="hover:bg-accent" key={status.id} value={String(status.id)}>
                     <div className="flex items-center">
                       <div className="mr-2 h-3 w-3 rounded-full border" style={{ backgroundColor: status.bg_color }} />
                       <span>{status.name}</span>
@@ -112,7 +121,12 @@ export function EditMachineModal({ machine, statuses, isOpen, onOpenChange }: Ed
           </div>
           <div className="space-y-2">
             <Label htmlFor="image">Update Image (Optional)</Label>
-            <Input className='ring-1 ring-ring hover:bg-accent' id="image" type="file" onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)} />
+            <Input
+              className="ring-1 ring-ring hover:bg-accent"
+              id="image"
+              type="file"
+              onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)}
+            />
             <InputError message={errors.image} />
           </div>
         </form>

@@ -6,14 +6,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table-column-header';
 import * as React from 'react';
+import { EmailContact } from '@/types';
 
 // Define the shape of the EmailContact data
-export interface EmailContact {
-    id: number;
-    name: string;
-    email: string;
-    department: string;
-}
+
 
 // The function now accepts the sorting state and handler
 export const getColumns = (

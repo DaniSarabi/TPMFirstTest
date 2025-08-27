@@ -10,45 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Machine } from '@/types/machine';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react';
-
-interface Creator {
-  id: number;
-  name: string;
-  email: string;
-}
-interface InspectionPoint {
-  id: number;
-  name: string;
-}
-// Define the shape of the data to match what your controller sends
-// This includes the nested relationships for subsystems and inspection points
-export interface Subsystem {
-  id: number;
-  name: string;
-  inspection_points: InspectionPoint[];
-}
-
-export interface MachineStatus {
-  id: number;
-  name: string;
-  bg_color: string;
-  text_color: string;
-  is_operational_default: boolean;
-}
-export interface Machine {
-  id: number;
-  name: string;
-  description: string;
-  machine_status: MachineStatus;
-  image_url: string | null;
-  creator: Creator;
-  created_at: string;
-  updated_at: string;
-  subsystems: Subsystem[];
-}
 
 // This function will be called from your Index page to generate the columns
 export const getColumns = (can: { edit: boolean; delete: boolean }, handleDelete: (id: number) => void): ColumnDef<Machine>[] => [

@@ -8,39 +8,10 @@ import { ChecklistCard } from './Components/CheckListCard';
 import { ExistingTicketsModal } from './Components/ExistingTicketsModal';
 import { InspectionResult } from './Components/InspectionPointRow';
 import { SummaryCard } from './Components/SummaryCard';
-import { CameraModal } from './Components/CameraModal';
+import { CameraModal } from '../../components/CameraModal';
+import { InspectionPoint, Machine } from '@/types/machine';
 
 // --- Type Definitions for this page ---
-export interface InspectionPoint {
-  id: number;
-  name: string;
-  description: string | null;
-}
-
-export interface Subsystem {
-  id: number;
-  name: string;
-  inspection_points: InspectionPoint[];
-}
-
-export interface MachineStatus {
-  id: number;
-  name: string;
-  bg_color: string;
-  text_color: string;
-}
-
-export interface Machine {
-  id: number;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  created_at: string;
-  updated_at: string;
-  creator: { id: number; name: string } | null;
-  machine_status: MachineStatus;
-  subsystems: Subsystem[];
-}
 
 export interface InspectionStatus {
   id: number;
@@ -117,7 +88,7 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
     setIsCameraModalOpen(true);
   };
 
-  // --- ACTION 4: Create the handler for when a photo is captured ---
+  // ---  Create the handler for when a photo is captured ---
   const handleCapturePhoto = (file: File) => {
     if (pointToPhotograph) {
       handleResultChange(pointToPhotograph.id, {

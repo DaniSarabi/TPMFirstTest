@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class EmailContact extends Model
 {
@@ -26,4 +27,11 @@ class EmailContact extends Model
         'email',
         'department',
     ];
+     /**
+     * The escalation levels that the contact is a part of.
+     */
+    public function escalationLevels(): BelongsToMany
+    {
+        return $this->belongsToMany(EscalationLevel::class, 'escalation_level_email_contact');
+    }
 }

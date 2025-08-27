@@ -119,5 +119,5 @@
         "resources/js/**/*.d.ts",
         "resources/js/**/*.tsx",
         "resources/js/types/inertia.d.ts" // <--- AGREGA ESTA LÍNEA
-, "resources/js/pages/GeneralSettings/InspectionStatus"    ]
+, "resources/js/pages/GeneralSettings/InspectionStatus", "resources/js/pages/PerformMaintenance", "resources/js/pages/PerformMaintenance"    ]
 }

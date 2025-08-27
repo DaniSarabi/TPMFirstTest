@@ -1,8 +1,9 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { InspectionPoint, InspectionStatus, Machine } from '../Perform';
+import { InspectionStatus  } from '../Perform';
 import { InspectionPointRow, InspectionResult } from './InspectionPointRow';
 import { Check, ListTodo } from 'lucide-react';
+import { InspectionPoint, Machine } from '@/types/machine';
 
 interface ChecklistCardProps {
   machine: Machine;

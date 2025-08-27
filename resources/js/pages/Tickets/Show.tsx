@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { User, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Ticket, TicketStatus, User } from './Columns';
+import { Ticket, TicketStatus } from './Columns';
 import { ActionsCard } from './Components/ActionsCard';
 import { ActivityLogCard } from './Components/ActivityLogCard';
 import { DiscussionCard } from './Components/DiscussionCard';

@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bolt, Mail, ReceiptText, TicketCheck } from 'lucide-react';
+import { Bolt, LayoutTemplate, Mail, Megaphone, ReceiptText, TicketCheck } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
@@ -27,6 +27,16 @@ const sidebarNavItems: NavItem[] = [
     title: 'Mail Contacts',
     href: route('settings.email-contacts.index'),
     icon: Mail,
+  },
+  {
+    title: 'Escalation Policies',
+    href: route('settings.escalation-policies.index'),
+    icon: Megaphone,
+  },
+  {
+    title: 'Maintenance Templates',
+    href: route('settings.maintenance-templates.index'),
+    icon: LayoutTemplate,
   },
 ];
 

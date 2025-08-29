@@ -129,7 +129,7 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
             />
           </TabsContent>
           <TabsContent value="maintenance">
-            <MaintenanceTab maintenances={machine.all_maintenances} />
+            <MaintenanceTab maintenances={machine.all_maintenances} machineId={machine.id}/>
           </TabsContent>
           <TabsContent value='reports'>
             <div>

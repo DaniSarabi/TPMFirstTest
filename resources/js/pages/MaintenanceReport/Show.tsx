@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, PageProps } from '@/types';
 import { MaintenanceReport, MaintenanceTemplateTask } from '@/types/maintenance';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { AlertTriangle, CheckCircle, CircleX, Download, FileText, Hash, Pilcrow, SquareCheckBig } from 'lucide-react';
 import { useState } from 'react';
@@ -84,9 +84,11 @@ export default function MaintenanceReportShow({ report }: Props) {
               </span>
             </div>
           </div>
-          <Button disabled>
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF
+          <Button asChild>
+            <a href={route('maintenance-reports.pdf', report.id)} target="_blank">
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </a>
           </Button>
         </div>
 
@@ -94,7 +96,7 @@ export default function MaintenanceReportShow({ report }: Props) {
         {wasCompletedOverdue && (
           <Alert variant="default" className="border-0 bg-yellow-100 text-yellow-600">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className='font-bold text-base'>Completed Overdue</AlertTitle>
+            <AlertTitle className="text-base font-bold">Completed Overdue</AlertTitle>
             <AlertDescription className="text-yellow-600">This maintenance was completed after its grace period had ended.</AlertDescription>
           </Alert>
         )}

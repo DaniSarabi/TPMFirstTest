@@ -73,11 +73,11 @@ export function EventDetailsModal({ isOpen, onOpenChange, event }: Props) {
     router.get(route('maintenance.perform.show', event.id));
   };
 
-   const handleViewReport = () => {
-        if (extendedProps.report_id) {
-            router.get(route('maintenance-reports.show', extendedProps.report_id));
-        }
-    };
+  const handleViewReport = () => {
+    if (extendedProps.report_id) {
+      router.get(route('maintenance-reports.show', extendedProps.report_id));
+    }
+  };
 
   return (
     <>
@@ -108,17 +108,19 @@ export function EventDetailsModal({ isOpen, onOpenChange, event }: Props) {
                   </Button>
                 </>
               ) : (
-                                <TooltipProvider delayDuration={100}>
-                                    {isCompleted ? (
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button type="button" variant="outline" size="icon" onClick={handleViewReport}>
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent><p>View Report</p></TooltipContent>
-                                        </Tooltip>
-                                    ) : (
+                <TooltipProvider delayDuration={100}>
+                  {isCompleted ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button type="button" variant="outline" size="icon" onClick={handleViewReport}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View Report</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button type="button" size="icon" onClick={handlePerform}>
@@ -129,27 +131,31 @@ export function EventDetailsModal({ isOpen, onOpenChange, event }: Props) {
                         <p>Perform Maintenance</p>
                       </TooltipContent>
                     </Tooltip>
-                 )}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            {/* FIX: Disable the button if the event is completed */}
-                                            <Button type="button" variant="secondary" size="icon" onClick={() => setIsEditing(true)} disabled={isCompleted}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Edit Schedule</p></TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            {/* FIX: Disable the button if the event is completed */}
-                                            <Button type="button" variant="destructive" size="icon" onClick={() => setIsDeleteDialogOpen(true)} disabled={isCompleted}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Delete Event</p></TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {/* FIX: Disable the button if the event is completed */}
+                      <Button type="button" variant="secondary" size="icon" onClick={() => setIsEditing(true)} disabled={isCompleted}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit Schedule</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {/* FIX: Disable the button if the event is completed */}
+                      <Button type="button" variant="destructive" size="icon" onClick={() => setIsDeleteDialogOpen(true)} disabled={isCompleted}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete Event</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>

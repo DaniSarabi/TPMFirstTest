@@ -41,38 +41,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Maintenance Calendar Route
     Route::get('/maintenance-calendar', [MaintenanceCalendarController::class, 'index'])
-        ->name('maintenance-calendar.index');
+        ->name('maintenance-calendar.index')
+        ->middleware('permission:preventive-maintenance.view');
 
-    // This should go with your other main application routes
-    Route::resource('scheduled-maintenances', ScheduledMaintenanceController::class)->only(['store']);
-
-    // Update this line to include the 'update' method
-    Route::resource('scheduled-maintenances', ScheduledMaintenanceController::class)->only(['store', 'update', 'destroy']);
-
+    // Routes for creating, updating, and deleting scheduled events
+    Route::resource('scheduled-maintenances', ScheduledMaintenanceController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->middleware('permission:preventive-maintenance.schedule');
 
     // ---//? *********************** Perform Maintenance Routes *********************** ---
 
     // Routes for the "Perform Maintenance" workflow
     Route::get('/perform-maintenance/{scheduledMaintenance}', [PerformMaintenanceController::class, 'show'])
-        ->name('maintenance.perform.show');
+        ->name('maintenance.perform.show')
+        ->middleware('permission:preventive-maintenance.perform');
 
-    // --- New, separate routes for saving and submitting ---
+    // Routes for saving progress and submitting the final report
     Route::post('/perform-maintenance/{scheduledMaintenance}/save', [PerformMaintenanceController::class, 'saveProgress'])
-        ->name('maintenance.perform.save');
+        ->name('maintenance.perform.save')
+        ->middleware('permission:preventive-maintenance.perform');
 
     Route::post('/perform-maintenance/{scheduledMaintenance}/submit', [PerformMaintenanceController::class, 'submitReport'])
-        ->name('maintenance.perform.submit');
+        ->name('maintenance.perform.submit')
+        ->middleware('permission:preventive-maintenance.perform');
 
     // Route for deleting a single maintenance photo
     Route::delete('/maintenance-photos/{maintenancePhoto}', [MaintenancePhotoController::class, 'destroy'])
-        ->name('maintenance-photos.destroy');
+        ->name('maintenance-photos.destroy')
+        ->middleware('permission:preventive-maintenance.perform');
 
-
-
+    //  ? * ***************************** Maintenance Report Routes *****************************
     // Route for viewing a single maintenance report
     Route::get('/maintenance-reports/{maintenanceReport}', [MaintenanceReportController::class, 'show'])
-        ->name('maintenance-reports.show');
+        ->name('maintenance-reports.show')
+        ->middleware('permission:preventive-maintenance.view');
 
+    // Route for downloading the PDF of a report
+    Route::get('/maintenance-reports/{maintenanceReport}/pdf', [MaintenanceReportController::class, 'downloadPDF'])
+        ->name('maintenance-reports.pdf')
+        ->middleware('permission:preventive-maintenance.view');
 
     // * ***************************** Notifications Routes *****************************
     // --- Rutas para el sistema de notificaciones en la aplicación ---
@@ -82,26 +89,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // * ***************************** Tickets module Routes *****************************
 
+
     Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
 
-    Route::patch('/tickets/{ticket}/start-work', [TicketActionsController::class, 'startWork'])->name('tickets.start-work');
-    Route::patch('/tickets/{ticket}/resume-work', [TicketActionsController::class, 'resumeWork'])->name('tickets.resume-work');
-    // --- ACTION: Add the new route for closing a ticket ---
-    Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close');
+    Route::patch('/tickets/{ticket}/start-work', [TicketActionsController::class, 'startWork'])->name('tickets.start-work')->middleware('permission:tickets.perform');
+    Route::patch('/tickets/{ticket}/resume-work', [TicketActionsController::class, 'resumeWork'])->name('tickets.resume-work')->middleware('permission:tickets.perform');
+    Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close')->middleware('permission:tickets.close');
 
 
     // This route will handle downloading the ticket PDF
-    Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf');
+    Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf')->middleware('permission:tickets.view');
 
-    // ------------------------------------ Ticket Update ------------------------------------
+    // ? ------------------------------------ Ticket Update ------------------------------------
 
-    // This route will handle posting new comments to a ticket
-    Route::post('/tickets/{ticket}/updates', [TicketUpdateController::class, 'store'])->name('tickets.updates.store');
-    // This route will handle the change of a ticket's status
-    Route::patch('/tickets/{ticket}/status', [TicketUpdateController::class, 'updateStatus'])->name('tickets.status.update');
-
-    // This route will handle sending the part request email
-    Route::post('/tickets/{ticket}/request-parts', [PartRequestController::class, 'send'])->name('tickets.request-parts');
+    // These actions are performed by a user working on a ticket
+    Route::post('/tickets/{ticket}/updates', [TicketUpdateController::class, 'store'])->name('tickets.updates.store')->middleware('permission:tickets.perform');
+    Route::patch('/tickets/{ticket}/status', [TicketUpdateController::class, 'updateStatus'])->name('tickets.status.update')->middleware('permission:tickets.perform');
+    Route::post('/tickets/{ticket}/request-parts', [PartRequestController::class, 'send'])->name('tickets.request-parts')->middleware('permission:tickets.perform');
 
     // * ***************************** Inspections module Routes *****************************
 
@@ -109,38 +113,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start')->middleware('permission:inspections.perform');
 
     // This route will create a new in-progress inspection report
-    Route::post('/inspections', [InspectionController::class, 'store'])->name('inspections.store');
+    Route::post('/inspections', [InspectionController::class, 'store'])->name('inspections.store')->middleware('permission:inspections.perform');
 
     // This route now accepts an InspectionReport model
     Route::get('/inspections/{inspectionReport}/perform', [InspectionController::class, 'perform'])->name('inspections.perform')->middleware('permission:inspections.perform');
 
     // This route will handle submitting the completed inspection
-    Route::put('/inspections/{inspectionReport}', [InspectionController::class, 'update'])->name('inspections.update');
+    Route::put('/inspections/{inspectionReport}', [InspectionController::class, 'update'])->name('inspections.update')->middleware('permission:inspections.perform');
 
     Route::resource('inspections', InspectionController::class)
         ->only(['index'])
         ->middleware('permission:inspections.view');
 
     // This route will handle deleting/cancelling an inspection report.
-    Route::delete('/inspections/{inspectionReport}', [InspectionController::class, 'destroy'])->name('inspections.destroy');
+    Route::delete('/inspections/{inspectionReport}', [InspectionController::class, 'destroy'])->name('inspections.destroy')->middleware('permission:inspections.administration');
+
     // This route will display the details of a single inspection report
-    Route::get('/inspections/{inspectionReport}', [InspectionController::class, 'show'])->name('inspections.show');
+    Route::get('/inspections/{inspectionReport}', [InspectionController::class, 'show'])->name('inspections.show')->middleware('permission:inspections.view');
 
     Route::get('/inspections/{inspectionReport}/pdf', [InspectionController::class, 'downloadPDF'])
         ->name('inspections.pdf')
         ->middleware('permission:inspections.view');
 
     // This new route will handle the GET request from the QR code scan
-    Route::get('/inspections/start-from-qr/{machine}', [InspectionController::class, 'startFromQr'])->name('inspections.startFromQr');
+    Route::get('/inspections/start-from-qr/{machine}', [InspectionController::class, 'startFromQr'])->name('inspections.startFromQr')->middleware('permission:inspections.perform');
 
     // --- Add the new API-like route for getting open tickets ---
     Route::get('/inspection-points/{inspectionPoint}/open-tickets', [InspectionPointController::class, 'getOpenTickets'])
-        ->name('inspection-points.open-tickets');
+        ->name('inspection-points.open-tickets')->middleware('permission:inspections.view');
+
 
     // * ***************************** General Settings Routes *****************************
 
-    //  Use a Route Group to correctly prefix the names and URLs ---
-    // --- General Settings Route Group ---
+    // ? --- General Settings Route Group ---
     Route::prefix('general-settings')->name('settings.')->group(function () {
 
         Route::resource('machine-status', MachineStatusController::class)
@@ -159,24 +164,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['show'])
             ->middleware('permission:email-contacts.admin'); // Or a new settings permission
 
-        Route::resource('maintenance-templates', MaintenanceTemplateController::class)
-            ->except(['show']);
-        // This route is specifically for updating the tasks of a template.
-        Route::put(
-            'maintenance-templates/{maintenanceTemplate}/sync-tasks',
-            [MaintenanceTemplateController::class, 'syncTasks']
-        )->name('maintenance-templates.sync-tasks');
+         Route::resource('maintenance-templates', MaintenanceTemplateController::class)
+            ->except(['show'])
+            ->middleware('permission:maintenance-templates.view'); // Or a new 'edit' permission
 
-        Route::resource('escalation-policies', EscalationPolicyController::class)->except(['show']);
+        Route::put('maintenance-templates/{maintenanceTemplate}/sync-tasks', [MaintenanceTemplateController::class, 'syncTasks'])
+            ->name('maintenance-templates.sync-tasks')
+            ->middleware('permission:maintenance-templates.edit'); // Or a new 'edit' permission
 
-        Route::resource('escalation-levels', EscalationLevelController::class)->only(['store', 'update', 'destroy']);
-        Route::post('escalation-levels/{escalationLevel}/sync-contacts', [EscalationLevelController::class, 'syncContacts'])
-            ->name('escalation-levels.sync-contacts');
+        Route::resource('escalation-policies', EscalationPolicyController::class)
+            ->except(['show'])
+            ->middleware('permission:policies.edit');
 
-        Route::resource('escalation-policies', EscalationPolicyController::class)->except(['show']);
-        // Nueva ruta para cambiar el estado de una política
         Route::patch('escalation-policies/{escalationPolicy}/toggle-status', [EscalationPolicyController::class, 'toggleStatus'])
-            ->name('escalation-policies.toggle-status');
+            ->name('escalation-policies.toggle-status')
+            ->middleware('permission:policies.edit');
+
+        Route::resource('escalation-levels', EscalationLevelController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('permission:policies.edit');
+
+        Route::post('escalation-levels/{escalationLevel}/sync-contacts', [EscalationLevelController::class, 'syncContacts'])
+            ->name('escalation-levels.sync-contacts')
+            ->middleware('permission:policies.edit');
     });
     // * ***************************** Machines module Routes *****************************
 
@@ -215,6 +225,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy')->middleware('permission:machines.delete');
     Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy')->middleware('permission:machines.delete');
+
+    // Route for downloading the maintenance schedule PDF
+    Route::get('/machines/{machine}/maintenance-schedule/pdf', [MachineController::class, 'downloadMaintenanceSchedulePDF'])
+        ->name('machines.maintenance-schedule.pdf');
 
     // ---//? *********************** QR Code Generation Routes *********************** ---
 

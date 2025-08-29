@@ -232,4 +232,30 @@ class MachineController extends Controller
 
         return $pdf->download('qr-code-' . $machine->name . '.pdf');
     }
+
+    public function downloadMaintenanceSchedulePDF(Machine $machine)
+    {
+        // Reutilizar la misma lógica de carga de datos que el método show
+        $machine->load([
+            'scheduledMaintenances.schedulable',
+            'scheduledMaintenances.report',
+            'subsystems.scheduledMaintenances.schedulable',
+            'subsystems.scheduledMaintenances.report',
+        ]);
+
+        $machineMaintenances = $machine->scheduledMaintenances;
+        $subsystemMaintenances = $machine->subsystems->flatMap->scheduledMaintenances;
+        $allMaintenances = $machineMaintenances->merge($subsystemMaintenances)->sortBy('scheduled_date');
+
+        $upcoming = $allMaintenances->whereNotIn('status', ['completed', 'completed_overdue']);
+        $history = $allMaintenances->whereIn('status', ['completed', 'completed_overdue']);
+
+        $pdf = Pdf::loadView('pdf.maintenance-schedule', [
+            'machine' => $machine,
+            'upcoming' => $upcoming,
+            'history' => $history,
+        ]);
+
+        return $pdf->download('maintenance-schedule-' . $machine->name . '.pdf');
+    }
 }

@@ -21,9 +21,10 @@ interface Props {
     onOpenChange: (isOpen: boolean) => void;
     machines: Machine[];
     templates: MaintenanceTemplate[];
+
 }
 
-export function ScheduleMaintenanceModal({ isOpen, onOpenChange, machines, templates }: Props) {
+export function ScheduleMaintenanceModal({ isOpen, onOpenChange, machines, templates}: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         maintenance_template_id: '' as string | null,
         scheduled_date: new Date(),

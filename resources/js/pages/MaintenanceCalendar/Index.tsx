@@ -1,17 +1,18 @@
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import useCan from '@/lib/useCan';
 import { BreadcrumbItem, PageProps } from '@/types';
 import { Machine } from '@/types/machine';
 import { MaintenanceTemplate, ScheduledMaintenanceEvent } from '@/types/maintenance';
+import { EventClickArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import FullCalendar from '@fullcalendar/react';
-import { EventClickArg } from '@fullcalendar/core';
 import { Head } from '@inertiajs/react';
 import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
+import { CustomEventContent } from './Components/CustomEventContent';
 import { EventDetailsModal } from './Components/EventDetailsModal'; // Import the new modal
 import { ScheduleMaintenanceModal } from './Components/ScheduleMaintenanceModal';
-import { CustomEventContent } from './Components/CustomEventContent';
 
 interface Props extends PageProps {
   events: ScheduledMaintenanceEvent[];
@@ -26,11 +27,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     isCurrent: true,
   },
 ];
+
 export default function MaintenanceCalendarIndex({ events, machines, templates }: Props) {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduledMaintenanceEvent | null>(null);
-
+  const can = {
+    schedule: useCan('preventive-maintenance.schedule'),
+    view: useCan('preventive-maintenance.view'),
+    perform: useCan('preventive-maintenance.perform'),
+  };
   // This function is called by FullCalendar when an event is clicked
   const handleEventClick = (clickInfo: EventClickArg) => {
     // We find our full event object from the props using the ID
@@ -52,10 +58,12 @@ export default function MaintenanceCalendarIndex({ events, machines, templates }
               <h1 className="text-2xl font-bold tracking-tight">Maintenance Calendar</h1>
               <p className="text-muted-foreground">A complete overview of all scheduled tasks.</p>
             </div>
-            <Button onClick={() => setIsScheduleModalOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Schedule Maintenance
-            </Button>
+            {can.schedule && (
+              <Button onClick={() => setIsScheduleModalOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Schedule Maintenance
+              </Button>
+            )}
           </div>
 
           <div className="overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg dark:bg-gray-800">
@@ -78,7 +86,6 @@ export default function MaintenanceCalendarIndex({ events, machines, templates }
       </div>
 
       <ScheduleMaintenanceModal isOpen={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen} machines={machines} templates={templates} />
-
       <EventDetailsModal isOpen={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen} event={selectedEvent} />
     </AppLayout>
   );

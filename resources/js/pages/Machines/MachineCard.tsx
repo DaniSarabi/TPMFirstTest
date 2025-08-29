@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
+import { Machine } from '@/types/machine';
 import { Link } from '@inertiajs/react';
 import { Calendar, Clock, ListChecks, RotateCw, Wrench } from 'lucide-react';
-import { Machine } from './Columns';
 
 // Define the props for the card component
 interface MachineCardProps {

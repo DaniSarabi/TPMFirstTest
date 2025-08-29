@@ -41,7 +41,7 @@ export default function Show({ role, permissions } : ShowRolePageProps) {
                     {permissions.map((permission) => (
                         <span
                             key="{permission}"
-                            className="mr-1 rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300"
+                            className="mr-1 rounded px-2.5 py-0.5 text-xs font-medium "
                         >
                             {permission}
                         </span>

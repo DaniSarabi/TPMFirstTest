@@ -45,9 +45,11 @@ class PermissionSeeder extends Seeder
             'inspections.administration',
 
             // * Tickets Permissions
-            'tickets.view',
-            'tickets.edit',
+            'tickets.perform',
+            'tickets.discard',
             'tickets.close',
+            'tickets.view',
+
 
             // * Email permissions
             'email-contacts.admin',
@@ -59,6 +61,16 @@ class PermissionSeeder extends Seeder
             // * Policies permissions
             'policies.view',
             'policies.edit',
+
+            // * Maintenance Templates permissions
+            'maintenance-templates.view',
+            'maintenance-templates.edit',
+
+            // * Preventive Maintenance permissions
+            'preventive-maintenance.view',
+            'preventive-maintenance.perform',
+            'preventive-maintenance.schedule'
+            
         ];
 
         // Create permissions if they don't exist

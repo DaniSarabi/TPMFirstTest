@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduledMaintenance } from '@/types/maintenance';
 import { Link } from '@inertiajs/react';
 import { format, isValid } from 'date-fns';
-import { Eye } from 'lucide-react';
+import { Download, Eye } from 'lucide-react';
 import { StatusBadge, TargetBadge } from './StatusBadgeHelper';
 
 interface Props {
   maintenances: ScheduledMaintenance[];
+  machineId: number;
 }
 
 const MaintenanceListItem = ({ item }: { item: ScheduledMaintenance }) => {
@@ -40,15 +41,22 @@ const MaintenanceListItem = ({ item }: { item: ScheduledMaintenance }) => {
   );
 };
 
-export function MaintenanceTab({ maintenances }: Props) {
+export function MaintenanceTab({ maintenances, machineId }: Props) {
   const upcoming = maintenances.filter((m) => !['completed', 'completed_overdue'].includes(m.status));
   const history = maintenances.filter((m) => ['completed', 'completed_overdue'].includes(m.status));
 
   return (
     <Card className="shadow-lg drop-shadow-lg bg-background border-border">
       <CardHeader>
-        <CardTitle className='text-xl font-semibold' >Maintenance History & Schedule</CardTitle>
-      </CardHeader>
+ <div className="flex items-center justify-between">
+                    <CardTitle>Maintenance History & Schedule</CardTitle>
+                    <Button asChild size="sm">
+                        <a href={route('machines.maintenance-schedule.pdf', machineId)} target='_blank'>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Schedule
+                        </a>
+                    </Button>
+                </div>      </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h3 className="mb-4 text-lg font-semibold text-primary">Upcoming Schedule</h3>

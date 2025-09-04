@@ -1,6 +1,7 @@
 'use client';
 
 import { DataTableColumnHeader } from '@/components/data-table-column-header';
+import DynamicLucideIcon from '@/components/dynamicIconHelper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,38 +12,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getContrastColor } from '@/lib/tpm-helpers';
+import { Tag } from '@/types/maintenance'; // Importar el tipo Tag
+import { InspectionStatus } from '@/types/settings'; // Importar desde el nuevo archivo de tipos
 import { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import * as React from 'react';
-import { MachineStatus } from '../MachineStatus/Columns';
 
-export interface Behavior {
-  id: number;
-  name: string;
-  title: string;
-  description: string;
-  pivot?: {
-    // The pivot data for the relationship
-    machine_status_id?: number;
-  };
-}
-
-export interface InspectionStatus {
-  id: number;
-  name: string;
-  severity: number;
-  bg_color: string;
-  text_color: string;
-  behaviors: Behavior[];
-}
-
-// This function will be called from your Index page to generate the columns
 export const getColumns = (
   onEdit: (status: InspectionStatus) => void,
   onDelete: (status: InspectionStatus) => void,
   onSort: (columnId: string, direction: 'asc' | 'desc' | null) => void,
   currentSort: { id: string; desc: boolean } | null,
-  machineStatuses: MachineStatus[],
+  tags: Tag[], // Recibir la lista de tags
 ): ColumnDef<InspectionStatus>[] => [
   {
     accessorKey: 'name',
@@ -70,19 +52,44 @@ export const getColumns = (
     header: 'Behaviors',
     cell: ({ row }) => {
       const behaviors = row.original.behaviors;
-      // ---  The cell now has the logic to find and display the machine status name ---
-      const setsMachineStatusBehavior = behaviors.find((b) => b.name === 'sets_machine_status');
-      const machineStatusId = setsMachineStatusBehavior?.pivot?.machine_status_id;
-      const machineStatusName = machineStatuses.find((ms) => ms.id === machineStatusId)?.name;
 
+      // --- ACTION: Refactored logic to render styled badges ---
       return (
         <div className="flex flex-wrap gap-1">
-          {behaviors.map((behavior) => (
-            <Badge key={behavior.id} className="bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-              {behavior.title}
-              {behavior.name === 'sets_machine_status' && machineStatusName && `: ${machineStatusName} `}
-            </Badge>
-          ))}
+          {behaviors.map((behavior, index) => {
+            // Case 1: This is a behavior that applies a tag.
+            if (behavior.name === 'applies_machine_tag') {
+              const tagId = behavior.pivot?.tag_id;
+              const tag = tags.find((t) => t.id === tagId);
+
+              // If we found the tag, render the styled badge.
+              if (tag) {
+                return (
+                  <Badge
+                    key={`${behavior.id}-${tag.id}-${index}`}
+                    className="flex items-center gap-1.5 text-xs capitalize"
+                    style={{
+                      backgroundColor: tag.color,
+                      color: getContrastColor(tag.color),
+                    }}
+                  >
+                    <DynamicLucideIcon name={tag.icon} className="h-3 w-3" />
+                    Tag:
+                    <span>{tag.name}</span>
+                  </Badge>
+                );
+              }
+              // If tag not found, render nothing for this rule.
+              return null;
+            }
+
+            // Case 2: This is a simple behavior (like "Creates Ticket").
+            return (
+              <Badge key={`${behavior.id}-${index}`} variant="secondary">
+                {behavior.title}
+              </Badge>
+            );
+          })}
         </div>
       );
     },
@@ -121,7 +128,7 @@ export const getColumns = (
                 }}
                 className="text-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-2 h-4 w-4 text-red-600" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -6,6 +6,7 @@ use App\Models\Behavior;
 use App\Models\InspectionStatus;
 use App\Models\MachineStatus;
 use Illuminate\Database\Seeder;
+use App\Models\Tag;
 
 class InspectionStatusSeeder extends Seeder
 {
@@ -14,12 +15,12 @@ class InspectionStatusSeeder extends Seeder
      */
     public function run(): void
     {
-        // Fetch all the necessary behaviors and machine statuses first
+        // Fetch all the necessary behaviors and the new tags
         $behaviors = Behavior::whereIn('scope', ['inspection', 'universal'])->get()->keyBy('name');
-        $machineStatuses = MachineStatus::all()->keyBy('name');
+        $tags = Tag::all()->keyBy('slug');
 
         // --- Status: OK ---
-        $okStatus = InspectionStatus::firstOrCreate(['name' => 'OK'], [
+        InspectionStatus::firstOrCreate(['name' => 'OK'], [
             'severity' => 0,
             'bg_color' => '#dcfce7',
             'text_color' => '#166534',
@@ -31,11 +32,11 @@ class InspectionStatusSeeder extends Seeder
             'bg_color' => '#fef9c3',
             'text_color' => '#854d0e',
         ]);
-        // Attach the behaviors using the pivot table
+        // Attach the behaviors using the pivot table with the new 'tag_id'
         $needsAttention->behaviors()->sync([
-            $behaviors['creates_ticket_sev1']->id => [], // No extra data needed for this one
-            $behaviors['sets_machine_status']->id => [
-                'machine_status_id' => $machineStatuses['Needs Maintenance']->id,
+            $behaviors['creates_ticket_sev1']->id => [],
+            $behaviors['applies_machine_tag']->id => [
+                'tag_id' => $tags['open-ticket']->id,
             ],
         ]);
 
@@ -47,8 +48,8 @@ class InspectionStatusSeeder extends Seeder
         ]);
         $criticalFailure->behaviors()->sync([
             $behaviors['creates_ticket_sev2']->id => [],
-            $behaviors['sets_machine_status']->id => [
-                'machine_status_id' => $machineStatuses['Out of Service']->id,
+            $behaviors['applies_machine_tag']->id => [
+                'tag_id' => $tags['out-of-service']->id,
             ],
         ]);
 

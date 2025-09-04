@@ -12,21 +12,23 @@ return [
     |
     */
 
+
     'types' => [
+        'Global' => [
+            'user.created' => 'A new user is added to the system',
+            'role.updated' => 'A user role is updated',
+        ],
         'Tickets' => [
-            'ticket.created' => 'When a new ticket is created.',
-            'ticket.status.changed' => 'When a ticket\'s status is updated.',
-            'ticket.comment.added' => 'When a new comment is added to a ticket.',
+            'ticket.created' => 'A new ticket is created',
+            'ticket.status.changed' => 'A ticket\'s status changes',
+            'ticket.comment.added' => 'A new comment is added to a ticket',
         ],
         'Inspections' => [
-            'inspection.completed' => 'When an inspection is completed.',
+            'inspection.completed' => 'An inspection is completed',
         ],
-        'Users & Roles' => [
-            'user.created' => 'When a new user is added to the system.',
-            'role.updated' => 'When a role\'s permissions are changed.',
-        ],
-        'Machines'=> [
-            'machine.status.changed' => 'When a machine\'s status is updated.',
+        'Maintenance' => [
+            'maintenance.reminder' => 'A scheduled maintenance is approaching',
+            'maintenance.overdue' => 'A scheduled maintenance becomes overdue',
         ],
     ],
 ];

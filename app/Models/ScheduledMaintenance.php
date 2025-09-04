@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -29,6 +30,7 @@ class ScheduledMaintenance extends Model
         'title',
         'color',
         'series_id',
+        'reminder_sent_at'
     ];
 
     /**
@@ -63,5 +65,12 @@ class ScheduledMaintenance extends Model
     public function report(): HasOne
     {
         return $this->hasOne(MaintenanceReport::class);
+    }
+    /**
+     * Get all of the maintenance schedule's downtime logs.
+     */
+    public function downtimeLogs(): MorphMany
+    {
+        return $this->morphMany(DowntimeLog::class, 'downtimeable');
     }
 }

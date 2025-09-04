@@ -25,11 +25,11 @@ class DowntimeLog extends Model
      */
     protected $fillable = [
         'machine_id',
-        'user_id',
-        'ticket_id',
+        'downtimeable_id',   // <-- ACTION: New fillable attribute
+        'downtimeable_type', // <-- ACTION: New fillable attribute
+        'category',          // <-- ACTION: New fillable attribute
         'start_time',
         'end_time',
-        'reason',
     ];
 
     /**
@@ -58,11 +58,19 @@ class DowntimeLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    // /**
+    //  * Get the ticket associated with the downtime log.
+    //  */
+    // public function ticket(): BelongsTo
+    // {
+    //     return $this->belongsTo(Ticket::class);
+    // }
+
     /**
-     * Get the ticket associated with the downtime log.
+     * This is the new polymorphic relationship.
      */
-    public function ticket(): BelongsTo
+    public function downtimeable()
     {
-        return $this->belongsTo(Ticket::class);
+        return $this->morphTo();
     }
 }

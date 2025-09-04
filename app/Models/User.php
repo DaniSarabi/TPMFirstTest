@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\NotificationPreference;
+
 /**
  * --- ACTION: Add this docblock to help your code editor ---
  * This tells static analysis tools like Intelephense about the methods
@@ -62,8 +63,6 @@ class User extends Authenticatable
      */
     public function notificationPreferences(): HasMany
     {
-        // This assumes you have a NotificationPreference model.
-        // If not, you can query the table directly, but a model is cleaner.
         return $this->hasMany(NotificationPreference::class);
     }
 }

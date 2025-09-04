@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Ticket extends Model
 {
@@ -76,5 +77,12 @@ class Ticket extends Model
     public function updates(): HasMany
     {
         return $this->hasMany(TicketUpdate::class);
+    }
+    /**
+     * Get all of the ticket's downtime logs.
+     */
+    public function downtimeLogs(): MorphMany
+    {
+        return $this->morphMany(DowntimeLog::class, 'downtimeable');
     }
 }

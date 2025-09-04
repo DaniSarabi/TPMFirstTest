@@ -1,24 +1,23 @@
 import { CardGrid } from '@/components/card-grid';
+import { ListToolbar } from '@/components/list-toolbar';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/lib/useCan';
 import { Paginated, type BreadcrumbItem, type Filter } from '@/types';
+import { Machine } from '@/types/machine';
 import { Head, router } from '@inertiajs/react';
 import { Row } from '@tanstack/react-table';
 import { CirclePlus } from 'lucide-react';
 import * as React from 'react';
-import { CreateMachineWizard } from './CreateMachineWizard';
-import { MachineCard } from './MachineCard';
-import { MachineListToolbar } from './MachineListToolbar';
-import { SubsystemList } from './SubsystemList';
-import { Machine, MachineStatus } from '@/types/machine';
+import { MachineCard } from './Components/MachineCard';
+import { CreateMachineWizard } from './Components/CreateMachineWizard';
+import { SubsystemList } from './Components/SubsystemList';
 
 // Define the props for the Index page
 interface IndexPageProps {
   machines: Paginated<Machine>;
   filters: Filter & { statuses?: number[] };
-  machineStatuses: MachineStatus[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -28,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Index({ machines, filters, machineStatuses }: IndexPageProps) {
+export default function Index({ machines, filters }: IndexPageProps) {
   const [dialogIsOpen, setDialogIsOpen] = React.useState(false);
   const [machineToDelete, setMachineToDelete] = React.useState<number | null>(null);
   const [wizardIsOpen, setWizardIsOpen] = React.useState(false);
@@ -91,11 +90,8 @@ export default function Index({ machines, filters, machineStatuses }: IndexPageP
           <h1 className="text-2xl font-bold">Machine Management</h1>
         </div>
 
-        <MachineListToolbar
+        <ListToolbar
           onSearch={setSearch}
-          statuses={machineStatuses}
-          statusFilterValues={statusFilter}
-          onStatusFilterChange={setStatusFilter}
           createAction={
             canCreate ? (
               <Button onClick={() => setWizardIsOpen(true)}>
@@ -104,7 +100,9 @@ export default function Index({ machines, filters, machineStatuses }: IndexPageP
               </Button>
             ) : null
           }
-        />
+        >
+          {/* <MultiSelectFilter /> */}
+        </ListToolbar>
 
         <CardGrid items={machines.data} renderCard={(machine) => <MachineCard machine={machine} />} />
 

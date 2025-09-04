@@ -4,10 +4,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Ticket, TicketStatus } from '@/types/ticket';
 import { useForm } from '@inertiajs/react';
 import { AlertTriangle, CircleX, Send } from 'lucide-react';
 import * as React from 'react';
-import { Ticket, TicketStatus } from '../Columns';
 
 // Define the props for the modal
 interface ChangeStatusModalProps {

@@ -30,7 +30,9 @@ class TicketUpdate extends Model
         'parts_used',
         'old_status_id',
         'new_status_id',
-        'new_machine_status_id',
+        'loggable_id',
+        'loggable_type',
+        'action',
     ];
 
     /**
@@ -66,10 +68,17 @@ class TicketUpdate extends Model
     }
 
     /**
-     * Get the new machine status for this update.
+     * ACTION: The old 'newMachineStatus()' relationship has been removed.
      */
-    public function newMachineStatus(): BelongsTo
+    // public function newMachineStatus(): BelongsTo ... (REMOVED)
+
+    /**
+     * ACTION: The new polymorphic 'loggable' relationship has been added.
+     * This allows a timeline event to be associated with any other model,
+     * such as a Tag.
+     */
+    public function loggable()
     {
-        return $this->belongsTo(MachineStatus::class, 'new_machine_status_id');
+        return $this->morphTo();
     }
 }

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\MorphMany; // Import MorphMany
+use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Import BelongsToMany
 
 
 class Machine extends Model
@@ -26,8 +27,8 @@ class Machine extends Model
         'name',
         'description',
         'created_by',
-        'machine_status_id', // Use the new foreign key
         'image_url',
+        'status'
     ];
 
     /**
@@ -42,22 +43,6 @@ class Machine extends Model
                 return $value ? Storage::url($value) : null;
             }
         );
-    }
-
-    /**
-     * The "booted" method of the model.
-     *
-     * This is the perfect place to register model events.
-     */
-    protected static function booted(): void
-    {
-        // --- ACTION: Add the 'created' event listener ---
-        // This will automatically run every time a new machine is created.
-        static::created(function (Machine $machine) {
-            $machine->statusLogs()->create([
-                'machine_status_id' => $machine->machine_status_id,
-            ]);
-        });
     }
 
     /**
@@ -77,21 +62,13 @@ class Machine extends Model
     }
 
     /**
-     * Get the status logs for the machine.
+     * The tags that belong to the machine.
      */
-    public function statusLogs(): HasMany
+    public function tags(): BelongsToMany
     {
-        return $this->hasMany(MachineStatusLog::class);
+        return $this->belongsToMany(Tag::class, 'machine_tag');
     }
 
-    /**
-     * Get the status for the machine.
-     * This is the relationship method that was missing.
-     */
-    public function machineStatus(): BelongsTo
-    {
-        return $this->belongsTo(MachineStatus::class);
-    }
     /**
      * Get all of the machine's scheduled maintenances.
      * This is the missing relationship method.
@@ -107,12 +84,28 @@ class Machine extends Model
     {
         return $this->hasMany(Ticket::class);
     }
-     /**
+    /**
      * Get all of the inspection reports for the machine.
      * This is the missing relationship.
      */
     public function inspectionReports(): HasMany
     {
         return $this->hasMany(InspectionReport::class);
+    }
+    /**
+     * Get the downtime logs for the machine.
+     */
+    public function downtimeLogs()
+    {
+        // DowntimeLog model
+        return $this->hasMany(DowntimeLog::class);
+    }
+    /**
+     * Get all of the machine's notification preferences.
+     * This is the new relationship.
+     */
+    public function notificationPreferences(): MorphMany
+    {
+        return $this->morphMany(NotificationPreference::class, 'preferable');
     }
 }

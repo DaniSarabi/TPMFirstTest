@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Ticket } from '@/types/ticket';
 import { useForm } from '@inertiajs/react';
 import { CircleX, Send } from 'lucide-react';
 import * as React from 'react';
-import { Ticket } from '../Columns';
 
 // Define the props for the modal
 interface CloseTicketModalProps {

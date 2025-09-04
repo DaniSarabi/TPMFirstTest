@@ -14,6 +14,7 @@ use App\Listeners\SendInAppNotificationListener;
 use App\Models\TicketUpdate;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use App\Events\MaintenanceReminderSent; 
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -60,13 +61,14 @@ class AppServiceProvider extends ServiceProvider
             SendInAppNotificationListener::class
         );
 
-        //* Machines events
-        Event::listen(
-            MachineStatusChanged::class,
-            SendInAppNotificationListener::class
-        );
+
         Event::listen(
             MachineCreated::class,
+            SendInAppNotificationListener::class
+        );
+        // This tells Laravel to trigger our listener whenever a reminder is sent.
+        Event::listen(
+            MaintenanceReminderSent::class,
             SendInAppNotificationListener::class
         );
     }

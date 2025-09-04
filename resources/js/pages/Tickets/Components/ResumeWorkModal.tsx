@@ -2,10 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Ticket } from '@/types/ticket';
 import { useForm } from '@inertiajs/react';
-import { Info } from 'lucide-react';
+import { CircleX, Info, PlayCircle } from 'lucide-react';
 import * as React from 'react';
-import { Ticket } from '../Columns';
 
 interface ResumeWorkModalProps {
   ticket: Ticket;
@@ -51,10 +51,12 @@ export function ResumeWorkModal({ ticket, isOpen, onOpenChange }: ResumeWorkModa
           </div>
         </form>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button className='hover:bg-destructive hover:text-destructive-foreground' variant="outline" onClick={() => onOpenChange(false)}>
+            <CircleX  className='h-4 w-4'/>
             Cancel
           </Button>
-          <Button type="submit" form="resume-work-form" disabled={processing}>
+          <Button className='hover:bg-secondary hover:text-secondary-foreground' type="submit" form="resume-work-form" disabled={processing}>
+            <PlayCircle className='h-4 w-4'/>
             {processing ? 'Saving...' : 'Resume Work'}
           </Button>
         </DialogFooter>

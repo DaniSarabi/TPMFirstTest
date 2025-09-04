@@ -19,10 +19,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Carbon\Carbon;
+use App\Services\TagManagerService;
+use App\Models\Tag;
 
 class InspectionController extends Controller
 {
-    public function __construct(protected TicketActionService $ticketActionService) {}
+
+
+    public function __construct(protected TicketActionService $ticketActionService, protected TagManagerService $tagManager) {}
     //
     /**
      * Display a listing of the resource.
@@ -224,41 +229,44 @@ class InspectionController extends Controller
      */
     public function perform(InspectionReport $inspectionReport)
     {
-        // ---  Eager-load all necessary relationships for the page ---
         $inspectionReport->load([
             'machine.subsystems.inspectionPoints',
             'machine.creator',
-            'machine.machineStatus',
-            'machine.statusLogs.machineStatus',
+            'machine.tags', // <-- ACTION: Add this line
         ]);
 
-        // ---  Calculate uptime information for the associated machine ---
         $machine = $inspectionReport->machine;
-        $uptimeData = [
-            'since' => null,
-            'duration' => null,
+
+        // --- ACTION: Calculate the full stats object, just like in MachineController ---
+        $closingStatusIds = TicketStatus::whereHas('behaviors', function ($query) {
+            $query->where('name', 'is_ticket_closing_status');
+        })->pluck('id');
+
+        $lastInspection = $machine->inspectionReports()->whereNotNull('completed_at')->latest('completed_at')->first();
+        $lastMaintenance = $machine->scheduledMaintenances()->where('status', 'completed')->latest('scheduled_date')->first();
+
+        $stats = [
+            'subsystems_count' => $machine->subsystems->count(),
+            'inspection_points_count' => $machine->subsystems->reduce(fn($carry, $subsystem) => $carry + ($subsystem->inspectionPoints?->count() ?? 0), 0),
+            'open_tickets_count' => $machine->tickets()->whereNotIn('ticket_status_id', $closingStatusIds)->count(),
+            'last_inspection_date' => $lastInspection?->completed_at->format('M d, Y'),
+            'last_maintenance_date' => $lastMaintenance?->scheduled_date->format('M d, Y'),
         ];
 
-        $inServiceLog = $machine->statusLogs()
-            ->whereHas('machineStatus', function ($query) {
-                $query->where('name', 'In Service');
-            })
-            ->latest()
-            ->first();
+        $lastDowntime = $machine->downtimeLogs()->latest('end_time')->first();
+        $uptimeData = [
+            'since' => $lastDowntime?->end_time ? Carbon::parse($lastDowntime->end_time)->format('M d, Y') : null,
+            'duration' => $lastDowntime?->end_time ? Carbon::parse($lastDowntime->end_time)->diffForHumans(null, true) : 'N/A',
+        ];
 
-        if ($inServiceLog) {
-            $uptimeData['since'] = $inServiceLog->created_at->format('M d, Y, h:i A');
-            $uptimeData['duration'] = $inServiceLog->created_at->diffForHumans(null, true, true);
-        }
-
-        // Fetch all available inspection statuses
         $inspectionStatuses = InspectionStatus::all();
 
-        // ---  Render the "Perform" page and pass all the necessary data ---
+        // --- Render the "Perform" page and pass all the necessary data ---
         return Inertia::render('Inspections/Perform', [
             'report' => $inspectionReport,
             'inspectionStatuses' => $inspectionStatuses,
             'uptime' => $uptimeData,
+            'stats' => $stats, // <-- ACTION: Pass the new stats object
         ]);
     }
 
@@ -266,9 +274,10 @@ class InspectionController extends Controller
      * Update the specified resource in storage.
      * This method is called when the user submits the full inspection.
      */
-    public function update(Request $request, InspectionReport $inspectionReport)
+    public function update(Request $request, InspectionReport $inspectionReport, TagManagerService $tagManager)
     {
-
+        // --- 1. Validation ---
+        // The validation logic for the incoming inspection data remains the same.
         $results = $request->input('results', []);
         $rules = [
             'results' => 'required|array',
@@ -276,33 +285,26 @@ class InspectionController extends Controller
             'results.*.pinged_ticket_id' => 'nullable|exists:tickets,id',
         ];
 
-        // Build conditional rules for comments and mandatory photos
         foreach ($results as $pointId => $result) {
-            // Every point now requires an image, unless it's a ping
             if (empty($result['pinged_ticket_id'])) {
                 $rules["results.{$pointId}.image"] = 'required|file|image|max:2048';
             }
-
-            // Find the selected status to check its severity
             $status = InspectionStatus::find($result['status_id'] ?? null);
             if ($status && $status->severity > 0) {
-                // The comment is required if the severity is 1 or 2
                 $rules["results.{$pointId}.comment"] = 'required|string';
             } else {
                 $rules["results.{$pointId}.comment"] = 'nullable|string';
             }
         }
-
         $validated = Validator::make($request->all(), $rules)->validate();
 
-        DB::transaction(function () use ($request, $inspectionReport, $validated) {
-
-            $highestSeverityStatus = null;
+            
+        // --- 2. Database Transaction ---
+        DB::transaction(function () use ($request, $inspectionReport, $validated, $tagManager) {
             $openTicketStatus = TicketStatus::where('name', 'Open')->first();
-            $newlyCreatedTickets = [];
 
-            // Loop through each inspection point result to save it
             foreach ($validated['results'] as $pointId => $result) {
+                // --- A. Create the Inspection Item ---
                 $imagePath = null;
                 if ($request->hasFile("results.{$pointId}.image")) {
                     $imagePath = $request->file("results.{$pointId}.image")->store('inspection_images', 'public');
@@ -317,13 +319,11 @@ class InspectionController extends Controller
                 ]);
 
                 $status = InspectionStatus::with('behaviors')->find($result['status_id']);
-                if ($status && ($highestSeverityStatus === null || $status->severity > $highestSeverityStatus->severity)) {
-                    $highestSeverityStatus = $status;
-                }
+                $ticket = null; // Initialize ticket as null for this loop iteration.
 
+                // --- B. Handle Pinging or Creating a New Ticket ---
                 if ($status && $status->severity > 0) {
-                    if (! empty($result['pinged_ticket_id'])) {
-                        // **************** This is a PING
+                    if (!empty($result['pinged_ticket_id'])) {
                         $ticketToPing = Ticket::find($result['pinged_ticket_id']);
                         if ($ticketToPing) {
                             $ticketToPing->updates()->create([
@@ -332,7 +332,6 @@ class InspectionController extends Controller
                             ]);
                         }
                     } else {
-                        // *************** This is a NEW TICKET
                         if ($openTicketStatus && ($status->behaviors->contains('name', 'creates_ticket_sev1') || $status->behaviors->contains('name', 'creates_ticket_sev2'))) {
                             $ticket = Ticket::create([
                                 'inspection_report_item_id' => $item->id,
@@ -348,42 +347,31 @@ class InspectionController extends Controller
                                 'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
                                 'new_status_id' => $openTicketStatus->id,
                             ]);
-
                             event(new TicketCreated($ticket));
+                        }
+                    }
+                }
 
-                            $newlyCreatedTickets[] = $ticket;
-                            if ($ticket->priority === 2) { // Priority 2 is High
-                                $this->ticketActionService->startDowntimeLog($ticket, 'Maintenance', Auth::user());
+                // --- C. Delegate Tagging to the "Downtime Boss" ---
+                // This is the new, simplified logic. We just tell the TagManager what happened.
+                if ($status) {
+                    foreach ($status->behaviors as $behavior) {
+                        if ($behavior->name === 'applies_machine_tag') {
+                            $tagId = $behavior->pivot->tag_id;
+                            $tag = Tag::find($tagId);
+                            if ($tag) {
+                                // The TagManagerService will handle all the complex logic of updating
+                                // the machine's status and starting/stopping downtime logs.
+                                $tagManager->applyTag($inspectionReport->machine, $tag->slug, $ticket);
                             }
                         }
                     }
                 }
             }
 
-            // Check the behavior of the highest severity status to update the machine
-            if ($highestSeverityStatus) {
-                $setStatusBehavior = $highestSeverityStatus->behaviors()->where('name', 'sets_machine_status')->first();
+            // --- The old, complex logic block for 'highestSeverityStatus' has been completely removed. ---
 
-                if ($setStatusBehavior) {
-                    $newMachineStatusId = $setStatusBehavior->pivot->machine_status_id;
-                    if ($newMachineStatusId) {
-                        $inspectionReport->machine()->update(['machine_status_id' => $newMachineStatusId]);
-
-                        // --- Log the machine status change on all created tickets ---
-                        $newMachineStatus = MachineStatus::find($newMachineStatusId);
-                        foreach ($newlyCreatedTickets as $ticket) {
-                            $ticket->updates()->create([
-                                'user_id' => Auth::id(), // The user who triggered the event
-                                'comment' => 'System: Machine status updated via inspection.',
-                                'new_machine_status_id' => $newMachineStatus->id,
-                            ]);
-                        }
-                    }
-                }
-            }
-
-
-            // Mark the main report as completed
+            // --- 3. Finalize the Inspection Report ---
             $inspectionReport->update([
                 'status' => 'completed',
                 'completed_at' => now(),

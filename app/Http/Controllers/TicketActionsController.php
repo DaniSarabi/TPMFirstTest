@@ -18,7 +18,8 @@ class TicketActionsController extends Controller
      */
     public function startWork(Ticket $ticket)
     {
-        $inProgressStatus = TicketStatus::where('name', 'In Progress')->firstOrFail();
+        // --- ACTION: Refactored to find the status by its behavior, not its name ---
+        $inProgressStatus = TicketStatus::whereHas('behaviors', fn($q) => $q->where('name', 'is_in_progress_status'))->firstOrFail();
 
         $this->ticketActionService->changeStatus(
             $ticket,
@@ -39,7 +40,8 @@ class TicketActionsController extends Controller
             'comment' => 'nullable|string',
         ]);
 
-        $inProgressStatus = TicketStatus::where('name', 'In Progress')->firstOrFail();
+        // --- ACTION: Refactored to find the status by its behavior, not its name ---
+        $inProgressStatus = TicketStatus::whereHas('behaviors', fn($q) => $q->where('name', 'is_in_progress_status'))->firstOrFail();
         $comment = $validated['comment'] ?? 'Work has resumed on this ticket.';
 
         $this->ticketActionService->changeStatus(

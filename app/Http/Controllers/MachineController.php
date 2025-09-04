@@ -13,6 +13,7 @@ use App\Events\MachineStatusChanged;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\TicketStatus;
 use Carbon\Carbon;
+use App\Models\Tag;
 
 class MachineController extends Controller
 {
@@ -21,15 +22,19 @@ class MachineController extends Controller
      */
     public function index(Request $request)
     {
-        $searchQuery = $request->input('search');
-        $statusFilter = $request->input('statuses');
+        $filters = $request->only(['search', 'statuses', 'tags']);
 
-        $machines = Machine::with('creator', 'subsystems.inspectionPoints', 'machineStatus')
-            ->when($searchQuery, function ($query, $search) {
+        $machines = Machine::with('creator', 'subsystems.inspectionPoints', 'tags')
+            ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where('name', 'like', '%' . $search . '%');
             })
-            ->when($statusFilter && count($statusFilter) > 0, function ($query) use ($statusFilter) {
-                $query->whereIn('machine_status_id', $statusFilter);
+            ->when($filters['statuses'] ?? null, function ($query, $statuses) {
+                $query->whereIn('status', $statuses);
+            })
+            ->when($filters['tags'] ?? null, function ($query, $tags) {
+                $query->whereHas('tags', function ($q) use ($tags) {
+                    $q->whereIn('tag_id', $tags);
+                });
             })
             ->latest()
             ->paginate(12)
@@ -37,12 +42,10 @@ class MachineController extends Controller
 
         return Inertia::render('Machines/Index', [
             'machines' => $machines,
-            'filters' => [
-                'search' => $searchQuery,
-                'statuses' => $statusFilter,
-            ],
-            'machineStatuses' => MachineStatus::all(),
-
+            'filters' => $filters,
+            'tags' => Tag::orderBy('name')->get(),
+            // Definimos los estados primarios directamente ya que son fijos
+            'primaryStatuses' => ['new', 'in_service', 'out_of_service'],
         ]);
     }
 
@@ -62,21 +65,16 @@ class MachineController extends Controller
             $imagePath = $request->file('image')->store('images', 'public');
         }
 
-        // This ensures the model event has the correct data.
+        // El 'status' por defecto ya se establece en 'new' en la migración.
         $machine = Machine::create([
             'name' => $validated['name'],
             'description' => $validated['description'],
             'image_url' => $imagePath,
             'created_by' => Auth::id(),
-            'machine_status_id' => 1, // Set the default status to 'New' (ID 1)
         ]);
 
-        // The 'created' event in the Machine model will now work correctly.
-
         return back()->with('flash', [
-            'machine' => [
-                'id' => $machine->id,
-            ],
+            'machine' => ['id' => $machine->id],
         ]);
     }
 
@@ -85,61 +83,53 @@ class MachineController extends Controller
      */
     public function show(Machine $machine)
     {
-
         // Cargar las relaciones necesarias de forma eficiente
         $machine->load([
             'subsystems.inspectionPoints',
-            'statusLogs.machineStatus',
             'creator',
-            'machineStatus',
+            'tags',
             'scheduledMaintenances.template',
             'scheduledMaintenances.report',
-            'scheduledMaintenances.schedulable', // Load for machine's own maintenances
+            'scheduledMaintenances.schedulable',
             'subsystems.scheduledMaintenances.template',
             'subsystems.scheduledMaintenances.report',
             'subsystems.scheduledMaintenances.schedulable',
         ]);
 
-        // --- Combine all maintenances into a single, sorted list ---
+        // Combinar todos los mantenimientos en una sola lista ordenada
         $machineMaintenances = $machine->scheduledMaintenances;
         $subsystemMaintenances = $machine->subsystems->flatMap->scheduledMaintenances;
         $allMaintenances = $machineMaintenances->merge($subsystemMaintenances)->sortByDesc('scheduled_date');
-
-        // We will add this merged list to the machine object for the frontend
         $machine->all_maintenances = $allMaintenances->values()->all();
 
-
+        // Obtener IDs de los estados de ticket de cierre
         $closingStatusIds = TicketStatus::whereHas('behaviors', function ($query) {
             $query->where('name', 'is_ticket_closing_status');
         })->pluck('id');
 
+        // Obtener las últimas fechas de inspección y mantenimiento
         $lastInspection = $machine->inspectionReports()->whereNotNull('completed_at')->latest('completed_at')->first();
         $lastMaintenance = $machine->scheduledMaintenances()->where('status', 'completed')->latest('scheduled_date')->first();
 
         $stats = [
             'subsystems_count' => $machine->subsystems->count(),
-            'inspection_points_count' => $machine->subsystems->reduce(function ($carry, $subsystem) {
-                return $carry + ($subsystem->inspectionPoints?->count() ?? 0);
-            }, 0),
+            'inspection_points_count' => $machine->subsystems->reduce(fn($carry, $subsystem) => $carry + ($subsystem->inspectionPoints?->count() ?? 0), 0),
             'open_tickets_count' => $machine->tickets()->whereNotIn('ticket_status_id', $closingStatusIds)->count(),
-            'last_inspection_date' => $lastInspection ? $lastInspection->completed_at->format('M d, Y') : null,
-            'last_maintenance_date' => $lastMaintenance ? $lastMaintenance->scheduled_date->format('M d, Y') : null,
+            'last_inspection_date' => $lastInspection?->completed_at->format('M d, Y'),
+            'last_maintenance_date' => $lastMaintenance?->scheduled_date->format('M d, Y'),
         ];
 
-        // Calcular el Uptime
-        $lastOperationalLog = $machine->statusLogs->where('machineStatus.is_operational_default', true)->sortByDesc('created_at')->first();
+        // Calcular el Uptime usando la tabla downtime_logs
+        $lastDowntime = $machine->downtimeLogs()->latest('end_time')->first();
         $uptime = [
-            'since' => $lastOperationalLog ? Carbon::parse($lastOperationalLog->created_at)->format('M d, Y') : null,
-            'duration' => $lastOperationalLog ? Carbon::parse($lastOperationalLog->created_at)->diffForHumans(null, true) : null,
+            'since' => $lastDowntime?->end_time ? Carbon::parse($lastDowntime->end_time)->format('M d, Y') : null,
+            'duration' => $lastDowntime?->end_time ? Carbon::parse($lastDowntime->end_time)->diffForHumans(null, true) : 'N/A',
         ];
 
-        // Render the 'Show' page component and pass both the machine and uptime data.
         return Inertia::render('Machines/Show', [
             'machine' => $machine,
-            'statuses' => MachineStatus::all(),
             'uptime' => $uptime,
             'stats' => $stats,
-
         ]);
     }
 
@@ -148,17 +138,13 @@ class MachineController extends Controller
      */
     public function update(Request $request, Machine $machine)
     {
+        // La validación ahora es más simple, ya que el estado no se maneja aquí.
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'machine_status_id' => 'required|exists:machine_statuses,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Check if the status has changed to create a log entry
-        $statusChanged = $machine->machine_status_id !== (int) $validated['machine_status_id'];
-
-        // Handle file upload...
         if ($request->hasFile('image')) {
             if ($machine->image_url) {
                 Storage::disk('public')->delete($machine->image_url);
@@ -167,14 +153,6 @@ class MachineController extends Controller
         }
 
         $machine->update($validated);
-
-        if ($statusChanged) {
-            //  Use the correct ID to create the log ---
-            $machine->statusLogs()->create([
-                'machine_status_id' => $validated['machine_status_id'],
-            ]);
-            event(new MachineStatusChanged($machine));
-        }
 
         return to_route('machines.show', $machine->id)
             ->with('success', 'Machine updated successfully.');

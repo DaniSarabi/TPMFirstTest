@@ -25,6 +25,7 @@ use App\Http\Controllers\MaintenancePhotoController;
 use App\Http\Controllers\MaintenanceReportController;
 use App\Http\Controllers\Settings\EscalationPolicyController;
 use App\Http\Controllers\Settings\EscalationLevelController;
+use App\Http\Controllers\Settings\NotificationPreferencesController; // <-- Make sure this line exists!
 
 
 Route::get('/', function () {
@@ -87,6 +88,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
     Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
 
+  
     // * ***************************** Tickets module Routes *****************************
 
 
@@ -154,17 +156,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('inspection-status', InspectionStatusController::class)
             ->except(['show'])
-            ->middleware('permission:inspections.edit');
+            ->middleware('permission:inspections.administration');
 
         Route::resource('ticket-status', TicketStatusController::class)
             ->except(['show'])
-            ->middleware('permission:tickets.edit');
+            ->middleware('permission:tickets.discard');
 
         Route::resource('email-contacts', EmailContactController::class)
             ->except(['show'])
             ->middleware('permission:email-contacts.admin'); // Or a new settings permission
 
-         Route::resource('maintenance-templates', MaintenanceTemplateController::class)
+        Route::resource('maintenance-templates', MaintenanceTemplateController::class)
             ->except(['show'])
             ->middleware('permission:maintenance-templates.view'); // Or a new 'edit' permission
 

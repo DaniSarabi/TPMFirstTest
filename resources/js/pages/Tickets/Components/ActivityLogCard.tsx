@@ -1,13 +1,18 @@
+import DynamicLucideIcon from '@/components/dynamicIconHelper';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, GitCommitVertical, Mail, MessageSquare, Terminal } from 'lucide-react';
-import { Ticket, TicketUpdate } from '../Columns';
+import { getContrastColor } from '@/lib/tpm-helpers';
+import { Ticket, TicketUpdate } from '@/types/ticket';
+import { AlertTriangle, GitCommitVertical, Mail, MessageSquare, TagIcon, Terminal } from 'lucide-react';
 
 interface ActivityLogCardProps {
   ticket: Ticket;
 }
 // A helper component to render the correct icon for each activity type
 const ActivityIcon = ({ update }: { update: TicketUpdate }) => {
+  if (update.loggable_type?.endsWith('Tag')) {
+    return <TagIcon className="h-4 w-4 text-white" />;
+  }
   if (update.comment?.startsWith('Ping:')) {
     return <AlertTriangle className="h-4 w-4 text-white" />;
   }
@@ -29,6 +34,7 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
     (update) =>
       update.old_status ||
       update.new_status ||
+      update.loggable ||
       update.comment?.startsWith('Ping:') ||
       update.comment?.startsWith('System:') ||
       update.comment?.startsWith('Sent a part request'),
@@ -57,8 +63,25 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                     </time>
                   </div>
                   <div className="mt-1 rounded-md bg-muted/50 p-2 text-sm text-muted-foreground">
-                    {/* Handle the "Created" case */}
-                    {!update.old_status && update.new_status && (
+                    {/* Case 1: A tag was applied or removed */}
+                    {update.loggable && update.loggable_type?.endsWith('Tag') && (
+                      <>
+                        System {update.action} tag:{' '}
+                        <Badge
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold"
+                          style={{
+                            backgroundColor: update.loggable.color,
+                            color: getContrastColor(update.loggable.color),
+                          }}
+                        >
+                          <DynamicLucideIcon name={update.loggable.icon} className="h-3 w-3 stroke-3" />
+                          <span className="capitalize">{update.loggable.name}</span>
+                        </Badge>
+                      </>
+                    )}
+
+                    {/* Case 2: Ticket was created */}
+                    {!update.loggable && !update.old_status && update.new_status && (
                       <>
                         Created the ticket and set status to{' '}
                         <Badge style={{ backgroundColor: update.new_status.bg_color, color: update.new_status.text_color }}>
@@ -66,8 +89,9 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                         </Badge>
                       </>
                     )}
-                    {/* Handle a normal status change */}
-                    {update.old_status && update.new_status && (
+
+                    {/* Case 3: Ticket status changed */}
+                    {!update.loggable && update.old_status && update.new_status && (
                       <>
                         Changed status from{' '}
                         <Badge style={{ backgroundColor: update.old_status.bg_color, color: update.old_status.text_color }}>
@@ -79,18 +103,10 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                         </Badge>
                       </>
                     )}
-                    {/* Handle a machine status change */}
-                    {update.new_machine_status && (
-                      <>
-                        Set machine status to{' '}
-                        <Badge style={{ backgroundColor: update.new_machine_status.bg_color, color: update.new_machine_status.text_color }}>
-                          {update.new_machine_status.name}
-                        </Badge>
-                      </>
-                    )}
-                    {/* Handle a ping */}
-                    {update.comment?.startsWith('Ping:') && 'Pinged this ticket: Issue was reported again.'}
-                    {update.comment?.startsWith('Sent a part request') && <p>{update.comment}</p>}
+
+                    {/* Case 4: Other comments (Pings, Part Requests, etc.) */}
+                    {!update.loggable && update.comment?.startsWith('Ping:') && 'Pinged this ticket: Issue was reported again.'}
+                    {!update.loggable && update.comment?.startsWith('Sent a part request') && <p>{update.comment}</p>}
                   </div>
                 </li>
               ))}

@@ -1,17 +1,17 @@
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
+import { Ticket } from '@/types/ticket';
 import { router, useForm } from '@inertiajs/react';
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, CircleX, Heading1, Heading2, Heading3, Italic, List, ListOrdered, Send, X } from 'lucide-react';
+import { Bold, CircleX, Heading1, Heading2, Heading3, Italic, List, ListOrdered, PlusCircle, Send, X } from 'lucide-react';
 import * as React from 'react';
-import { Ticket } from '../Columns';
-import { Badge } from '@/components/ui/badge';
 
 interface EmailContact {
   id: number;
@@ -32,8 +32,9 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
     return null;
   }
   return (
-    <div className="flex items-center gap-1 rounded-md border p-1 ring ring-secondary hover:ring-ring">
+    <div className="flex items-center justify-center gap-1 rounded-md p-1 hover:ring-ring">
       <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
         size="sm"
         pressed={editor.isActive('heading', { level: 1 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -41,6 +42,7 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
         <Heading1 className="h-4 w-4" />
       </Toggle>
       <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
         size="sm"
         pressed={editor.isActive('heading', { level: 2 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -48,24 +50,44 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
         <Heading2 className="h-4 w-4" />
       </Toggle>
       <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
         size="sm"
         pressed={editor.isActive('heading', { level: 3 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >
         <Heading3 className="h-4 w-4" />
       </Toggle>
-      <Separator orientation="vertical" className="mx-1 h-6" />
-      <Toggle size="sm" pressed={editor.isActive('bold')} onPressedChange={() => editor.chain().focus().toggleBold().run()}>
+<Separator orientation="vertical" className="h-full rounded-2xl border-3 border-secondary" />      <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
+        size="sm"
+        pressed={editor.isActive('bold')}
+        onPressedChange={() => editor.chain().focus().toggleBold().run()}
+      >
         <Bold className="h-4 w-4" />
       </Toggle>
-      <Toggle size="sm" pressed={editor.isActive('italic')} onPressedChange={() => editor.chain().focus().toggleItalic().run()}>
+      <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
+        size="sm"
+        pressed={editor.isActive('italic')}
+        onPressedChange={() => editor.chain().focus().toggleItalic().run()}
+      >
         <Italic className="h-4 w-4" />
       </Toggle>
-      <Separator orientation="vertical" className="mx-1 h-6" />
-      <Toggle size="sm" pressed={editor.isActive('bulletList')} onPressedChange={() => editor.chain().focus().toggleBulletList().run()}>
+      <Separator orientation="vertical" className="h-full rounded-2xl border-3 border-secondary" />
+      <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
+        size="sm"
+        pressed={editor.isActive('bulletList')}
+        onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
+      >
         <List className="h-4 w-4" />
       </Toggle>
-      <Toggle size="sm" pressed={editor.isActive('orderedList')} onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}>
+      <Toggle
+        className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
+        size="sm"
+        pressed={editor.isActive('orderedList')}
+        onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
+      >
         <ListOrdered className="h-4 w-4" />
       </Toggle>
     </div>
@@ -103,13 +125,15 @@ export function RequestPartsModal({ ticket, purchasingContacts, isOpen, onOpenCh
                 <p></p>
                 <p>We require parts for the following maintenance ticket:</p>
                 
-                <h3>Parts Needed:</h3>
+                <p>Parts Needed:</p>
                 <ul>
                     <li>[Enter part name and quantity here]</li>
                 </ul>
                 <p></p>
                 <p>Thank you,</p>
+                <p></p>
                 <p><strong>  ${ticket.creator.name}</strong></p>
+                <p>JST Power Equipment</p>
             `;
 
       editor?.commands.setContent(emailTemplate);
@@ -155,24 +179,31 @@ export function RequestPartsModal({ ticket, purchasingContacts, isOpen, onOpenCh
           <DialogDescription>Compose and send an email to the purchasing department for the parts needed for this ticket.</DialogDescription>
         </DialogHeader>
 
-        <form id="request-parts-form" onSubmit={submit} className="grid gap-4 py-4" autoComplete='off'>
+        <form id="request-parts-form" onSubmit={submit} className="grid gap-4 py-4" autoComplete="off">
           <div className="space-y-2">
             <Label>To:</Label>
-            <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-md border p-2 ring ring-secondary hover:ring-ring hover:bg-accent">
+            <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-md border p-2 ring ring-secondary hover:bg-accent hover:ring-ring">
               {data.to.map((email) => (
-                <Badge key={email} variant="secondary" className="gap-1 hover:bg-destructive text-destructive-foreground" onClick={() => removeRecipient(email)}>
+                <Badge
+                  key={email}
+                  variant="default"
+                  className="gap-1 text-destructive-foreground hover:bg-destructive"
+                  onClick={() => removeRecipient(email)}
+                >
                   {email}
                   <button type="button" onClick={() => removeRecipient(email)}>
-                    <X className="h-3 w-3 hover:bg-destructive text-destructive-foreground rounded" />
+                    <X className="h-3 w-3 rounded text-destructive-foreground hover:bg-destructive" />
                   </button>
                 </Badge>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2 ">
+            <div className="flex flex-wrap gap-2">
               <span className="text-sm text-muted-foreground">Suggestions:</span>
               {purchasingContacts.map((contact) => (
                 <button key={contact.id} type="button" onClick={() => addRecipient(contact.email)}>
-                  <Badge className='hover:bg-accent hover:text-accent-foreground'>{contact.name}</Badge>
+                  <Badge className="bg-secondary text-secondary-foreground hover:bg-primary hover:text-accent-primary">
+                    <PlusCircle className="h-4 w-4 stroke-3" />
+                    {contact.name}</Badge>
                 </button>
               ))}
             </div>
@@ -181,29 +212,41 @@ export function RequestPartsModal({ ticket, purchasingContacts, isOpen, onOpenCh
 
           <div className="space-y-2">
             <Label htmlFor="cc">Cc (optional, comma-separated):</Label>
-            <Input className='ring ring-secondary hover:ring-ring hover:bg-accent' id="cc" type="text" value={data.cc} onChange={(e) => setData('cc', e.target.value)} />
+            <Input
+              className="ring ring-secondary hover:bg-accent hover:ring-ring"
+              id="cc"
+              type="text"
+              value={data.cc}
+              onChange={(e) => setData('cc', e.target.value)}
+            />
             <InputError message={errors.cc} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="subject">Subject</Label>
-            <Input className='ring ring-secondary hover:ring-ring hover:bg-accent' id="subject" value={data.subject} onChange={(e) => setData('subject', e.target.value)} required />
+            <Input
+              className="ring ring-secondary hover:bg-accent hover:ring-ring"
+              id="subject"
+              value={data.subject}
+              onChange={(e) => setData('subject', e.target.value)}
+              required
+            />
             <InputError message={errors.subject} />
           </div>
           <div className="space-y-2">
             <Label>Body</Label>
             <TiptapToolbar editor={editor} />
-            <EditorContent editor={editor} className='ring ring-secondary hover:ring-ring rounded-lg' />
+            <EditorContent editor={editor} className="rounded-lg ring ring-secondary hover:ring-ring" />
             <InputError message={errors.body} />
           </div>
         </form>
         <DialogFooter>
-          <Button className='hover:bg-destructive hover:text-destructive-foreground' variant="outline" onClick={() => onOpenChange(false)}>
-            <CircleX/>
+          <Button className="hover:bg-destructive hover:text-destructive-foreground" variant="outline" onClick={() => onOpenChange(false)}>
+            <CircleX />
             Cancel
           </Button>
           <Button type="submit" form="request-parts-form" disabled={isSubmitting}>
-            <Send/>
+            <Send />
             {isSubmitting ? 'Sending...' : 'Send Request'}
           </Button>
         </DialogFooter>

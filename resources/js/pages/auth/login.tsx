@@ -49,7 +49,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
               <div className="flex flex-col items-center text-center">
                 <h1 className="text-2xl font-bold">Welcome Back</h1>
                 <p className="text-balance text-muted-foreground">Login to your TPM account</p>
-                <p className="text-xs text-muted-foreground">v0.8</p>
+                <p className="text-xs text-muted-foreground">v0.9.1</p>
               </div>
               <div className="grid gap-4">
                 <div className="grid gap-2">

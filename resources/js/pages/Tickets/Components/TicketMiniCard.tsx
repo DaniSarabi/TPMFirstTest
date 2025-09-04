@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
+import { Ticket } from '@/types/ticket';
 import { Link } from '@inertiajs/react';
-import { Ticket } from '../Columns';
 
 interface TicketMiniCardProps {
   ticket: Ticket;

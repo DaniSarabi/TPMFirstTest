@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Ticket } from '../Columns';
 import { TicketMiniCard } from './TicketMiniCard';
+import { Ticket } from '@/types/ticket';
 
 interface RelatedTicketsCardProps {
   relatedTickets: Ticket[];

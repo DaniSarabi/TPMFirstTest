@@ -1,6 +1,8 @@
+import DynamicLucideIcon from '@/components/dynamicIconHelper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { getContrastColor, getStatusBadgeClass } from '@/lib/tpm-helpers';
 import { Machine } from '@/types/machine';
 import { Calendar, Clock, History, ListChecks, Pencil, QrCode, Ticket, Trash2, Wrench } from 'lucide-react';
 import React from 'react';
@@ -28,22 +30,35 @@ interface Props {
 
 export function MachineHeader({ machine, stats, uptime, onEdit, onDelete, onQrCode, can }: Props) {
   return (
-    <Card className="border-0 bg-primary text-primary-foreground shadow-lg drop-shadow-lg p-0">
+    <Card className="border-0 bg-primary p-0 text-primary-foreground shadow-lg drop-shadow-lg">
       <div className="flex flex-col md:flex-row">
         {/* Columna Izquierda: Detalles y Estadísticas */}
         <div className="flex flex-1 flex-col p-6">
           <div className="flex items-center justify-between">
+            <div className='flex items-baseline gap-2'>
+
             <div className="rounded-full bg-background p-1">
-              <Badge
-                className="text-sm"
-                style={{
-                  backgroundColor: machine.machine_status.bg_color,
-                  color: machine.machine_status.text_color,
-                }}
-              >
-                {machine.machine_status.name}
-              </Badge>
+              <Badge className={`text-sm capitalize ${getStatusBadgeClass(machine.status)}`}>{machine.status.replace(/_/g, ' ')}</Badge>{' '}
             </div>
+            {machine.tags && machine.tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {machine.tags.map((tag) => (
+                  <Badge
+                  key={tag.id}
+                  className="flex items-center gap-1.5 text-xs"
+                  style={{
+                    backgroundColor: tag.color,
+                    color: getContrastColor(tag.color),
+                  }}
+                  >
+                    <DynamicLucideIcon name={tag.icon} className="h-3 w-3" />
+                    <span className="capitalize">{tag.name}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            </div>
+
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="icon" onClick={onQrCode}>
                 <QrCode className="h-4 w-4" />

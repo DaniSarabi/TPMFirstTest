@@ -6,22 +6,25 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import GeneralSettingsLayout from '@/layouts/general-settings-layout';
 import { useCan } from '@/lib/useCan';
-import { type BreadcrumbItem, type Filter, type Paginated } from '@/types';
+import { type BreadcrumbItem, type Filter, type Paginated} from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { PlusCircle } from 'lucide-react';
 import * as React from 'react';
 import { BehaviorsInfoModal } from '../BehaviorsInfoModal';
-import { MachineStatus } from '../MachineStatus/Columns';
-import { Behavior, getColumns, TicketStatus } from './Columns';
+import { getColumns } from './Columns';
 import { ReassignAndDeleteStatusModal } from './ReassindAndDeleteTicketsStatusModal';
 import { TicketStatusFormModal } from './TicketStatusFormModal';
+import { TicketStatus } from '@/types/ticket';
+import { Behavior } from '@/types/settings';
+import { Tag } from '@/types/machine';
+
 
 // Define the props for the page
 interface IndexPageProps {
   statuses: Paginated<TicketStatus>;
   behaviors: Behavior[];
-  machineStatuses: MachineStatus[];
+  tags: Tag[];
   filters: Filter & { sort?: string; direction?: 'asc' | 'desc' };
 }
 
@@ -37,17 +40,17 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-export default function Index({ statuses, machineStatuses, behaviors, filters }: IndexPageProps) {
+export default function Index({ statuses, tags, behaviors, filters }: IndexPageProps) {
   const [isFormModalOpen, setIsFormModalOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [statusToEdit, setStatusToEdit] = React.useState<Partial<TicketStatus> | null>(null);
   const [statusToDelete, setStatusToDelete] = React.useState<TicketStatus | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
 
   const [search, setSearch] = React.useState(filters.search || '');
   const [sort, setSort] = React.useState<{ id: string; desc: boolean } | null>(
     filters.sort ? { id: filters.sort, desc: filters.direction === 'desc' } : null,
   );
-  const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
 
   const isInitialMount = React.useRef(true);
 
@@ -55,13 +58,14 @@ export default function Index({ statuses, machineStatuses, behaviors, filters }:
     name: '',
     bg_color: '#dcfce7',
     text_color: '#166534',
-    behaviors: [] as { id: number }[],
+    is_protected: false as boolean,
+    behaviors: [] as { id: number; tag_id: number | null; ruleId: string }[],
   });
 
   const can = {
-    create: useCan('tickets.edit'),
-    edit: useCan('tickets.edit'),
-    delete: useCan('tickets.edit'),
+    create: useCan('tickets.status'),
+    edit: useCan('tickets.status'),
+    delete: useCan('tickets.status'),
   };
 
   React.useEffect(() => {
@@ -98,13 +102,16 @@ export default function Index({ statuses, machineStatuses, behaviors, filters }:
   };
 
   const handleEdit = (status: TicketStatus) => {
+    // --- ACTION: Correctly map the behaviors, adding a temporary UUID for the UI ---
     form.setData({
       name: status.name,
       bg_color: status.bg_color,
       text_color: status.text_color,
-      behaviors: status.behaviors.map((b) => ({
+      is_protected: status.is_protected,
+      behaviors: status.behaviors.map((b: Behavior) => ({
         id: b.id,
-        machine_status_id: b.pivot?.machine_status_id || null,
+        tag_id: b.pivot?.tag_id || null,
+        ruleId: crypto.randomUUID(), // Add temporary ID for form state management
       })),
     });
     setStatusToEdit(status);
@@ -134,7 +141,7 @@ export default function Index({ statuses, machineStatuses, behaviors, filters }:
     }
   };
 
-  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete, handleSort, sort, machineStatuses), [sort]);
+  const columns = React.useMemo(() => getColumns(handleEdit, handleDelete, handleSort, sort, tags), [sort, tags]);
 
   const table = useReactTable({
     data: statuses.data,
@@ -186,7 +193,7 @@ export default function Index({ statuses, machineStatuses, behaviors, filters }:
           onOpenChange={setIsFormModalOpen}
           onSubmit={handleSubmit}
           status={statusToEdit}
-          machineStatuses={machineStatuses}
+          tags={tags}
           behaviors={behaviors}
           data={form.data}
           setData={form.setData}

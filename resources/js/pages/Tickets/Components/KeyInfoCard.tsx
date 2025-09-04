@@ -1,7 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Ticket } from '@/types/ticket';
+import { User } from '@/types/user';
 import { AlertTriangle, Calendar, CheckCircle, Clock, ShieldAlert, UserIcon } from 'lucide-react';
-import { Ticket, User } from '../Columns';
 
 interface KeyInfoCardProps {
   ticket: Ticket;

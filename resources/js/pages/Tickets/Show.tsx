@@ -1,15 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { User, type BreadcrumbItem } from '@/types';
+import { EmailContact, User, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Ticket, TicketStatus } from './Columns';
 import { ActionsCard } from './Components/ActionsCard';
 import { ActivityLogCard } from './Components/ActivityLogCard';
 import { DiscussionCard } from './Components/DiscussionCard';
 import { FullDetailsCard } from './Components/FullDetailsCard';
 import { KeyInfoCard } from './Components/KeyInfoCard';
-import { EmailContact } from '../GeneralSettings/EmailContacts/Columns';
 import { RelatedTicketsCard } from './Components/RelatedTicketsCard';
+import { Ticket, TicketStatus } from '@/types/ticket';
 
 // --- Type Definitions for this page ---
 // These should match the data sent from your TicketController@show method

@@ -3,22 +3,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import useCan from '@/lib/useCan';
 import { type BreadcrumbItem } from '@/types';
-import { Machine, MachineStatus, Subsystem } from '@/types/machine';
+import { Machine, Subsystem } from '@/types/machine';
 import { Head, router } from '@inertiajs/react';
 import React from 'react';
-import { AddSubsystemWizard } from './AddSubsystemWizard';
+import { AddSubsystemWizard } from './Components/AddSubsystemWizard';
+import { EditMachineModal } from './Components/EditMachineModal';
+import { EditSubsystemModal } from './Components/EditSubsystemModal';
 import { MachineHeader } from './Components/MachineHeader';
 import { MaintenanceTab } from './Components/MaintenanceTab';
+import { ManageInspectionPointsModal } from './Components/ManageInspectionPointsModal';
 import { QrCodeModal } from './Components/QrCodeModal';
 import { SubsystemsTab } from './Components/SubsystemsTab';
-import { EditMachineModal } from './EditMachineModal';
-import { EditSubsystemModal } from './EditSubsystemModal';
-import { ManageInspectionPointsModal } from './ManageInspectionPointsModal';
 
 // Define the props for the Show page
 interface ShowPageProps {
   machine: Machine;
-  statuses: MachineStatus[];
   uptime: {
     since: string | null;
     duration: string | null;
@@ -26,7 +25,7 @@ interface ShowPageProps {
   stats: any;
 }
 
-export default function Show({ machine, statuses, uptime, stats }: ShowPageProps) {
+export default function Show({ machine, uptime, stats }: ShowPageProps) {
   const [editModalIsOpen, setEditModalIsOpen] = React.useState(false);
 
   const [AddSubsystemWizardIsOpen, setAddSubsystemWizardIsOpen] = React.useState(false);
@@ -129,19 +128,17 @@ export default function Show({ machine, statuses, uptime, stats }: ShowPageProps
             />
           </TabsContent>
           <TabsContent value="maintenance">
-            <MaintenanceTab maintenances={machine.all_maintenances} machineId={machine.id}/>
+            <MaintenanceTab maintenances={machine.all_maintenances} machineId={machine.id} />
           </TabsContent>
-          <TabsContent value='reports'>
+          <TabsContent value="reports">
             <div>
-              <span>
-                Reports tab
-              </span>
+              <span>Reports tab</span>
             </div>
             {/* <ReportsTab /> */}
           </TabsContent>
         </Tabs>
       </div>
-      <EditMachineModal machine={machine} statuses={statuses} isOpen={editModalIsOpen} onOpenChange={setEditModalIsOpen} />
+      <EditMachineModal machine={machine} isOpen={editModalIsOpen} onOpenChange={setEditModalIsOpen} />
       <AddSubsystemWizard
         machineId={machine.id}
         isOpen={AddSubsystemWizardIsOpen}

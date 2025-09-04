@@ -34,8 +34,8 @@ class TicketStatus extends Model
      */
     public function behaviors(): BelongsToMany
     {
-        return $this->belongsToMany(Behavior::class, 'ticket_status_has_behaviors')
-            ->withPivot('machine_status_id');
+          return $this->belongsToMany(Behavior::class, 'ticket_status_has_behaviors')
+            ->withPivot('tag_id');
     }
 
     /**

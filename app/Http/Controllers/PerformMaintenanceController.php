@@ -12,6 +12,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use App\Services\TagManagerService;
+use App\Models\Tag;
 
 class PerformMaintenanceController extends Controller
 {
@@ -98,7 +100,7 @@ class PerformMaintenanceController extends Controller
     /**
      * Submit the final maintenance report.
      */
-    public function submitReport(Request $request, ScheduledMaintenance $scheduledMaintenance)
+    public function submitReport(Request $request, ScheduledMaintenance $scheduledMaintenance, TagManagerService $tagManager)
     {
         $templateTasks = $scheduledMaintenance->template->tasks->keyBy('label');
         $resultsData = $request->input('results', []);
@@ -160,6 +162,37 @@ class PerformMaintenanceController extends Controller
 
         $report->update(['completed_at' => now()]);
         $scheduledMaintenance->update(['status' => $finalStatus]);
+
+
+        // After successfully completing the maintenance, we now check if we can remove any tags.
+        $machine = $scheduledMaintenance->schedulable_type === 'App\\Models\\Machine'
+            ? $scheduledMaintenance->schedulable
+            : $scheduledMaintenance->schedulable->machine;
+
+        if ($machine) {
+            // 1. Overdue Check: Does this machine have any OTHER overdue maintenances?
+            $hasOtherOverdue = $machine->scheduledMaintenances()
+                ->where('id', '!=', $scheduledMaintenance->id) // Exclude the one we just completed
+                ->where('status', 'overdue')
+                ->exists();
+
+            if (!$hasOtherOverdue) {
+                // If not, it's safe to remove the 'overdue' tag.
+                $tagManager->removeTag($machine, 'maintenance-overdue', $scheduledMaintenance);
+            }
+
+            // 2. Upcoming Check: Does this machine have any OTHER non-completed maintenances?
+            $hasOtherUpcoming = $machine->scheduledMaintenances()
+                ->where('id', '!=', $scheduledMaintenance->id) // Exclude the one we just completed
+                ->whereNotIn('status', ['completed', 'completed_overdue'])
+                ->exists();
+
+            if (!$hasOtherUpcoming) {
+                // If not, it's safe to remove the 'due' tag.
+                $tagManager->removeTag($machine, 'maintenance-due', $scheduledMaintenance);
+            }
+        }
+
 
         return Redirect::route('maintenance-calendar.index')->with('success', 'Maintenance report submitted successfullyy.');
     }

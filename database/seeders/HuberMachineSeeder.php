@@ -28,7 +28,6 @@ class HuberMachineSeeder extends Seeder
             [
                 'description' => 'Máquina de moldeo por inyección para piezas de resina.',
                 'created_by' => $user->id,
-                'machine_status_id' => 1, // Asumiendo que el ID 1 es 'En Servicio'
             ]
         );
 

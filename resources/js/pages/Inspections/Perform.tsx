@@ -1,15 +1,15 @@
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import { InspectionPoint, Machine } from '@/types/machine';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
 import * as React from 'react';
+import { CameraModal } from '../../components/CameraModal';
 import { Ticket } from '../Tickets/Columns';
 import { ChecklistCard } from './Components/CheckListCard';
 import { ExistingTicketsModal } from './Components/ExistingTicketsModal';
 import { InspectionResult } from './Components/InspectionPointRow';
 import { SummaryCard } from './Components/SummaryCard';
-import { CameraModal } from '../../components/CameraModal';
-import { InspectionPoint, Machine } from '@/types/machine';
 
 // --- Type Definitions for this page ---
 
@@ -34,9 +34,10 @@ interface PerformPageProps {
     since: string | null;
     duration: string | null;
   };
+  stats: any;
 }
 
-export default function Perform({ report, inspectionStatuses, uptime }: PerformPageProps) {
+export default function Perform({ report, inspectionStatuses, uptime, stats }: PerformPageProps) {
   const { machine } = report;
 
   const [inspectionResults, setInspectionResults] = React.useState<Record<number, InspectionResult>>({});
@@ -135,7 +136,7 @@ export default function Perform({ report, inspectionStatuses, uptime }: PerformP
       <Head title={`Inspecting: ${machine.name}`} />
 
       <div className="space-y-6 p-6">
-        <SummaryCard machine={machine} uptime={uptime} />
+        <SummaryCard machine={machine} uptime={uptime} stats={stats} />
 
         <ChecklistCard
           machine={machine}

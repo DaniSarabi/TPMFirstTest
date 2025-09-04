@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
+import { Ticket } from '@/types/ticket';
 import { Link } from '@inertiajs/react';
-import { Download, FileText, Flag, Image, ListChecks, Wrench } from 'lucide-react';
+import { Download, FileText, Flag, Image, ListChecks, View, Wrench, Eye } from 'lucide-react';
 import * as React from 'react';
-import { Ticket } from '../Columns';
 
 interface FullDetailsCardProps {
   ticket: Ticket;
@@ -72,10 +72,12 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
           <div className="flex items-center justify-end gap-2 pt-2">
             {inspectionReportId && (
               <Button variant="outline" asChild>
-                <Link href={route('inspections.show', inspectionReportId)}>View Full Inspection Report</Link>
+                <Link href={route('inspections.show', inspectionReportId)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Full Inspection Report</Link>
               </Button>
             )}
-            <Button asChild>
+            <Button className='hover:bg-secondary hover:text-secondary-foreground' variant={'default'} asChild>
               <a href={route('tickets.pdf', ticket.id)} target="_blank">
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF

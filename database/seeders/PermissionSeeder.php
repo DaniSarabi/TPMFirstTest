@@ -49,6 +49,8 @@ class PermissionSeeder extends Seeder
             'tickets.discard',
             'tickets.close',
             'tickets.view',
+            'tickets.status',
+
 
 
             // * Email permissions

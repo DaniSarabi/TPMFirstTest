@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Behavior;
-use App\Models\MachineStatus;
 use App\Models\Ticket;
 use App\Models\TicketStatus;
+use App\Models\Tag; // Importar el modelo Tag
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -23,7 +24,7 @@ class TicketStatusController extends Controller
 
         $statuses = TicketStatus::with('behaviors')
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%'.$search.'%');
+                $query->where('name', 'like', '%' . $search . '%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -37,8 +38,8 @@ class TicketStatusController extends Controller
         return Inertia::render('GeneralSettings/TicketStatus/Index', [
             'statuses' => $statuses,
             'filters' => $filters,
-            'machineStatuses' => MachineStatus::all(),
-            'behaviors' => Behavior::where('scope', 'ticket')->orWhere('scope', 'universal')->get(),
+            'tags' => Tag::orderBy('name')->get(), // Ahora enviamos los Tags
+            'behaviors' => Behavior::where('scope', 'like', '%ticket%')->orWhere('scope', 'universal')->get(),
         ]);
     }
 
@@ -47,44 +48,29 @@ class TicketStatusController extends Controller
      */
     public function store(Request $request)
     {
+        // Actualizar la validación para que use tag_id
         $validated = $request->validate([
             'name' => 'required|string|unique:ticket_statuses,name|max:255',
             'bg_color' => 'required|string',
             'text_color' => 'required|string',
+            'is_protected' => 'boolean',
             'behaviors' => 'present|array',
             'behaviors.*.id' => 'required|exists:behaviors,id',
-            'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
+            'behaviors.*.tag_id' => 'nullable|exists:tags,id',
         ]);
 
-        $behaviorsData = collect($validated['behaviors']);
-        $setsMachineStatusBehavior = Behavior::where('name', 'sets_machine_status')->first();
-
-        if ($setsMachineStatusBehavior && $behaviorsData->pluck('id')->contains($setsMachineStatusBehavior->id)) {
-            $behaviorData = $behaviorsData->firstWhere('id', $setsMachineStatusBehavior->id);
-            if (empty($behaviorData['machine_status_id'])) {
-                throw ValidationException::withMessages([
-                    'behaviors' => 'The "Machine Status to Set" is required when using the "sets_machine_status" behavior.',
-                ]);
-            }
-        }
-
         DB::transaction(function () use ($validated) {
-            $behaviorsToSyncData = collect($validated['behaviors']);
-            $behaviorsToSync = $behaviorsToSyncData->keyBy('id')->map(function ($behavior) {
-                return ['machine_status_id' => $behavior['machine_status_id']];
-            });
+            $statusData = collect($validated)->except('behaviors')->all();
+            $status = TicketStatus::create($statusData);
 
-            $closingBehavior = Behavior::where('name', 'is_ticket_closing_status')->first();
-
-            if ($closingBehavior && $behaviorsToSyncData->pluck('id')->contains($closingBehavior->id)) {
-                // First, remove this behavior from all other statuses.
-                DB::table('ticket_status_has_behaviors')
-                    ->where('behavior_id', $closingBehavior->id)
-                    ->delete();
+            // ACTION: Replaced the old sync() logic with a loop that correctly attaches each rule.
+            // This is what fixes the "only saves one tag" bug.
+            foreach ($validated['behaviors'] as $behaviorRule) {
+                $status->behaviors()->attach(
+                    $behaviorRule['id'],
+                    ['tag_id' => $behaviorRule['tag_id'] ?? null]
+                );
             }
-
-            $status = TicketStatus::create($validated);
-            $status->behaviors()->sync($behaviorsToSync);
         });
 
         return back()->with('success', 'Ticket status created successfully.');
@@ -95,44 +81,32 @@ class TicketStatusController extends Controller
      */
     public function update(Request $request, TicketStatus $ticketStatus)
     {
+        // ACTION: Simplified the validation.
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('ticket_statuses')->ignore($ticketStatus->id)],
             'bg_color' => 'required|string',
             'text_color' => 'required|string',
+            'is_protected' => 'boolean',
             'behaviors' => 'present|array',
             'behaviors.*.id' => 'required|exists:behaviors,id',
-            'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
+            'behaviors.*.tag_id' => 'nullable|exists:tags,id',
         ]);
 
         DB::transaction(function () use ($validated, $ticketStatus) {
-            $behaviorsToSyncData = collect($validated['behaviors']);
-            $behaviorsToSync = $behaviorsToSyncData->keyBy('id')->map(function ($behavior) {
-                return ['machine_status_id' => $behavior['machine_status_id']];
-            });
+            $statusData = collect($validated)->except('behaviors')->all();
+            $ticketStatus->update($statusData);
 
-            $closingBehavior = Behavior::where('name', 'is_ticket_closing_status')->first();
+            // ACTION: Replaced the old sync() logic with the correct detach() and attach() loop.
+            // 1. First, remove all existing behavior rules for this status.
+            $ticketStatus->behaviors()->detach();
 
-            $behaviorsData = collect($validated['behaviors']);
-            $setsMachineStatusBehavior = Behavior::where('name', 'sets_machine_status')->first();
-
-            if ($setsMachineStatusBehavior && $behaviorsData->pluck('id')->contains($setsMachineStatusBehavior->id)) {
-                $behaviorData = $behaviorsData->firstWhere('id', $setsMachineStatusBehavior->id);
-                if (empty($behaviorData['machine_status_id'])) {
-                    throw ValidationException::withMessages([
-                        'behaviors' => 'The "Machine Status to Set" is required when using the "sets_machine_status" behavior.',
-                    ]);
-                }
+            // 2. Then, loop through the new rules and attach them one by one.
+            foreach ($validated['behaviors'] as $behaviorRule) {
+                $ticketStatus->behaviors()->attach(
+                    $behaviorRule['id'],
+                    ['tag_id' => $behaviorRule['tag_id'] ?? null]
+                );
             }
-            if ($closingBehavior && $behaviorsToSyncData->pluck('id')->contains($closingBehavior->id)) {
-                // Remove this behavior from any status that is NOT the one we are currently editing.
-                DB::table('ticket_status_has_behaviors')
-                    ->where('behavior_id', $closingBehavior->id)
-                    ->where('ticket_status_id', '!=', $ticketStatus->id)
-                    ->delete();
-            }
-
-            $ticketStatus->update($validated);
-            $ticketStatus->behaviors()->sync($behaviorsToSync);
         });
 
         return back()->with('success', 'Ticket status updated successfully.');
@@ -143,17 +117,22 @@ class TicketStatusController extends Controller
      */
     public function destroy(Request $request, TicketStatus $ticketStatus)
     {
-        // ---  Update the destroy method logic ---
         $validated = $request->validate([
             'new_status_id' => 'required|exists:ticket_statuses,id',
         ]);
 
+        // --- ACTION: Refactored logic to check for the 'is_protected' behavior ---
+        // Eager-load the behaviors relationship to check for protection.
+        $ticketStatus->load('behaviors');
+
+        if ($ticketStatus->behaviors->contains('name', 'is_protected')) {
+            return back()->with('error', 'This status is protected by a system behavior and cannot be deleted.');
+        }
+
         DB::transaction(function () use ($validated, $ticketStatus) {
-            // Re-assign any inspection report items that were using the old status
             Ticket::where('ticket_status_id', $ticketStatus->id)
                 ->update(['ticket_status_id' => $validated['new_status_id']]);
 
-            // Now, safely delete the status
             $ticketStatus->delete();
         });
 

@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/user-avatar';
+import { Ticket, TicketUpdate } from '@/types/ticket';
 import { useForm } from '@inertiajs/react';
 import { MessageCircle, Send } from 'lucide-react';
 import * as React from 'react';
-import { Ticket, TicketUpdate } from '../Columns';
 
 interface DiscussionCardProps {
   ticket: Ticket;
@@ -15,13 +15,6 @@ interface DiscussionCardProps {
 interface DiscussionItem extends TicketUpdate {
   is_initial?: boolean; // Make it optional
 }
-
-// Helper function to get initials from a name
-const getInitials = (name: string) => {
-  const names = name.split(' ');
-  const initials = names.map((n) => n[0]).join('');
-  return initials.toUpperCase().slice(0, 2);
-};
 
 export function DiscussionCard({ ticket }: DiscussionCardProps) {
   const discussionItems: DiscussionItem[] = React.useMemo(() => {
@@ -44,13 +37,21 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
         parts_used: null,
         old_status: null,
         new_status: null,
-        new_machine_status_id: null,
-        new_machine_status: null,
+        action: null,
+        loggable_id: null,
+        loggable_type: null,
+        loggable: null,
       });
     }
 
     ticket.updates.forEach((update) => {
-      if (update.comment && !update.comment.startsWith('Ping:') && !update.comment.startsWith('System:')&& !update.comment.startsWith('Sent a part request') && update.id !== createdEvent?.id) {
+      if (
+        update.comment &&
+        !update.comment.startsWith('Ping:') &&
+        !update.comment.startsWith('System') &&
+        !update.comment.startsWith('Sent a part request') &&
+        update.id !== createdEvent?.id
+      ) {
         items.push(update);
       }
     });
@@ -83,7 +84,7 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
         <div className="max-h-60 space-y-4 overflow-y-auto pr-2">
           {discussionItems.length > 0 ? (
             discussionItems.map((item) => (
-              <div key={item.id} className="pl-1.5 pt-1.5 flex items-start gap-3">
+              <div key={item.id} className="flex items-start gap-3 pt-1.5 pl-1.5">
                 <UserAvatar user={item.user} className="h-8 w-8" />
 
                 <div className="flex-1 rounded-md bg-muted p-3 text-sm shadow backdrop-blur-lg">

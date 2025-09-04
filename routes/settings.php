@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     })->name('appearance');
 
     // --- Rutas para las Preferencias de Notificación ---
-    Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('profile.notifications.edit')->middleware('permission:notifications.admin');
-    Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('profile.notifications.update')->middleware('permission:notifications.admin');
+    Route::get('/settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('settings.notifications.edit');
+
+    Route::patch('/settings/notifications', [NotificationPreferencesController::class, 'update'])->name('settings.notifications.update');
 });

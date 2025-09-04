@@ -27,7 +27,6 @@ class InspectionStatus extends Model
         'name',
         'severity',
         'auto_creates_ticket',
-        'machine_status_id', // Changed from sets_machine_status_to
         'bg_color',
         'text_color',
         'is_default',
@@ -36,9 +35,9 @@ class InspectionStatus extends Model
     /**
      * The behaviors that belong to the inspection status.
      */
-    public function behaviors(): BelongsToMany
-    {
-        return $this->belongsToMany(Behavior::class, 'inspection_status_has_behaviors')
-            ->withPivot('machine_status_id'); // Important for accessing the extra pivot column
-    }
+   public function behaviors(): BelongsToMany
+{
+    return $this->belongsToMany(Behavior::class, 'inspection_status_has_behaviors')
+        ->withPivot('tag_id'); // <-- This is the important change
+}
 }

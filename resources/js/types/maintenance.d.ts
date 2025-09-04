@@ -103,3 +103,12 @@ export interface MaintenanceReport {
   scheduled_maintenance: ScheduledMaintenance;
   results: MaintenanceReportResult[];
 }
+
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  color: string;
+  icon: string;
+}

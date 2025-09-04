@@ -54,9 +54,9 @@ class TicketController extends Controller
 
         $ticketsQuery->when($filters['search'] ?? null, function ($query, $search) {
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%'.$search.'%')
+                $q->where('title', 'like', '%' . $search . '%')
                     ->orWhereHas('machine', function ($q2) use ($search) {
-                        $q2->where('name', 'like', '%'.$search.'%');
+                        $q2->where('name', 'like', '%' . $search . '%');
                     });
             });
         });
@@ -78,9 +78,9 @@ class TicketController extends Controller
     {
         // Eager-load all the necessary relationships for the details page
         $ticket->load([
-            'machine.machineStatus',
+            'machine.tags',
             'creator', // Load the full creator object
-            'status',
+            'status.behaviors',
             'inspectionItem:id,image_url,inspection_report_id,inspection_point_id',
             'inspectionItem.point:id,name,description,subsystem_id',
             'inspectionItem.point.subsystem:id,name',
@@ -89,7 +89,7 @@ class TicketController extends Controller
                     'user', // Load the full user object for each update
                     'oldStatus:id,name,bg_color,text_color',
                     'newStatus:id,name,bg_color,text_color',
-                    'newMachineStatus:id,name,bg_color,text_color',
+                    'loggable', // We now load the new polymorphic 'loggable' relationship.
                 ])->latest();
             },
         ]);
@@ -166,20 +166,23 @@ class TicketController extends Controller
     {
         // Eager-load all the necessary relationships for the PDF report
         $ticket->load([
-            'machine',
+            'machine.tags', // Load the machine's current tags
             'creator',
             'status',
             'inspectionItem.point.subsystem',
-            'updates.user',
-            'updates.oldStatus',
-            'updates.newStatus',
-            'updates.newMachineStatus',
+            'updates' => function ($query) {
+                $query->with([
+                    'user',
+                    'oldStatus',
+                    'newStatus',
+                    'loggable', // Load the new polymorphic relationship for tags
+                ])->orderBy('created_at', 'asc'); // Order chronologically for the report
+            },
         ]);
-
         // Load the Blade view and generate the PDF
         $pdf = Pdf::loadView('pdf.ticket-report', ['ticket' => $ticket]);
 
         // Return the PDF as a download
-        return $pdf->download('ticket-report-'.$ticket->id.'.pdf');
+        return $pdf->download('ticket-report-' . $ticket->id . '.pdf');
     }
 }

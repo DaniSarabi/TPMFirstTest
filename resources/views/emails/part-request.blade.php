@@ -15,13 +15,16 @@
             margin: 20px auto;
             padding: 20px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .header {
-            background-color: #f4f4f4;
-            padding: 10px;
+         .header {
+            background-color: #3a6edf;
+            color: #ffffff;
+            padding: 15px;
             text-align: center;
+            border-radius: 8px 8px 0 0;
         }
 
         .content {
@@ -31,6 +34,9 @@
         .footer {
             font-size: 0.9em;
             color: #777;
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
         }
 
         .ticket-details {
@@ -38,6 +44,10 @@
             border: 1px solid #eee;
             padding: 15px;
             margin-top: 20px;
+        }
+        .ticket-details h3 {
+            margin-top: 0;
+            color: #3a6edf;
         }
     </style>
 </head>
@@ -68,7 +78,8 @@
                 {{ $requester->email }}.</p>
         </div>
         <div class="footer">
-            <p>This is an automated message from the TPM Application.</p>
+            {{-- Aquí es donde incluiremos nuestra nueva firma --}}
+            @include('emails.partials.signature')
         </div>
     </div>
 </body>

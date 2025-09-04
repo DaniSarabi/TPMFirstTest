@@ -25,11 +25,5 @@ class MachineStatus extends Model
         'is_operational_default',
     ];
 
-    /**
-     * Get the machines that have this status.
-     */
-    public function machines(): HasMany
-    {
-        return $this->hasMany(Machine::class);
-    }
+    
 }

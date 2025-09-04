@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use App\Models\Tag;
 
 class InspectionStatusController extends Controller
 {
@@ -22,7 +23,7 @@ class InspectionStatusController extends Controller
 
         $statuses = InspectionStatus::with('behaviors')
             ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%'.$search.'%');
+                $query->where('name', 'like', '%' . $search . '%');
             })
             ->when($filters['sort'] ?? null, function ($query, $sort) use ($filters) {
                 $direction = $filters['direction'] ?? 'asc';
@@ -36,7 +37,7 @@ class InspectionStatusController extends Controller
         return Inertia::render('GeneralSettings/InspectionStatus/Index', [
             'statuses' => $statuses,
             'filters' => $filters,
-            'machineStatuses' => MachineStatus::all(),
+            'tags' => Tag::all(),
             'behaviors' => Behavior::where('scope', 'inspection')->orWhere('scope', 'universal')->get(),
         ]);
     }
@@ -52,7 +53,7 @@ class InspectionStatusController extends Controller
             'text_color' => 'required|string',
             'behaviors' => 'present|array',
             'behaviors.*.id' => 'required|exists:behaviors,id',
-            'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
+            'behaviors.*.tag_id' => 'nullable|exists:tags,id', // Changed from machine_status_id
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -75,13 +76,13 @@ class InspectionStatusController extends Controller
                 'severity' => $severity,
             ]);
 
-            // Prepare the data for the pivot table
-            $behaviorsToSync = collect($validated['behaviors'])->keyBy('id')->map(function ($behavior) {
-                return ['machine_status_id' => $behavior['machine_status_id']];
-            });
-
-            // Sync the behaviors using the many-to-many relationship
-            $status->behaviors()->sync($behaviorsToSync);
+            // We will loop and attach each behavior rule individually.
+            foreach ($validated['behaviors'] as $behaviorRule) {
+                $status->behaviors()->attach(
+                    $behaviorRule['id'],
+                    ['tag_id' => $behaviorRule['tag_id'] ?? null]
+                );
+            }
         });
 
         return back()->with('success', 'Inspection status created successfully.');
@@ -100,7 +101,7 @@ class InspectionStatusController extends Controller
                 'text_color' => 'required|string',
                 'behaviors' => 'present|array',
                 'behaviors.*.id' => 'required|exists:behaviors,id',
-                'behaviors.*.machine_status_id' => 'nullable|exists:machine_statuses,id',
+                'behaviors.*.tag_id' => 'nullable|exists:tags,id', // Changed from machine_status_id
             ]);
 
             $behaviorIds = collect($validated['behaviors'])->pluck('id');
@@ -120,11 +121,16 @@ class InspectionStatusController extends Controller
                 'severity' => $severity,
             ]);
 
-            $behaviorsToSync = collect($validated['behaviors'])->keyBy('id')->map(function ($behavior) {
-                return ['machine_status_id' => $behavior['machine_status_id']];
-            });
+            // 1. First, remove all existing behavior rules.
+            $inspectionStatus->behaviors()->detach();
 
-            $inspectionStatus->behaviors()->sync($behaviorsToSync);
+            // 2. Then, loop and re-attach each new behavior rule.
+            foreach ($validated['behaviors'] as $behaviorRule) {
+                $inspectionStatus->behaviors()->attach(
+                    $behaviorRule['id'],
+                    ['tag_id' => $behaviorRule['tag_id'] ?? null]
+                );
+            }
         });
 
         return back()->with('success', 'Inspection status updated successfully.');

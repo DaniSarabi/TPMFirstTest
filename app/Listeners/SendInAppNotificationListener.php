@@ -13,6 +13,8 @@ use App\Notifications\GeneralInAppNotification;
 use Illuminate\Support\Facades\Notification;
 use App\Events\TicketCommentAdded;
 use App\Events\TicketStatusChanged;
+use App\Events\MaintenanceReminderSent;
+use App\Models\Machine;
 
 class SendInAppNotificationListener
 {
@@ -46,7 +48,7 @@ class SendInAppNotificationListener
         if ($event instanceof UserCreated) {
             $this->handleUserCreated($event);
         }
-        if ($event instanceof RoleEdit){
+        if ($event instanceof RoleEdit) {
             $this->handleRoleEdit($event);
         }
 
@@ -54,11 +56,32 @@ class SendInAppNotificationListener
             $this->handleInspectionCompleted($event);
         }
 
-        // * Machines events
-        if ($event instanceof MachineStatusChanged) {
-            $this->handleMachineStatusChanged($event);
+        if ($event instanceof MaintenanceReminderSent) {
+            $this->handleMaintenanceReminderSent($event);
         }
-        
+    }
+
+    /**
+     * Handle the MaintenanceReminderSent event.
+     */
+    private function handleMaintenanceReminderSent(MaintenanceReminderSent $event): void
+    {
+        $maintenance = $event->maintenance;
+        $notificationType = 'maintenance.reminder';
+
+        $machine = $maintenance->schedulable_type === 'App\\Models\\Machine'
+            ? $maintenance->schedulable
+            : $maintenance->schedulable->machine;
+
+        if (!$machine) {
+            return;
+        } // Safety check
+
+        $message = "Maintenance reminder for {$maintenance->title} on machine {$machine->name}.";
+        $url = route('maintenance-calendar.index'); // Link to the calendar
+
+        // The helper method will correctly find both global and machine-specific subscribers.
+        $this->notifySubscribedUsers($notificationType, $message, $url, $machine);
     }
 
     /**
@@ -87,7 +110,7 @@ class SendInAppNotificationListener
 
         $this->notifySubscribedUsers($notificationType, $message, $url);
     }
-     /**
+    /**
      * Handle the CommentAdded event.
      */
     private function handleTicketCommentAdded(TicketCommentAdded $event): void
@@ -109,8 +132,8 @@ class SendInAppNotificationListener
         $notificationType = 'role.updated';
 
         $message = "The role {$role->name} has been updated";
-        $url = route('roles.index'); 
-        
+        $url = route('roles.index');
+
         $this->notifySubscribedUsers($notificationType, $message, $url);
     }
 
@@ -142,48 +165,30 @@ class SendInAppNotificationListener
         $this->notifySubscribedUsers($notificationType, $message, $url);
     }
 
-    /**
-     * Handle the MachineStatusChanged event.
-    */
-    private function handleMachineStatusChanged(MachineStatusChanged $event): void
-    {
-        $machine = $event->machine;
-        $notificationType = 'machine.status.changed';
 
-        $message = "Machine status for {$machine->name} has been updated to {$machine->machineStatus->name}.";
-        $url = route('machines.show', $machine->id);
 
-        $this->notifySubscribedUsers($notificationType, $message, $url);
-    }
-    
-
-    /** 
-     * A reusable helper method to find and notify users.
+    /** * A reusable helper method to find and notify users.
+     * It now accepts an optional Machine model to handle machine-specific subscriptions.
      */
-    private function notifySubscribedUsers(string $notificationType, string $message, string $url): void
+    private function notifySubscribedUsers(string $notificationType, string $message, string $url, ?Machine $machine = null): void
     {
-        // 1. Find all users who have subscribed to this notification type.
-        $usersToNotify = User::whereHas('notificationPreferences', function ($query) use ($notificationType) {
-            $query->where('notification_type', $notificationType);
+        $usersToNotify = User::whereHas('notificationPreferences', function ($query) use ($notificationType, $machine) {
+            $query->where('notification_type', $notificationType)
+                ->when($machine, function ($q) use ($machine) {
+                    // This 'when' clause adds the logic for machine-specific subscriptions.
+                    // It finds users who have EITHER a global preference OR a preference for this specific machine.
+                    $q->where(function ($subQuery) use ($machine) {
+                        $subQuery->whereNull('preferable_id')
+                            ->orWhere(function ($machineQuery) use ($machine) {
+                                $machineQuery->where('preferable_type', 'App\\Models\\Machine')
+                                    ->where('preferable_id', $machine->id);
+                            });
+                    });
+                });
         })->get();
 
-        // 2. Send the notification only to those users.
         if ($usersToNotify->isNotEmpty()) {
             Notification::send($usersToNotify, new GeneralInAppNotification($message, $url));
         }
-
-
-        // TODO Do not notofy the user who triggered the event.
-        //  $subscribedUsers = User::whereHas('notificationPreferences', function ($query) use ($notificationType) {
-        //     $query->where('notification_type', $notificationType);
-        // })->get();
-
-        // // 2. Filter the list to exclude the user who triggered the event.
-        // $usersToNotify = $subscribedUsers->where('id', '!=', $userWhoTriggeredEvent->id);
-
-        // // 3. Send the notification only to the final list of users.
-        // if ($usersToNotify->isNotEmpty()) {
-        //     Notification::send($usersToNotify, new GeneralInAppNotification($message, $url));
-        // }
     }
 }

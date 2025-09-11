@@ -9,6 +9,7 @@ import { FullDetailsCard } from './Components/FullDetailsCard';
 import { KeyInfoCard } from './Components/KeyInfoCard';
 import { RelatedTicketsCard } from './Components/RelatedTicketsCard';
 import { Ticket, TicketStatus } from '@/types/ticket';
+import { ResolutionCard } from './Components/ResolutionCard';
 
 // --- Type Definitions for this page ---
 // These should match the data sent from your TicketController@show method
@@ -46,6 +47,7 @@ export default function Show({ ticket, timeOpen, solvedBy, statuses, purchasingC
           <div className="space-y-6 lg:col-span-2">
             <KeyInfoCard ticket={ticket} timeOpen={timeOpen} solvedBy={solvedBy} />
             <ActionsCard ticket={ticket} statuses={statuses} purchasingContacts={purchasingContacts} />
+            <ResolutionCard ticket={ticket} />
             <FullDetailsCard ticket={ticket} />
             <RelatedTicketsCard relatedTickets={relatedTickets} />
           </div>

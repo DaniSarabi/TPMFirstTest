@@ -57,6 +57,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('maintenance.perform.show')
         ->middleware('permission:preventive-maintenance.perform');
 
+    Route::post('/perform-maintenance/{scheduledMaintenance}/start', [PerformMaintenanceController::class, 'start'])
+        ->name('maintenance.perform.start')
+        ->middleware('permission:preventive-maintenance.perform');
+
+
     // Routes for saving progress and submitting the final report
     Route::post('/perform-maintenance/{scheduledMaintenance}/save', [PerformMaintenanceController::class, 'saveProgress'])
         ->name('maintenance.perform.save')
@@ -88,7 +93,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
     Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
 
-  
+
     // * ***************************** Tickets module Routes *****************************
 
 
@@ -97,6 +102,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/tickets/{ticket}/start-work', [TicketActionsController::class, 'startWork'])->name('tickets.start-work')->middleware('permission:tickets.perform');
     Route::patch('/tickets/{ticket}/resume-work', [TicketActionsController::class, 'resumeWork'])->name('tickets.resume-work')->middleware('permission:tickets.perform');
     Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close')->middleware('permission:tickets.close');
+    Route::patch('/tickets/{ticket}/escalate', [TicketActionsController::class, 'escalate'])->name('tickets.escalate')->middleware('permission:tickets.escalate');
+    Route::patch('/tickets/{ticket}/downgrade', [TicketActionsController::class, 'downgrade'])->name('tickets.downgrade')->middleware('permission:tickets.discard');
+    Route::patch('/tickets/{ticket}/discard', [TicketActionsController::class, 'discard'])->name('tickets.discard')->middleware('permission:tickets.discard');
 
 
     // This route will handle downloading the ticket PDF

@@ -38,11 +38,13 @@ export function MachineHeader({ machine, stats, uptime, onEdit, onDelete, onQrCo
             <div className='flex items-baseline gap-2'>
 
             <div className="rounded-full bg-background p-1">
-              <Badge className={`text-sm capitalize ${getStatusBadgeClass(machine.status)}`}>{machine.status.replace(/_/g, ' ')}</Badge>{' '}
+              <Badge className={`text-base capitalize ${getStatusBadgeClass(machine.status)}`}>{machine.status.replace(/_/g, ' ')}</Badge>{' '}
             </div>
             {machine.tags && machine.tags.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 {machine.tags.map((tag) => (
+                  <div className='px-0.5 bg-background rounded-full py-0.5'>
+
                   <Badge
                   key={tag.id}
                   className="flex items-center gap-1.5 text-xs"
@@ -51,9 +53,10 @@ export function MachineHeader({ machine, stats, uptime, onEdit, onDelete, onQrCo
                     color: getContrastColor(tag.color),
                   }}
                   >
-                    <DynamicLucideIcon name={tag.icon} className="h-3 w-3" />
+                    <DynamicLucideIcon name={tag.icon} className="h-3 w-3 stroke-3" />
                     <span className="capitalize">{tag.name}</span>
                   </Badge>
+                    </div>
                 ))}
               </div>
             )}

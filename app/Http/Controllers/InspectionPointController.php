@@ -91,27 +91,26 @@ class InspectionPointController extends Controller
      */
     public function getOpenTickets(InspectionPoint $inspectionPoint)
     {
-        // First, find the status that is considered a "closing" status.
-        $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
-            $query->where('name', 'is_ticket_closing_status');
-        })->first();
+        // Get all statuses that should be excluded (closing or discarded)
+        $excludedStatuses = TicketStatus::whereHas('behaviors', function ($query) {
+            $query->whereIn('name', [
+                'is_ticket_closing_status',
+                'is_ticket_discard_status',
+            ]);
+        })->pluck('id');
 
-        // Find all tickets linked to this inspection point, excluding any that are closed.
+        // Fetch tickets that belong to the inspection point and are not excluded
         $openTickets = Ticket::with([
-            // We only need a few fields for the mini-card
             'creator:id,name',
             'inspectionItem:id,image_url',
         ])
             ->whereHas('inspectionItem', function ($query) use ($inspectionPoint) {
                 $query->where('inspection_point_id', $inspectionPoint->id);
             })
-            ->when($closingStatus, function ($query) use ($closingStatus) {
-                $query->where('ticket_status_id', '!=', $closingStatus->id);
-            })
+            ->whereNotIn('ticket_status_id', $excludedStatuses)
             ->latest()
             ->get();
 
-        // Return the data as a simple JSON response.
         return response()->json($openTickets);
     }
 }

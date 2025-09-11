@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getContrastColor } from '@/lib/tpm-helpers';
 import { Ticket, TicketUpdate } from '@/types/ticket';
-import { AlertTriangle, GitCommitVertical, Mail, MessageSquare, TagIcon, Terminal } from 'lucide-react';
+import { AlertTriangle, GitCommitVertical, Mail, Megaphone, MessageSquare, TagIcon, Terminal } from 'lucide-react';
 
 interface ActivityLogCardProps {
   ticket: Ticket;
@@ -25,6 +25,9 @@ const ActivityIcon = ({ update }: { update: TicketUpdate }) => {
   if (update.comment?.startsWith('Sent a part request')) {
     return <Mail className="h-4 w-4 text-white" />;
   }
+  if (update.action === 'escalated' || update.action === 'downgraded') {
+    return <Megaphone className="h-4 w-4 text-white" />;
+  }
   return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
 };
 
@@ -37,7 +40,8 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
       update.loggable ||
       update.comment?.startsWith('Ping:') ||
       update.comment?.startsWith('System:') ||
-      update.comment?.startsWith('Sent a part request'),
+      update.comment?.startsWith('Sent a part request')||
+      update.action == 'escalated',
   );
   console.log('Actividades', activities);
   return (
@@ -107,6 +111,10 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                     {/* Case 4: Other comments (Pings, Part Requests, etc.) */}
                     {!update.loggable && update.comment?.startsWith('Ping:') && 'Pinged this ticket: Issue was reported again.'}
                     {!update.loggable && update.comment?.startsWith('Sent a part request') && <p>{update.comment}</p>}
+                    { update.action == 'escalated' && <p>Escalated the ticket to High Priority.</p>}
+                    { update.action == 'downgraded' && <p>Downgraded the ticket to Medium Priority.</p>}
+                    
+                    
                   </div>
                 </li>
               ))}

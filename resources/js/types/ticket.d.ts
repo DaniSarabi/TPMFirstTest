@@ -31,15 +31,20 @@ export interface TicketUpdate {
   id: number;
   comment: string | null;
   action_taken: string | null;
+  category: string | null;
   parts_used: string | null;
   created_at: string;
   user: GlobalUserType;
   old_status: TicketStatus | null;
   new_status: TicketStatus | null;
-  action: 'applied' | 'removed' | null;
+  action: 'applied' | 'removed' | 'escalated' | 'downgraded' | null;
   loggable_id: number | null;
   loggable_type: string | null;
   loggable: Tag | null; // For now, we know it can be a Tag
+  photos: {
+    id: number;
+    photo_url: string;
+  }[];
 }
 
 // The main, consolidated Ticket interface

@@ -50,8 +50,7 @@ class PermissionSeeder extends Seeder
             'tickets.close',
             'tickets.view',
             'tickets.status',
-
-
+            'tickets.escalate',
 
             // * Email permissions
             'email-contacts.admin',

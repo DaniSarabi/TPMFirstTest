@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TicketUpdate extends Model
 {
@@ -28,6 +29,7 @@ class TicketUpdate extends Model
         'comment',
         'action_taken',
         'parts_used',
+        'category',
         'old_status_id',
         'new_status_id',
         'loggable_id',
@@ -80,5 +82,13 @@ class TicketUpdate extends Model
     public function loggable()
     {
         return $this->morphTo();
+    }
+    /**
+     * ACTION: The new relationship to get all photos for this update.
+     * This defines the "one-to-many" relationship.
+     */
+    public function photos(): HasMany
+    {
+        return $this->hasMany(TicketUpdatePhoto::class);
     }
 }

@@ -18,7 +18,7 @@ const MaintenanceListItem = ({ item }: { item: ScheduledMaintenance }) => {
   const dateText = isValid(scheduledDate) ? format(scheduledDate, 'PPP') : 'Date not set';
 
   return (
-    <div className="flex items-center justify-between rounded-md border p-4 shadow-lg drop-shadow-lg bg-card hover:bg-muted">
+    <div className="flex items-center justify-between rounded-md border bg-card p-4 shadow-lg drop-shadow-lg hover:bg-muted">
       <div>
         <p className="font-semibold">{item.title}</p>
         <div className="mt-1 flex items-center gap-2">
@@ -46,17 +46,18 @@ export function MaintenanceTab({ maintenances, machineId }: Props) {
   const history = maintenances.filter((m) => ['completed', 'completed_overdue'].includes(m.status));
 
   return (
-    <Card className="shadow-lg drop-shadow-lg bg-background border-border">
+    <Card className="border-border bg-background shadow-lg drop-shadow-lg">
       <CardHeader>
- <div className="flex items-center justify-between">
-                    <CardTitle>Maintenance History & Schedule</CardTitle>
-                    <Button asChild size="sm">
-                        <a href={route('machines.maintenance-schedule.pdf', machineId)} target='_blank'>
-                            <Download className="mr-2 h-4 w-4" />
-                            Download Schedule
-                        </a>
-                    </Button>
-                </div>      </CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Maintenance History & Schedule</CardTitle>
+          <Button asChild size="sm">
+            <a href={route('machines.maintenance-schedule.pdf', machineId)} target="_blank">
+              <Download className="mr-2 h-4 w-4" />
+              Download Schedule
+            </a>
+          </Button>
+        </div>{' '}
+      </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h3 className="mb-4 text-lg font-semibold text-primary">Upcoming Schedule</h3>

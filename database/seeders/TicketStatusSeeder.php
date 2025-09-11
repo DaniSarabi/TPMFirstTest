@@ -63,6 +63,17 @@ class TicketStatusSeeder extends Seeder
             $behaviors['is_protected']->id => [],
         ]);
 
+
+        $discarted = TicketStatus::firstOrCreate(['name' => 'Discarded'], [
+            'bg_color' => '#fca5a5',
+            'text_color' => '#991b1b',
+        ]);
+        $discarted->behaviors()->sync([
+            $behaviors['is_ticket_discard_status']->id => [],
+            $behaviors['']->id => [],
+        ]);
+        
+
         // Note: The 'Awaiting Critical Parts' status is removed as its functionality is now
         // handled by combining 'Awaiting Parts' logic with an 'out-of-service' tag,
         // which would be applied by a severe Inspection Status.

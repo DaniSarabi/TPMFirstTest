@@ -55,7 +55,14 @@ class TagSeeder extends Seeder
                 'description' => 'Preventive maintenance is past its due date and grace period.',
                 'color' => '#be123c', // Dark Red
                 'icon' => 'calendar-x'
-            ]
+            ],
+            [
+                'name' => 'Perfoming Maintenance',
+                'slug' => 'in-preventive-maintenance',
+                'description' => 'Machine is currently stopped for a scheduled preventive maintenance task.',
+                'color' => '#3b82f6', // A distinct blue color
+                'icon' => 'Wrench'
+            ],
         ];
 
         foreach ($tags as $tagData) {

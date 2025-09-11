@@ -25,6 +25,7 @@ class ScheduledMaintenance extends Model
         'schedulable_type',
         'scheduled_date',
         'status',
+        'is_critical',
         'grace_period_days',
         'reminder_days_before',
         'title',

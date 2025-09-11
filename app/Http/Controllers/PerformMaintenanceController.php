@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use App\Services\TagManagerService;
 use App\Models\Tag;
+use App\Models\Machine;
+use App\Services\DowntimeService;
 
 class PerformMaintenanceController extends Controller
 {
@@ -70,37 +72,61 @@ class PerformMaintenanceController extends Controller
         ]);
     }
     /**
+     * ACTION: This method has been refactored for our new "Smart Start" logic.
+     * It now updates the maintenance record and then delegates to the Downtime Resolver.
+     */
+    public function start(Request $request, ScheduledMaintenance $scheduledMaintenance, TagManagerService $tagManager, DowntimeService $downtimeService)
+    {
+        $validated = $request->validate([
+            'log_downtime' => 'required|boolean',
+        ]);
+
+        $machine = $scheduledMaintenance->schedulable_type === 'App\\Models\\Machine'
+            ? $scheduledMaintenance->schedulable
+            : $scheduledMaintenance->schedulable->machine;
+
+        // 1. Always apply the informational 'under-maintenance' tag.
+        $tagManager->applyTag($machine, 'under-maintenance', $scheduledMaintenance);
+
+
+        // 2. Update the maintenance status and the new is_critical flag.
+        $newStatus = $scheduledMaintenance->status === 'overdue' ? 'in_progress_overdue' : 'in_progress';
+        $scheduledMaintenance->update([
+            'status' => $newStatus,
+            'is_critical' => $validated['log_downtime'], // Set the flag based on user input.
+        ]);
+
+        // 3. Ensure the report exists.
+        $scheduledMaintenance->report()->updateOrCreate(
+            ['scheduled_maintenance_id' => $scheduledMaintenance->id],
+            ['user_id' => Auth::id()]
+        );
+        if ($validated['log_downtime']) {
+            $tagManager->applyTag($machine, 'out-of-service', $scheduledMaintenance);
+        }
+        // 4. After all data is updated, tell the "Downtime Boss" to re-evaluate the machine's state.
+        $downtimeService->resolveDowntime($machine);
+
+        return Redirect::back()->with('success', 'Maintenance has been started.');
+    }
+    /**
      * Save the current progress of a maintenance report.
      */
     public function saveProgress(Request $request, ScheduledMaintenance $scheduledMaintenance)
     {
-        // Very lenient validation. We just check that the data is in the right format.
+        // This method remains unchanged and works correctly.
         $validated = $request->validate([
             'results' => 'present|array',
-            'results.*.task_label' => 'string',
-            'results.*.result' => 'nullable',
-            'results.*.comment' => 'nullable|string',
-            'results.*.photos' => 'nullable|array',
-            'results.*.photos.*' => 'image|max:10240',
             'notes' => 'nullable|string',
         ]);
-
-        if ($scheduledMaintenance->status === 'scheduled' || $scheduledMaintenance->status === 'overdue') {
-            $newStatus = $scheduledMaintenance->status === 'overdue'
-                ? 'in_progress_overdue'
-                : 'in_progress';
-            $scheduledMaintenance->update(['status' => $newStatus]);
-        }
-
         $this->updateReportData($request, $scheduledMaintenance, $validated);
-
         return Redirect::back()->with('success', 'Progress saved successfully.');
     }
 
     /**
      * Submit the final maintenance report.
      */
-    public function submitReport(Request $request, ScheduledMaintenance $scheduledMaintenance, TagManagerService $tagManager)
+    public function submitReport(Request $request, ScheduledMaintenance $scheduledMaintenance, TagManagerService $tagManager, DowntimeService $downtimeService)
     {
         $templateTasks = $scheduledMaintenance->template->tasks->keyBy('label');
         $resultsData = $request->input('results', []);
@@ -161,7 +187,10 @@ class PerformMaintenanceController extends Controller
             : 'completed';
 
         $report->update(['completed_at' => now()]);
-        $scheduledMaintenance->update(['status' => $finalStatus]);
+        $scheduledMaintenance->update([
+            'status' => $finalStatus,
+            'is_critical' => false,
+        ]);
 
 
         // After successfully completing the maintenance, we now check if we can remove any tags.
@@ -170,27 +199,12 @@ class PerformMaintenanceController extends Controller
             : $scheduledMaintenance->schedulable->machine;
 
         if ($machine) {
-            // 1. Overdue Check: Does this machine have any OTHER overdue maintenances?
-            $hasOtherOverdue = $machine->scheduledMaintenances()
-                ->where('id', '!=', $scheduledMaintenance->id) // Exclude the one we just completed
-                ->where('status', 'overdue')
-                ->exists();
 
-            if (!$hasOtherOverdue) {
-                // If not, it's safe to remove the 'overdue' tag.
-                $tagManager->removeTag($machine, 'maintenance-overdue', $scheduledMaintenance);
-            }
+            // Tell the resolver to re-evaluate the state now that this maintenance is no longer a potential owner.
+            $downtimeService->resolveDowntime($machine);
 
-            // 2. Upcoming Check: Does this machine have any OTHER non-completed maintenances?
-            $hasOtherUpcoming = $machine->scheduledMaintenances()
-                ->where('id', '!=', $scheduledMaintenance->id) // Exclude the one we just completed
-                ->whereNotIn('status', ['completed', 'completed_overdue'])
-                ->exists();
-
-            if (!$hasOtherUpcoming) {
-                // If not, it's safe to remove the 'due' tag.
-                $tagManager->removeTag($machine, 'maintenance-due', $scheduledMaintenance);
-            }
+            // Clean up all informational tags using the refactored helper method.
+            $this->cleanupInformationalTags($machine, $scheduledMaintenance, $tagManager);
         }
 
 
@@ -226,5 +240,48 @@ class PerformMaintenanceController extends Controller
             }
         }
         return $report;
+    }
+
+    /**
+     * Helper method for cleaning up informational maintenance tags.
+     */
+    private function cleanupInformationalTags(Machine $machine, ScheduledMaintenance $completedMaintenance, TagManagerService $tagManager)
+    {
+        //  --- Under Maintenance Check ---
+
+        $hasOtherInProgress = $machine->scheduledMaintenances()
+            ->where('id', '!=', $completedMaintenance->id)
+            ->whereIn('status', ['in_progress', 'in_progress_overdue'])
+            ->exists();
+
+        if ($hasOtherInProgress) {
+            $tagManager->applyTag($machine, 'under-maintenance');
+        } else {
+            $tagManager->removeTag($machine, 'under-maintenance');
+        }
+
+        // --- Overdue Check ---
+        $hasOtherOverdue = $machine->scheduledMaintenances()
+            ->where('id', '!=', $completedMaintenance->id)
+            ->where('status', 'overdue')
+            ->exists();
+
+        if ($hasOtherOverdue) {
+            $tagManager->applyTag($machine, 'maintenance-overdue');
+        } else {
+            $tagManager->removeTag($machine, 'maintenance-overdue');
+        }
+
+        // --- Upcoming/Due Check ---
+        $hasOtherUpcoming = $machine->scheduledMaintenances()
+            ->where('id', '!=', $completedMaintenance->id)
+            ->whereNotIn('status', ['completed', 'completed_overdue'])
+            ->exists();
+
+        if ($hasOtherUpcoming) {
+            $tagManager->applyTag($machine, 'maintenance-due');
+        } else {
+            $tagManager->removeTag($machine, 'maintenance-due');
+        }
     }
 }

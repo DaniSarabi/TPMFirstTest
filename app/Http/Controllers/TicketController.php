@@ -22,9 +22,6 @@ class TicketController extends Controller
         $filters = $request->only(['search', 'view', 'statuses']);
         $viewMode = $filters['view'] ?? 'grid';
 
-        $closingBehavior = Behavior::where('name', 'is_ticket_closing_status')->first();
-        $resolvedStatus = $closingBehavior ? $closingBehavior->ticketStatuses()->first() : null;
-
         $relations = [
             'creator:id,name,avatar_url,avatar_color', // Load all necessary fields
             'status:id,name,bg_color,text_color',
@@ -37,18 +34,22 @@ class TicketController extends Controller
             $relations[] = 'machine:id,name';
         }
 
+        $excludedStatuses = TicketStatus::whereHas('behaviors', function ($q) {
+            $q->whereIn('name', [
+                'is_ticket_closing_status',
+                'is_ticket_discard_status',
+            ]);
+        })->pluck('id');
+
         $ticketsQuery = Ticket::with($relations)->latest();
 
         $ticketsQuery->when($filters['statuses'] ?? null, function ($query, $statusFilter) {
-            // If specific statuses are requested, use them.
+            // If user explicitly requests specific statuses, only show those
             $query->whereIn('ticket_status_id', $statusFilter);
-        }, function ($query) {
-            // Otherwise, show all tickets that are NOT resolved by default.
-            $resolvedStatus = TicketStatus::whereHas('behaviors', function ($q) {
-                $q->where('name', 'is_ticket_closing_status');
-            })->first();
-            if ($resolvedStatus) {
-                $query->where('ticket_status_id', '!=', $resolvedStatus->id);
+        }, function ($query) use ($excludedStatuses) {
+            // Otherwise, exclude closing + discarded tickets by default
+            if ($excludedStatuses->isNotEmpty()) {
+                $query->whereNotIn('ticket_status_id', $excludedStatuses);
             }
         });
 
@@ -89,7 +90,10 @@ class TicketController extends Controller
                     'user', // Load the full user object for each update
                     'oldStatus:id,name,bg_color,text_color',
                     'newStatus:id,name,bg_color,text_color',
+                    
                     'loggable', // We now load the new polymorphic 'loggable' relationship.
+                    'photos',   // The new relationship for solution photos
+
                 ])->latest();
             },
         ]);

@@ -102,6 +102,8 @@ class MachineController extends Controller
         $allMaintenances = $machineMaintenances->merge($subsystemMaintenances)->sortByDesc('scheduled_date');
         $machine->all_maintenances = $allMaintenances->values()->all();
 
+
+        
         // Obtener IDs de los estados de ticket de cierre
         $closingStatusIds = TicketStatus::whereHas('behaviors', function ($query) {
             $query->where('name', 'is_ticket_closing_status');

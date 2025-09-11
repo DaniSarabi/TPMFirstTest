@@ -7,121 +7,55 @@ use App\Models\Tag;
 use App\Models\DowntimeLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Ticket;
-
+use App\Models\ScheduledMaintenance;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TagManagerService
 {
     /**
-     * Applies a tag to a machine and updates the machine's status and downtime log.
-     * ACTION: This method now accepts an optional 'source' model (e.g., a Ticket).
+     * ACTION: This method is now simpler. It only applies a tag and logs the event.
+     * It no longer triggers the downtime resolver itself.
      */
     public function applyTag(Machine $machine, string $tagSlug, ?Model $source = null): void
     {
         $tag = Tag::where('slug', $tagSlug)->first();
-
-        if (!$tag) {
-            Log::warning("TagManagerService: Attempted to apply non-existent tag '{$tagSlug}' to machine #{$machine->id}.");
-            return;
-        }
+        if (!$tag) return;
 
         $machine->tags()->syncWithoutDetaching($tag->id);
 
-        // ACTION: Log this event on the ticket's timeline.
         if ($source instanceof Ticket) {
-            $source->updates()->create([
-                'user_id' => auth::id(),
-                'comment' => "System applied tag: '{$tag->name}'",
-                'action' => 'applied',
-                'loggable_id' => $tag->id,
-                'loggable_type' => get_class($tag),
-            ]);
+            $this->_logTagChange($source, $tag, 'applied');
         }
-
-        // Pass the source of the change to the gatekeeper method.
-        $this->syncStatus($machine, $source);
     }
 
     /**
-     * Removes a tag from a machine and updates the machine's status and downtime log.
-     * ACTION: This method now accepts an optional 'source' model.
+     * ACTION: This method is now simpler. It only removes a tag and logs the event.
      */
     public function removeTag(Machine $machine, string $tagSlug, ?Model $source = null): void
     {
         $tag = Tag::where('slug', $tagSlug)->first();
+        if (!$tag) return;
 
-        if ($tag) {
-            $machine->tags()->detach($tag->id);
+        $machine->tags()->detach($tag->id);
 
-            // ACTION: Log this event on the ticket's timeline.
-            if ($source instanceof Ticket) {
-                $source->updates()->create([
-                    'user_id' => auth::id(),
-                    'comment' => "System removed tag: '{$tag->name}'",
-                    'action' => 'removed',
-                    'loggable_id' => $tag->id,
-                    'loggable_type' => get_class($tag),
-                ]);
-            }
+        if ($source instanceof Ticket) {
+            $this->_logTagChange($source, $tag, 'removed');
         }
-
-        $this->syncStatus($machine, $source);
     }
 
-    /**
-     * ACTION: This is the new, central method for starting all downtime logs.
-     */
-    public function startDowntime(Machine $machine, string $category, ?Model $source = null): void
+
+    private function _logTagChange(?Model $source, Tag $tag, string $action): void
     {
-        // First, ensure any other open downtime log is stopped to prevent overlaps.
-        $this->stopDowntime($machine);
-
-        DowntimeLog::create([
-            'machine_id' => $machine->id,
-            'category' => $category,
-            'downtimeable_id' => $source ? $source->id : null,
-            'downtimeable_type' => $source ? get_class($source) : null,
-            'start_time' => now(),
-        ]);
-    }
-
-    /**
-     * ACTION: This is the new, central method for stopping all downtime logs.
-     */
-    public function stopDowntime(Machine $machine): void
-    {
-        DowntimeLog::where('machine_id', $machine->id)
-            ->whereNull('end_time')
-            ->update(['end_time' => now()]);
-    }
-
-    /**
-     * ACTION: This is the completely refactored "gatekeeper" method.
-     * It is the single source of truth for a machine's status.
-     */
-    private function syncStatus(Machine $machine, ?Model $source): void
-    {
-        $machine->load('tags'); // Ensure we have the latest tags.
-
-        $isOutOfService = $machine->tags->contains('slug', 'out-of-service');
-        $isAwaitingParts = $machine->tags->contains('slug', 'awaiting-parts');
-
-        if ($isOutOfService) {
-            // Only act if the status is not already 'OUT_OF_SERVICE' to prevent duplicate actions.
-            if ($machine->status !== 'out_of_service') {
-                $machine->update(['status' => 'out_of_service']);
-
-                // This is the "smart" logic: determine the downtime category based on other tags.
-                $category = $isAwaitingParts ? 'Awaiting Parts' : 'Corrective';
-                $this->startDowntime($machine, $category, $source);
-            }
-        } else {
-            // If the 'out-of-service' tag is gone, the machine should be operational.
-            if ($machine->status !== 'operational') {
-                $machine->update(['status' => 'operational']);
-                $this->stopDowntime($machine);
-            }
+        if ($source instanceof Ticket) {
+            $source->updates()->create([
+                'user_id' => Auth::id(),
+                'comment' => "System {$action} tag: '{$tag->name}'",
+                'action' => $action,
+                'loggable_id' => $tag->id,
+                'loggable_type' => get_class($tag),
+            ]);
         }
     }
 }

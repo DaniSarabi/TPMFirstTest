@@ -13,6 +13,59 @@ class TicketActionsController extends Controller
 {
     public function __construct(protected TicketActionService $ticketActionService) {}
 
+
+    /**
+     * --- ACTION: New method for escalating a ticket's priority ---
+     * This method is protected by the 'tickets.escalate' permission via the routes file.
+     */
+    public function escalate(Request $request, Ticket $ticket)
+    {
+        // 1. Validate the incoming request for an optional comment.
+        $validated = $request->validate([
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        // 2. Delegate the entire complex operation to our "Ticket Boss".
+        $this->ticketActionService->escalateTicket(
+            $ticket,
+            $request->user(),
+            $validated['comment']
+        );
+
+        return back()->with('success', 'Ticket escalated to High Priority.');
+    }
+    /**
+     * ACTION: New method to downgrade a ticket.
+     */
+    public function downgrade(Request $request, Ticket $ticket)
+    {
+        $validated = $request->validate(['comment' => 'required|string']);
+
+        $this->ticketActionService->downgradeTicket(
+            $ticket,
+            $request->user(),
+            $validated['comment']
+        );
+
+        return back()->with('success', 'Ticket downgraded successfully.');
+    }
+
+    /**
+     * ACTION: New method to discard a ticket.
+     */
+    public function discard(Request $request, Ticket $ticket)
+    {
+        $validated = $request->validate(['comment' => 'required|string']);
+
+        $this->ticketActionService->discardTicket(
+            $ticket,
+            $request->user(),
+            $validated['comment']
+        );
+
+        return back()->with('success', 'Ticket discarded successfully.');
+    }
+
     /**
      * Change the ticket status to 'In Progress'.
      */
@@ -61,6 +114,9 @@ class TicketActionsController extends Controller
         $validated = $request->validate([
             'action_taken' => 'required|string',
             'parts_used' => 'nullable|string',
+            'category' => 'required|string', // New category field
+            'photos' => 'nullable|array',      // New photos array
+            'photos.*' => 'image|max:10240',   // 10MB max per photo
         ]);
 
         // Call the service to perform all the complex logic
@@ -68,6 +124,8 @@ class TicketActionsController extends Controller
             $ticket,
             $validated['action_taken'],
             $validated['parts_used'],
+            $validated['category'],
+            $request->file('photos'), // Pass the uploaded files to the service
             $request->user()
         );
 

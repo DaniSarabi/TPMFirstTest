@@ -5,39 +5,35 @@ namespace App\Services;
 use App\Models\Ticket;
 use App\Models\TicketStatus;
 use App\Models\User;
-use App\Models\Machine;
 use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class TicketActionService
 {
     /**
-     * Inject the new TagManagerService.
+     * Inject the TagManagerService so we can use it.
      */
-    public function __construct(protected TagManagerService $tagManager) {}
+    public function __construct(protected TagManagerService $tagManager, protected DowntimeService $downtimeService) {}
 
     /**
      * The main entry point for changing a ticket's status.
-     * This method is now much simpler.
      */
     public function changeStatus(Ticket $ticket, int $newStatusId, ?string $comment, User $user): void
     {
         DB::transaction(function () use ($ticket, $newStatusId, $comment, $user) {
-            $oldStatus = $ticket->status;
+            $oldStatus = $ticket->status->load('behaviors');
             $newStatus = TicketStatus::with('behaviors')->findOrFail($newStatusId);
 
-            // Before we change the status, we check the OLD status's behaviors.
-            $oldStatusWasAwaitingParts = $oldStatus->behaviors->contains(fn($b) => 
+            $oldStatusWasAwaitingParts = $oldStatus->behaviors->contains(
+                fn($b) =>
                 in_array($b->name, ['awaits_critical_parts', 'awaits_non_critical_parts'])
             );
-            
-            // If the old status was an "Awaiting Parts" status, we must remove the tag.
+
             if ($oldStatusWasAwaitingParts) {
                 $this->tagManager->removeTag($ticket->machine, 'awaiting-parts', $ticket);
             }
 
-
-            // Update the ticket's status and create a log entry (this is still its job).
             $ticket->update(['ticket_status_id' => $newStatus->id]);
             $ticket->updates()->create([
                 'user_id' => $user->id,
@@ -46,77 +42,158 @@ class TicketActionService
                 'new_status_id' => $newStatus->id,
             ]);
 
-            // Execute behaviors by delegating to the TagManagerService.
             foreach ($newStatus->behaviors as $behavior) {
-                if ($behavior->name === 'applies_machine_tag') {
-                    $tagId = $behavior->pivot->tag_id;
-                    $tag = Tag::find($tagId);
-                    if ($tag) {
-                        $this->tagManager->applyTag($ticket->machine, $tag->slug, $ticket);
-                    }
+                $tagId = $behavior->pivot->tag_id;
+                $tag = $tagId ? Tag::find($tagId) : null;
+                if ($behavior->name === 'applies_machine_tag' && $tag) {
+                    $this->tagManager->applyTag($ticket->machine, $tag->slug, $ticket);
                 }
             }
 
-            // All old, complex downtime logic has been removed from this method.
+            $this->_areOpenTicketsRemaining($ticket);
+            // ACTION: The performance optimization is here.
+            // We only call the expensive resolver if the status change is significant.
+            if ($this->_changeRequiresDowntimeReevaluation(null, $oldStatus, $newStatus)) {
+                $this->downtimeService->resolveDowntime($ticket->machine);
+            }
         });
     }
+
+    /**
+     * Escalates a ticket's priority.
+     */
+    public function escalateTicket(Ticket $ticket, User $user, ?string $comment): void
+    {
+        if ($ticket->priority >= 2) {
+            throw ValidationException::withMessages(['priority' => 'This ticket is already at the highest priority.']);
+        }
+
+        DB::transaction(function () use ($ticket, $user, $comment) {
+            $ticket->update(['priority' => 2]);
+            $ticket->updates()->create([
+                'user_id' => $user->id,
+                'comment' => $comment ?? 'Ticket priority escalated to High.',
+                'action' => 'escalated',
+            ]);
+
+            // Escalating always affects downtime, so we call the resolver directly.
+            $this->downtimeService->resolveDowntime($ticket->machine);
+        });
+    }
+
+    /**
+     * Downgrades a ticket's priority.
+     */
+    public function downgradeTicket(Ticket $ticket, User $user, string $comment): void
+    {
+        if ($ticket->priority < 2) {
+            throw ValidationException::withMessages(['priority' => 'This ticket is not a high priority ticket.']);
+        }
+
+        DB::transaction(function () use ($ticket, $user, $comment) {
+            $ticket->update(['priority' => 1]);
+            $ticket->updates()->create([
+                'user_id' => $user->id,
+                'comment' => $comment,
+                'action' => 'downgraded',
+            ]);
+
+            // Downgrading always affects downtime, so we call the resolver directly.
+            $this->downtimeService->resolveDowntime($ticket->machine);
+        });
+    }
+
+    /**
+     * Discards a ticket.
+     */
+    public function discardTicket(Ticket $ticket, User $user, string $comment): void
+    {
+        DB::transaction(function () use ($ticket, $user, $comment) {
+            $discardStatus = TicketStatus::whereHas('behaviors', fn($q) => $q->where('name', 'is_ticket_discard_status'))->firstOrFail();
+            $this->changeStatus($ticket, $discardStatus->id, $comment, $user);
+        });
+    }
+
     /**
      * Close a ticket and log the resolution details.
      */
-    public function closeTicket(Ticket $ticket, string $actionTaken, ?string $partsUsed, User $user): void
+    public function closeTicket(Ticket $ticket, string $actionTaken, ?string $partsUsed, string $category, ?array $photos, User $user): void
     {
-        DB::transaction(function () use ($ticket, $actionTaken, $partsUsed, $user) {
+        DB::transaction(function () use ($ticket, $actionTaken, $partsUsed, $category, $photos, $user) {
             $closingStatus = TicketStatus::whereHas('behaviors', function ($query) {
                 $query->where('name', 'is_ticket_closing_status');
             })->firstOrFail();
 
-            // 1. Create the final "Resolution" log entry
-            $ticket->updates()->create([
+            // 1. Create the final "Resolution" log entry, now including the category.
+            $update = $ticket->updates()->create([
                 'user_id' => $user->id,
                 'action_taken' => $actionTaken,
                 'parts_used' => $partsUsed,
+                'category' => $category, // The new category is saved here.
                 'old_status_id' => $ticket->ticket_status_id,
                 'new_status_id' => $closingStatus->id,
             ]);
 
-            // 2. Update the ticket's main status
+            // 2. Handle the photo uploads.
+            if ($photos) {
+                foreach ($photos as $photo) {
+                    // Store the photo in 'storage/app/public/solution_photos'
+                    $path = $photo->store('solution_photos', 'public');
+                    // Create a new record in our dedicated photos table.
+                    $update->photos()->create(['photo_url' => $path]);
+                }
+            }
+
+            // 3. Update the ticket's main status.
             $ticket->update(['ticket_status_id' => $closingStatus->id]);
 
-            // 3. Check if this was the last open ticket and remove the 'open-ticket' tag if so.
-            $this->syncMachineTagsOnTicketClose($ticket->machine, $ticket);
+            // Closing a ticket always affects downtime, so we call the resolver directly.
+            $this->downtimeService->resolveDowntime($ticket->machine);
+            $this->_areOpenTicketsRemaining($ticket);
         });
     }
 
     /**
-     * ACTION: This new private method contains all the logic for what happens
-     * when a ticket is closed, keeping the public methods clean.
+     * ACTION: This new private helper contains the performance optimization logic.
+     * It decides if a status change is "significant" enough to warrant
+     * locking the machine table and re-evaluating the downtime state.
      */
-    private function syncMachineTagsOnTicketClose(Machine $machine, Ticket $closedTicket): void
+    private function _changeRequiresDowntimeReevaluation(?Ticket $ticket, TicketStatus $oldStatus, TicketStatus $newStatus): bool
     {
-        $closingStatus = TicketStatus::whereHas('behaviors', fn($q) => $q->where('name', 'is_ticket_closing_status'))->first();
-        if (!$closingStatus) return;
+        // If the priority is not high, status changes are less likely to affect downtime.
+        // The exception is moving into or out of an "Awaiting Parts" state.
+        if ($ticket && $ticket->priority < 2) {
+            $awaitingPartsBehaviors = ['awaits_critical_parts', 'awaits_non_critical_parts'];
+            $wasAwaitingParts = $oldStatus->behaviors->whereIn('name', $awaitingPartsBehaviors)->isNotEmpty();
+            $isNowAwaitingParts = $newStatus->behaviors->whereIn('name', $awaitingPartsBehaviors)->isNotEmpty();
 
-        // We only care about other HIGH priority tickets.
-        $hasOtherCriticalTickets = Ticket::where('machine_id', $machine->id)
-            ->where('id', '!=', $closedTicket->id)
-            ->where('priority', 2) // Priority 2 is High
-            ->where('ticket_status_id', '!=', $closingStatus->id)
-            ->exists();
-        
-        // If there are no other critical tickets, it's safe to remove the out-of-service tag.
-        if (!$hasOtherCriticalTickets) {
-            $this->tagManager->removeTag($machine, 'out-of-service', $closedTicket);
+            // Only re-evaluate if we are moving into or out of an "Awaiting Parts" state.
+            return $wasAwaitingParts !== $isNowAwaitingParts;
         }
 
-        // Next, check if there are ANY other open tickets for this machine.
-        $hasOtherOpenTickets = Ticket::where('machine_id', $machine->id)
-            ->where('id', '!=', $closedTicket->id)
-            ->where('ticket_status_id', '!=', $closingStatus->id)
+        // For high-priority tickets, or for any action that moves a ticket to a final state,
+        // it's always safest to re-evaluate.
+        return true;
+    }
+
+    private function _areOpenTicketsRemaining(Ticket $ticket): void
+    {
+        $machine = $ticket->machine;
+        $finalStatusBehaviors = ['is_ticket_closing_status', 'is_ticket_discard_status'];
+
+        // Check 1: Should the 'open-ticket' tag be removed?
+        $hasAnyOtherOpenTickets = Ticket::where('machine_id', $machine->id)
+            ->where('id', '!=', $ticket->id)
+            ->whereDoesntHave('status.behaviors', function ($q) use ($finalStatusBehaviors) {
+                $q->whereIn('name', $finalStatusBehaviors);
+            })
             ->exists();
 
-        // If there are no other open tickets at all, remove the generic 'open-ticket' tag.
-        if (!$hasOtherOpenTickets) {
-            $this->tagManager->removeTag($machine, 'open-ticket', $closedTicket);
+        if (!$hasAnyOtherOpenTickets) {
+            $this->tagManager->removeTag($machine, 'open-ticket', $ticket);
         }
+
+        // Step 2: Always ask the resolver to check the downtime state.
+        $this->downtimeService->resolveDowntime($machine);
     }
 }

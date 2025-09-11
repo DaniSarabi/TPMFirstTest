@@ -21,13 +21,14 @@ use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use App\Services\TagManagerService;
+use App\Services\DowntimeService;
 use App\Models\Tag;
 
 class InspectionController extends Controller
 {
 
 
-    public function __construct(protected TicketActionService $ticketActionService, protected TagManagerService $tagManager) {}
+    public function __construct(protected TicketActionService $ticketActionService, protected TagManagerService $tagManager, protected DowntimeService $downtimeService) {}
     //
     /**
      * Display a listing of the resource.
@@ -274,7 +275,7 @@ class InspectionController extends Controller
      * Update the specified resource in storage.
      * This method is called when the user submits the full inspection.
      */
-    public function update(Request $request, InspectionReport $inspectionReport, TagManagerService $tagManager)
+    public function update(Request $request, InspectionReport $inspectionReport, TagManagerService $tagManager, DowntimeService $downtimeService)
     {
         // --- 1. Validation ---
         // The validation logic for the incoming inspection data remains the same.
@@ -298,9 +299,9 @@ class InspectionController extends Controller
         }
         $validated = Validator::make($request->all(), $rules)->validate();
 
-            
+
         // --- 2. Database Transaction ---
-        DB::transaction(function () use ($request, $inspectionReport, $validated, $tagManager) {
+        DB::transaction(function () use ($request, $inspectionReport, $validated, $tagManager, $downtimeService) {
             $openTicketStatus = TicketStatus::where('name', 'Open')->first();
 
             foreach ($validated['results'] as $pointId => $result) {
@@ -369,7 +370,9 @@ class InspectionController extends Controller
                 }
             }
 
-            // --- The old, complex logic block for 'highestSeverityStatus' has been completely removed. ---
+            // After all tickets have been created and tags applied, we make one final call
+            // to the resolver. It will now have a complete and accurate view of the machine's state.
+            $downtimeService->resolveDowntime($inspectionReport->machine);
 
             // --- 3. Finalize the Inspection Report ---
             $inspectionReport->update([

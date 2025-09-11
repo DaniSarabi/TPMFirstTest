@@ -1,11 +1,12 @@
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Circle, CircleAlert, CircleCheck, CircleX } from 'lucide-react';
+import { InspectionPoint } from '@/types/machine';
+import { InspectionStatus } from '@/types/settings';
+import { Camera, Circle, CircleAlert, CircleCheck, CircleX, Upload } from 'lucide-react';
 import * as React from 'react';
-import { InspectionPoint, InspectionStatus } from '../Perform'; // Assuming types are exported from Perform.tsx
 
 // Define the shape of the result data for a single point
 export type InspectionResult = {
@@ -44,6 +45,8 @@ const StatusIcon = ({ status }: { status: InspectionStatus | undefined }) => {
 export function InspectionPointRow({ point, statuses, result, errors, onResultChange, onStatusChange, onTakePhoto }: InspectionPointRowProps) {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const selectedStatus = statuses.find((s) => s.id === result.status_id);
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false); // Estado para controlar el popover
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isPing = !!result.pinged_ticket_id;
 
@@ -65,36 +68,55 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onResultChange({ ...result, comment: e.target.value });
   };
-
+  const handleSelectStatus = (statusId: number) => {
+    onStatusChange(point.id, statusId);
+    setIsPopoverOpen(false); // Cierra el popover después de la selección
+  };
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onResultChange({ ...result, image: e.target.files[0] });
+    }
+  };
   return (
-    <div className="mb-4 flex flex-col rounded-md bg-muted/30 p-2 shadow-lg shadow-primary drop-shadow-lg transition-colors hover:bg-muted">
+    <div className="mb-4 flex cursor-pointer flex-col rounded-md bg-muted/30 p-2 shadow-lg shadow-primary drop-shadow-lg transition-colors hover:bg-accent">
       {/* Main Row: Point Name and Status Selector */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <StatusIcon status={selectedStatus} />
-          <div>
-            <p className="font-medium">{point.name}</p>
-            <p className="line-clamp-2 text-sm font-light text-muted-foreground/50 italic">{point.description || 'No description provided.'}</p>
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        <PopoverTrigger className="" asChild>
+          <div className="flex items-center justify-between rounded-md p-2">
+            <div className="flex items-center gap-4">
+              <StatusIcon status={selectedStatus} />
+              <div>
+                <p className="font-medium">{point.name}</p>
+                <p className="line-clamp-2 text-xs text-muted-foreground/60 italic">{point.description || 'Sin descripción.'}</p>
+              </div>
+            </div>
+
+            {selectedStatus && (
+              <div
+                className="text-md flex items-center gap-2 rounded-full px-4 py-1"
+                style={{ backgroundColor: selectedStatus.bg_color, color: selectedStatus.text_color }}
+              >
+                {selectedStatus.name}
+              </div>
+            )}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={result.status_id ? String(result.status_id) : ''} onValueChange={(value) => onStatusChange(point.id, Number(value))}>
-            <SelectTrigger className="w-[380px] border-0 bg-accent text-accent-foreground shadow-sm">
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((status) => (
-                <SelectItem key={status.id} value={String(status.id)}>
-                  <div className="flex items-center">
-                    <div className="mr-2 h-3 w-3 rounded-full" style={{ backgroundColor: status.bg_color }} />
-                    <span>{status.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 border-0 p-2">
+          <div className="space-y-1">
+            <p className="p-2 text-sm font-semibold">Seleccionar un estado</p>
+            {statuses.map((status) => (
+              <button
+                key={status.id}
+                onClick={() => handleSelectStatus(status.id)}
+                className="flex w-full items-center rounded-md p-2 text-left text-sm transition-colors hover:bg-accent"
+              >
+                <div className="mr-2 h-3 w-3 rounded-full" style={{ backgroundColor: status.bg_color }} />
+                <span>{status.name}</span>
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Inline Details Section (conditionally shown) */}
       {selectedStatus && (
@@ -114,21 +136,25 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
             <InputError message={errors?.[`results.${point.id}.comment`]} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`image-${point.id}`}>
-              Photo <span className={isPhotoRequired ? 'text-red-500' : 'text-blue-500'}>{isPhotoRequired ? '(Required)' : ''}</span>
+            <Label>
+              Foto <span className={isPhotoRequired ? 'text-destructive' : 'text-muted-foreground'}>{isPhotoRequired ? '(Requerida)' : ''}</span>
             </Label>
             <div className="flex items-center gap-4">
-              {/* --- ACTION: Replaced Input with a Button --- */}
-              <Button type="button" variant="outline" className="flex-1" onClick={onTakePhoto} disabled={isPing}>
-                <Camera className="mr-2 h-4 w-4" />
-                {result.image || result.original_image_url ? 'Change Photo' : 'Take Photo'}
-              </Button>
-
-              {/* --- Preview --- */}
               {(imagePreview || result.original_image_url) && (
-                <img src={imagePreview || result.original_image_url} alt="Preview" className="h-16 w-16 rounded-md object-cover" />
+                <img src={imagePreview || result.original_image_url} alt="Previsualización" className="h-20 w-20 rounded-md object-cover" />
               )}
+              <div className="flex flex-1 flex-col gap-2">
+                <Button type="button" variant="outline" className="w-full" onClick={onTakePhoto} disabled={isPing}>
+                  <Camera className="mr-2 h-4 w-4" />
+                  {result.image || result.original_image_url ? 'Take another' : 'Take photo'}
+                </Button>
+                <Button type="button" variant="secondary" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPing}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Browse
+                </Button>
+              </div>
             </div>
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="sr-only" accept="image/*" />
             <InputError message={errors?.[`results.${point.id}.image`]} />
           </div>
         </div>

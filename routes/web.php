@@ -236,9 +236,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/subsystems/{subsystem}', [SubsystemController::class, 'destroy'])->name('subsystems.destroy')->middleware('permission:machines.delete');
     Route::delete('/inspection-points/{inspectionPoint}', [InspectionPointController::class, 'destroy'])->name('inspection-points.destroy')->middleware('permission:machines.delete');
 
-    // Route for downloading the maintenance schedule PDF
-    Route::get('/machines/{machine}/maintenance-schedule/pdf', [MachineController::class, 'downloadMaintenanceSchedulePDF'])
-        ->name('machines.maintenance-schedule.pdf');
+    // Route for downloading the maintenance schedule EXCEL
+    Route::get('/machines/{machine}/maintenance-plan/download', [MachineController::class, 'downloadMaintenancePlan'])
+        ->name('machines.maintenance-plan.download')
+        ->middleware('permission:preventive-maintenance.view');
 
     // ---//? *********************** QR Code Generation Routes *********************** ---
 

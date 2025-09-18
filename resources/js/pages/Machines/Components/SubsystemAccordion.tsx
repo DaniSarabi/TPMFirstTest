@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Machine, Subsystem, InspectionPoint } from '@/types/machine';
 import { MoreVertical, Pencil, Trash2, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { InspectionPointCard } from './InspectionPointCard';
+import { InspectionPointCard } from './Machine/InspectionPointCard';
 
 interface Props {
     machine: Machine;

@@ -11,7 +11,7 @@ export function CustomEventContent({ event }: EventContentArg) {
         completed_overdue: 'bg-green-600',
         overdue: 'bg-red-500',
         in_progress: 'bg-yellow-300',
-        in_progress_overdue: 'bg-yellow-600',
+        in_progress_overdue: 'bg-orange-400',
     };
 
     const colorClass = statusColor[status];

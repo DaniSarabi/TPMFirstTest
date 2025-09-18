@@ -45,7 +45,7 @@ class CheckMaintenanceStatus extends Command
         $this->info('Checking maintenance statuses... .');
         Log::info('TPM Scheduler: Starting maintenance status check...');
 
-        $maintenancesToCheck = ScheduledMaintenance::where('status', '!=', 'completed')
+        $maintenancesToCheck = ScheduledMaintenance::whereNotIn('status', ['completed', 'completed_overdue'])
             ->with(['template', 'schedulable' => function ($morphTo) {
                 $morphTo->morphWith([
                     Machine::class => [],
@@ -90,7 +90,7 @@ class CheckMaintenanceStatus extends Command
 
         if (Carbon::today()->gte($reminderDate)) {
             Log::info("TPM Scheduler: [Reminder Check] #{$maintenance->id}: Reminder date has been reached. Searching for subscribers...");
-            
+
             $machine = $maintenance->schedulable_type === 'App\\Models\\Machine'
                 ? $maintenance->schedulable
                 : $maintenance->schedulable->machine;
@@ -103,13 +103,13 @@ class CheckMaintenanceStatus extends Command
             // Log the query that will be run
             $query = User::whereHas('notificationPreferences', function ($query) use ($machine) {
                 $query->where('notification_type', 'maintenance.reminder')
-                      ->where(function ($q) use ($machine) {
-                          $q->whereNull('preferable_id')
+                    ->where(function ($q) use ($machine) {
+                        $q->whereNull('preferable_id')
                             ->orWhere(function ($q2) use ($machine) {
                                 $q2->where('preferable_id', $machine->id)
-                                   ->where('preferable_type', 'App\\Models\\Machine');
+                                    ->where('preferable_type', 'App\\Models\\Machine');
                             });
-                      });
+                    });
             });
             Log::info("TPM Scheduler: [Reminder Check] Finding users with query: " . $query->toSql());
 
@@ -200,4 +200,3 @@ class CheckMaintenanceStatus extends Command
         }
     }
 }
-

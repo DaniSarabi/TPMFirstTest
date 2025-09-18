@@ -1,16 +1,30 @@
 import DynamicLucideIcon from '@/components/dynamicIconHelper';
-import { getContrastColor, getStatusBadgeClass } from '@/lib/tpm-helpers';
 import { Badge } from '@/components/ui/badge';
+import { getContrastColor, getStatusBadgeClass } from '@/lib/tpm-helpers';
 import { Machine } from '@/types/machine';
 import { Link } from '@inertiajs/react';
-import { Calendar, Clock, icons, ListChecks, RotateCw, Wrench, HelpCircle, PowerOff, Box } from 'lucide-react';
+import { Calendar, Clock, ListChecks, Ticket, Wrench , History} from 'lucide-react';
+import React from 'react';
 
+export interface MachineWithStats extends Machine {
+  open_tickets_count: number;
+  pending_maintenances_count: number;
+  current_uptime: string;
+  last_inspection_date: string | null; // ACTION: Añadir la nueva propiedad
+}
 // Define the props for the card component
 interface MachineCardProps {
-  machine: Machine;
+  machine: MachineWithStats;
 }
-
-
+const StatCard = ({ icon, label, value }: { icon: React.ElementType; label: string; value: string | number | null }) => (
+  <div className="flex items-center gap-3">
+    {React.createElement(icon, { className: 'h-8 w-8 text-primary' })}
+    <div>
+      <p className="text-sm font-medium">{label}</p>
+      <p className="text-lg font-bold">{value ?? 'N/A'}</p>
+    </div>
+  </div>
+);
 
 export function MachineCard({ machine }: MachineCardProps) {
   const dateAdded = new Date(machine.created_at).toLocaleDateString('en-US', {
@@ -46,14 +60,12 @@ export function MachineCard({ machine }: MachineCardProps) {
               />
             </div>
 
-            <Badge
-              className={`absolute text-sm top-0 left-0 z-10 mt-3 ml-3 select-none capitalize ${getStatusBadgeClass(machine.status)}`}
-            >
+            <Badge className={`absolute top-0 left-0 z-10 mt-3 ml-3 text-sm capitalize select-none ${getStatusBadgeClass(machine.status)}`}>
               {machine.status.replace(/_/g, ' ')}
             </Badge>
 
             {machine.tags && machine.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 absolute top-8 left-0 z-10 mt-3 ml-3 select-none">
+              <div className="absolute top-8 left-0 z-10 mt-3 ml-3 flex flex-wrap gap-2 select-none">
                 {machine.tags.map((tag) => (
                   <Badge
                     key={tag.id}
@@ -71,12 +83,12 @@ export function MachineCard({ machine }: MachineCardProps) {
             )}
             {/* Stats Overlay Section */}
             <div className="absolute bottom-0 mb-3 flex w-full justify-center">
-              <div className="flex space-x-5 overflow-hidden rounded-lg bg-card/80 px-4 py-1 shadow backdrop-blur-sm">
-                <p className="flex items-center font-medium text-card-foreground">
+              <div className="flex space-x-5 overflow-hidden rounded-lg bg-primary/60 px-4 py-1 text-white shadow backdrop-blur-sm">
+                <p className="flex items-center font-medium">
                   <Wrench className="mr-2 h-5 w-5" />
                   {machine.subsystems?.length ?? 0}
                 </p>
-                <p className="flex items-center font-medium text-card-foreground">
+                <p className="flex items-center font-medium">
                   <ListChecks className="mr-2 h-5 w-5" />
                   {totalInspectionPoints}
                 </p>
@@ -84,40 +96,19 @@ export function MachineCard({ machine }: MachineCardProps) {
             </div>
           </div>
 
-          {/* Name, Description, and Tags Section */}
-          <div className="mt-4">
+          {/* Name, Description */}
+          <div className="mt-4 mb-2">
             <h2 className="line-clamp-1 text-base font-medium text-foreground md:text-lg" title={machine.name}>
               {machine.name}
             </h2>
-
-            {/* --- NUEVA SECCIÓN DE ETIQUETAS (TAGS) --- */}
-            
             <p className="mt-2 line-clamp-1 text-sm text-muted-foreground">{machine.description || 'No description provided.'}</p>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 grid-rows-1 gap-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div className="text-sm">
-                <p className="text-muted-foreground">Added</p>
-                <p className="font-semibold">{dateAdded}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <RotateCw className="h-4 w-4 text-muted-foreground" />
-              <div className="text-sm">
-                <p className="text-muted-foreground">Last Update</p>
-                <p className="font-semibold">{lastUpdated}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Section */}
-          <div className="mt-7">
-            <div className="flex w-full items-center">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <p className="ml-2 line-clamp-1 text-sm text-muted-foreground">Last Inspected: N/A</p>
-            </div>
+          <div className="mt-auto grid grid-cols-2 gap-x-4 gap-y-6 border-t-3 border-primary/60 pt-3">
+            <StatCard icon={Clock} label="Current Uptime" value={machine.current_uptime} />
+            <StatCard icon={Ticket} label="Open Tickets" value={machine.open_tickets_count} />
+            <StatCard icon={Calendar} label="Pending Maintenances" value={machine.pending_maintenances_count} />
+            <StatCard icon={History} label="Last Inspected" value={machine.last_inspection_date} />
           </div>
         </div>
       </Link>

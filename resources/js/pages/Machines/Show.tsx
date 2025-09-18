@@ -2,20 +2,24 @@ import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import useCan from '@/lib/useCan';
-import { type BreadcrumbItem } from '@/types';
+import { Paginated, type BreadcrumbItem } from '@/types';
 import { Machine, Subsystem } from '@/types/machine';
-import { Head, router } from '@inertiajs/react';
+import { ScheduledMaintenance } from '@/types/maintenance';
+import { Ticket } from '@/types/ticket';
+import { Head, router, usePage } from '@inertiajs/react';
 import React from 'react';
-import { AddSubsystemWizard } from './Components/AddSubsystemWizard';
-import { EditMachineModal } from './Components/EditMachineModal';
-import { EditSubsystemModal } from './Components/EditSubsystemModal';
-import { MachineHeader } from './Components/MachineHeader';
-import { MaintenanceTab } from './Components/MaintenanceTab';
-import { ManageInspectionPointsModal } from './Components/ManageInspectionPointsModal';
-import { QrCodeModal } from './Components/QrCodeModal';
+// ACTION: Standardized component paths assuming a lowercase 'components' directory
+import { AddSubsystemWizard } from './Components/Modals/AddSubsystemWizard';
+import { MachineHeader } from './Components/Machine/MachineHeader';
+import { MaintenanceTab } from './Components/MaintenanceTab/MaintenanceTab';
+import { ManageInspectionPointsModal } from './Components/Machine/ManageInspectionPointsModal';
+import { EditMachineModal } from './Components/Modals/EditMachineModal';
+import { EditSubsystemModal } from './Components/Modals/EditSubsystemModal';
+import { QrCodeModal } from './Components/Modals/QrCodeModal';
 import { SubsystemsTab } from './Components/SubsystemsTab';
-
-// Define the props for the Show page
+// ACTION: Corrected the import path for the newly organized TicketsTab component
+import { TicketsTab } from './Components/TicketsTab/TicketsTab';
+//the props for the Show page
 interface ShowPageProps {
   machine: Machine;
   uptime: {
@@ -23,9 +27,25 @@ interface ShowPageProps {
     duration: string | null;
   };
   stats: any;
+  allMaintenances: Paginated<ScheduledMaintenance>;
+  maintenanceFilters: any;
+  maintenanceFilterOptions: any;
+  allTickets: Paginated<Ticket>;
+  ticketFilters: any;
+  ticketFilterOptions: any;
 }
 
-export default function Show({ machine, uptime, stats }: ShowPageProps) {
+export default function Show({
+  machine,
+  uptime,
+  stats,
+  allMaintenances,
+  maintenanceFilters,
+  maintenanceFilterOptions,
+  allTickets,
+  ticketFilters,
+  ticketFilterOptions,
+}: ShowPageProps) {
   const [editModalIsOpen, setEditModalIsOpen] = React.useState(false);
 
   const [AddSubsystemWizardIsOpen, setAddSubsystemWizardIsOpen] = React.useState(false);
@@ -42,11 +62,26 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
   const [isMachineDeleteDialogOpen, setIsMachineDeleteDialogOpen] = React.useState(false);
 
   const [isQrModalOpen, setIsQrModalOpen] = React.useState(false);
+  const queryParams = (usePage().props.query as Record<string, string | undefined>) || {};
+  const [activeTab, setActiveTab] = React.useState(queryParams.tab || 'subsystems');
 
   const can = {
     create: useCan('machines.create'),
     edit: useCan('machines.edit'),
     delete: useCan('machines.delete'),
+  };
+
+  const onTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    router.get(
+      window.location.pathname,
+      { ...queryParams, tab: newTab }, // It uses the safe queryParams from above, solving the error.
+      {
+        preserveState: true,
+        replace: true,
+        preserveScroll: true,
+      },
+    );
   };
 
   // Define the breadcrumbs for this page, including a link back to the index
@@ -111,11 +146,11 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
           onQrCode={() => setIsQrModalOpen(true)}
           can={can}
         />
-        <Tabs defaultValue="subsystems" className="w-full">
+        <Tabs value={activeTab} defaultValue="subsystems" onValueChange={onTabChange} className="w-full">
           <TabsList>
             <TabsTrigger value="subsystems">Subsystems</TabsTrigger>
             <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="tickets">Tickets</TabsTrigger>
           </TabsList>
           <TabsContent value="subsystems">
             <SubsystemsTab
@@ -128,13 +163,15 @@ export default function Show({ machine, uptime, stats }: ShowPageProps) {
             />
           </TabsContent>
           <TabsContent value="maintenance">
-            <MaintenanceTab maintenances={machine.all_maintenances} machineId={machine.id} />
+            <MaintenanceTab
+              machineId={machine.id}
+              allMaintenances={allMaintenances}
+              maintenanceFilters={maintenanceFilters}
+              maintenanceFilterOptions={maintenanceFilterOptions}
+            />
           </TabsContent>
-          <TabsContent value="reports">
-            <div>
-              <span>Reports tab</span>
-            </div>
-            {/* <ReportsTab /> */}
+          <TabsContent value="tickets">
+            <TicketsTab allTickets={allTickets} ticketFilters={ticketFilters} ticketFilterOptions={ticketFilterOptions} />
           </TabsContent>
         </Tabs>
       </div>

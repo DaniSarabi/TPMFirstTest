@@ -33,7 +33,7 @@ export default function Show(props: ShowPageProps) {
     };
     
     // The maintenance is considered "not started" only if the status is 'scheduled'.
-    const hasNotStarted = scheduledMaintenance.status === 'scheduled';
+    const hasNotStarted = scheduledMaintenance.status === 'scheduled'|| scheduledMaintenance.status === 'overdue' ;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

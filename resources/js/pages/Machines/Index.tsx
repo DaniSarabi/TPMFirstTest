@@ -7,12 +7,10 @@ import { useCan } from '@/lib/useCan';
 import { Paginated, type BreadcrumbItem, type Filter } from '@/types';
 import { Machine } from '@/types/machine';
 import { Head, router } from '@inertiajs/react';
-import { Row } from '@tanstack/react-table';
 import { CirclePlus } from 'lucide-react';
 import * as React from 'react';
-import { MachineCard } from './Components/MachineCard';
-import { CreateMachineWizard } from './Components/CreateMachineWizard';
-import { SubsystemList } from './Components/SubsystemList';
+import { CreateMachineWizard } from './Components/Modals/CreateMachineWizard';
+import { MachineCard, MachineWithStats } from './Components/Machine/MachineCard';
 
 // Define the props for the Index page
 interface IndexPageProps {
@@ -76,12 +74,6 @@ export default function Index({ machines, filters }: IndexPageProps) {
     router.reload({ only: ['machines'] });
   }
 
-  // This function takes the table row and returns the SubsystemList component,
-  // passing the specific machine data from that row.
-  const renderSubComponent = ({ row }: { row: Row<Machine> }) => {
-    return <SubsystemList machine={row.original} />;
-  };
-
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Machines" />
@@ -101,10 +93,9 @@ export default function Index({ machines, filters }: IndexPageProps) {
             ) : null
           }
         >
-          {/* <MultiSelectFilter /> */}
         </ListToolbar>
 
-        <CardGrid items={machines.data} renderCard={(machine) => <MachineCard machine={machine} />} />
+        <CardGrid items={machines.data} renderCard={(machine) => <MachineCard machine={machine as MachineWithStats} />} />
 
         <Pagination paginated={machines} />
       </div>

@@ -7,9 +7,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Machine } from '@/types/machine';
 import { Download, Printer } from 'lucide-react';
 import * as React from 'react';
-import { Machine } from '../Columns';
 
 // Define the props for the modal
 interface QrCodeModalProps {

@@ -4,10 +4,10 @@ import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Subsystem } from '@/types/machine';
 import { router, useForm } from '@inertiajs/react';
 import { Pencil, Plus, Save, Send, Trash2, X } from 'lucide-react';
 import * as React from 'react';
-import { Subsystem } from './Columns';
 
 // Define the shape of an inspection point
 interface InspectionPoint {

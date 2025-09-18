@@ -53,6 +53,7 @@ export interface Ticket {
   title: string;
   description: string | null;
   priority: number;
+  resolution_category: string;
   created_at: string;
   creator: GlobalUserType;
   machine: Machine;

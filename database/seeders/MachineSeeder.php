@@ -27,14 +27,14 @@ class MachineSeeder extends Seeder
         // --- Create Sample Machines ---
         $lathe = Machine::updateOrCreate(['name' => 'CNC Lathe TX-200'], [
             'description' => 'High-precision lathe for metal parts production.',
-            'status' => 'in_service',
+            'status' => 'operational',
             'image_url' => 'images/cnc-lathe.jpg',
             'created_by' => $maintenanceUser->id,
         ]);
 
         $press = Machine::updateOrCreate(['name' => 'Stamping Press P-50'], [
             'description' => '50-ton hydraulic press for sheet metal forming.',
-            'status' => 'in_service', // The machine is still running...
+            'status' => 'operational', // The machine is still running...
             'image_url' => 'images/stamping-press.jpg',
             'created_by' => $maintenanceUser->id,
         ]);
@@ -46,7 +46,7 @@ class MachineSeeder extends Seeder
 
         $robot = Machine::updateOrCreate(['name' => 'Welding Robot WR-5000'], [
             'description' => '6-axis robotic arm for automated welding.',
-            'status' => 'in_service',
+            'status' => 'operational',
             'image_url' => 'images/welding-robot.jpg',
             'created_by' => $maintenanceUser->id,
         ]);

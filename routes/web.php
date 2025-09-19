@@ -25,7 +25,9 @@ use App\Http\Controllers\MaintenancePhotoController;
 use App\Http\Controllers\MaintenanceReportController;
 use App\Http\Controllers\Settings\EscalationPolicyController;
 use App\Http\Controllers\Settings\EscalationLevelController;
-use App\Http\Controllers\Settings\NotificationPreferencesController; // <-- Make sure this line exists!
+use App\Http\Controllers\AssetGroupController;
+use App\Http\Controllers\AssetController;
+
 
 
 Route::get('/', function () {
@@ -37,6 +39,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+
+    // * ***************************** Assets Routes *****************************
+
+
+    Route::resource('assets', AssetController::class);
+    Route::resource('asset-groups', AssetGroupController::class)->except(['index', 'show', 'create', 'edit']); // Solo necesitamos las rutas de API
+
 
     // * ***************************** Maintenance Calendar Routes *****************************
 

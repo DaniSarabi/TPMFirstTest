@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { getContrastColor, getStatusBadgeClass } from '@/lib/tpm-helpers';
 import { Machine } from '@/types/machine';
 import { Link } from '@inertiajs/react';
-import { Calendar, Clock, ListChecks, Ticket, Wrench , History} from 'lucide-react';
+import { Calendar, Clock, History, ListChecks, Ticket, Wrench } from 'lucide-react';
 import React from 'react';
 
 export interface MachineWithStats extends Machine {
@@ -27,17 +27,7 @@ const StatCard = ({ icon, label, value }: { icon: React.ElementType; label: stri
 );
 
 export function MachineCard({ machine }: MachineCardProps) {
-  const dateAdded = new Date(machine.created_at).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-  });
-  const lastUpdated = new Date(machine.updated_at).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: false,
-  });
+ 
   const totalInspectionPoints =
     machine.subsystems?.reduce((acc, sub) => {
       return acc + (sub.inspection_points?.length ?? 0);

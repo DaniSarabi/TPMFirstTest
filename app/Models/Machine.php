@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\MorphMany; // Import MorphMany
 use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Import BelongsToMany
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 
 class Machine extends Model
@@ -64,9 +65,9 @@ class Machine extends Model
     /**
      * The tags that belong to the machine.
      */
-    public function tags(): BelongsToMany
+    public function tags(): MorphToMany
     {
-        return $this->belongsToMany(Tag::class, 'machine_tag');
+        return $this->morphToMany(Tag::class, 'taggable');
     }
 
     /**

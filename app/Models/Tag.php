@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Tag extends Model
 {
@@ -20,13 +21,22 @@ class Tag extends Model
     ];
 
     /**
-     * The machines that have this tag.
+     * Get all of the machines that are assigned this tag.
      */
-    public function machines(): BelongsToMany
+    public function machines(): MorphToMany
     {
-        return $this->belongsToMany(Machine::class);
+        return $this->morphedByMany(Machine::class, 'taggable');
     }
-     /**
+
+    /**
+     * Get all of the assets that are assigned this tag.
+     */
+    public function assets(): MorphToMany
+    {
+        return $this->morphedByMany(Asset::class, 'taggable');
+    }
+
+    /**
      * ACTION: This new relationship allows a Tag to find all the timeline
      * events that it has been a part of.
      */

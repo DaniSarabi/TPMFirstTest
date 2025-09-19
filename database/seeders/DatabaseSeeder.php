@@ -28,5 +28,12 @@ class DatabaseSeeder extends Seeder
         $this->call(BehaviorSeeder::class);
         $this->call(InspectionStatusSeeder::class);
         $this->call(TicketStatusSeeder::class);
+        $this->call(EmailContactSeeder::class);
+        $this->call(HuberMachineSeeder::class);
+
+        //$this->call(NotificationSeeder::class);
+        //$this->call(PolicySeeder::class);
+        //$this->call(MaintenanceTemplateSeeder::class);
+        //$this->call(PreventiveMaintenanceSeeder::class);
     }
 }

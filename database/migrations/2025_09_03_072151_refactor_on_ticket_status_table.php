@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::table('ticket_status_has_behaviors', function (Blueprint $table) {
             // Action 1: Drop the foreign key that we know exists.
             // Based on your table structure, only the 'tag_id' foreign key is present.
+            $table->dropForeign(['ticket_status_id']);
+            $table->dropForeign(['behavior_id']);
             $table->dropForeign(['tag_id']);
 
             // Action 2: Drop the old composite primary key.

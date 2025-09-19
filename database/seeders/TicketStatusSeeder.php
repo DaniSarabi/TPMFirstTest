@@ -70,7 +70,7 @@ class TicketStatusSeeder extends Seeder
         ]);
         $discarted->behaviors()->sync([
             $behaviors['is_ticket_discard_status']->id => [],
-            $behaviors['']->id => [],
+            $behaviors['is_protected']->id => [],
         ]);
         
 

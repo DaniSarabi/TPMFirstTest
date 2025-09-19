@@ -48,6 +48,11 @@ class UserSeeder extends Seeder
         )->assignRole($adminRole);
 
         User::firstOrCreate(
+            ['email' => 'it-nogales@jstpower.com'],
+            ['name' => 'Daniel Sarabia', 'password' => Hash::make('password')]
+        )->assignRole($adminRole);
+
+        User::firstOrCreate(
             ['email' => 'manager@tpm.com'],
             ['name' => 'Manager User', 'password' => Hash::make('password')]
         )->assignRole($managerRole);

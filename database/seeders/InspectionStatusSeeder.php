@@ -22,14 +22,14 @@ class InspectionStatusSeeder extends Seeder
         // --- Status: OK ---
         InspectionStatus::firstOrCreate(['name' => 'OK'], [
             'severity' => 0,
-            'bg_color' => '#dcfce7',
+            'bg_color' => '#00fa96',
             'text_color' => '#166534',
         ]);
 
         // --- Status: Needs Attention ---
         $needsAttention = InspectionStatus::firstOrCreate(['name' => 'Needs Attention'], [
             'severity' => 1,
-            'bg_color' => '#fef9c3',
+            'bg_color' => '#ffe600',
             'text_color' => '#854d0e',
         ]);
         // Attach the behaviors using the pivot table with the new 'tag_id'
@@ -43,7 +43,7 @@ class InspectionStatusSeeder extends Seeder
         // --- Status: Critical Failure ---
         $criticalFailure = InspectionStatus::firstOrCreate(['name' => 'Critical Failure'], [
             'severity' => 2,
-            'bg_color' => '#fee2e2',
+            'bg_color' => '#ff6368',
             'text_color' => '#991b1b',
         ]);
         $criticalFailure->behaviors()->sync([

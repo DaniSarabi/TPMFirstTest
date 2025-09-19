@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Subsystem } from '@/types/machine';
 import { router, useForm } from '@inertiajs/react';
-import { Pencil, Plus, Save, Send, Trash2, X } from 'lucide-react';
+import { Pencil, Save, Send, Trash2, X } from 'lucide-react';
 import * as React from 'react';
 
 // Define the shape of an inspection point
@@ -134,7 +134,7 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
             {/* List of existing inspection points */}
             <div className="max-h-64 space-y-2 overflow-y-auto pr-2">
               {points.map((point) => (
-                <div key={point.id} className="flex items-center gap-2 rounded-md bg-gray-100 border p-2">
+                <div key={point.id} className="flex items-center gap-2 rounded-md bg-muted/50 p-2">
                   {editingPointId === point.id ? (
                     // --- Edit View ---
                     <div className="flex flex-1 items-center gap-2">
@@ -142,7 +142,12 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
                       <Button size="icon" className="h-8 w-8" onClick={() => handleSaveEdit(point.id)} disabled={processingEdit}>
                         <Save className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive h-8 w-8 hover:bg-destructive hover:text-destructive-foreground" onClick={handleCancelEdit}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={handleCancelEdit}
+                      >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -151,7 +156,7 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
                     <>
                       <span className="flex-1">{point.name}</span>
                       {can.edit && (
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(point)}>
+                        <Button variant="default" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(point)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}
@@ -167,15 +172,20 @@ export function ManageInspectionPointsModal({ subsystem, isOpen, onOpenChange, c
             </div>
 
             {can.create && (
-              <div className="border-t pt-4">
+              <div className="border-t border-primary pt-4">
                 <Label>Add New Inspection Point</Label>
-                <form onSubmit={handleAddNewPoint} className="mt-2 flex items-center gap-2" autoComplete='off'>
+                <form onSubmit={handleAddNewPoint} className="mt-2 flex items-center gap-2" autoComplete="off">
                   <div className="flex-1">
-                    <Input className='drop-shadow-md shadow-md bg-gray-100 ring-1 ring-ring' value={newData.name} onChange={(e) => setNewData('name', e.target.value)} placeholder="e.g., Check oil level" />
+                    <Input
+                      className="bg-gray-100 shadow-md ring-1 ring-ring drop-shadow-md"
+                      value={newData.name}
+                      onChange={(e) => setNewData('name', e.target.value)}
+                      placeholder="e.g., Check oil level"
+                    />
                     <InputError message={newErrors.name} className="mt-1" />
                   </div>
-                  <Button className='drop-shadow-md shadow-md' type="submit" disabled={processingNew}>
-                    <Send/>
+                  <Button className="shadow-md drop-shadow-md" type="submit" disabled={processingNew}>
+                    <Send />
                     {processingNew ? 'Adding...' : 'Add Point'}
                   </Button>
                 </form>

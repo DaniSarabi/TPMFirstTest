@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Bolt, Calendar, FileClock, LayoutGrid, ReceiptText, Settings, Shield, Ticket, UserRound } from 'lucide-react';
+import { Bolt, Calendar, Cog, FileClock, LayoutGrid, ReceiptText, Settings, Shield, Ticket, UserRound } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -19,6 +19,11 @@ const mainNavItems: NavItem[] = [
     icon: Bolt,
   },
   {
+    title: 'Equipment',
+    href: '/assets',
+    icon: Cog,
+  },
+  {
     title: 'Start Inspections',
     href: '/inspections/start',
     icon: ReceiptText,
@@ -30,12 +35,12 @@ const mainNavItems: NavItem[] = [
   },
   {
     title: 'Tickets',
-    href: '/tickets', 
+    href: '/tickets',
     icon: Ticket,
   },
   {
     title: 'Maintenances',
-    href: '/maintenance-calendar', 
+    href: '/maintenance-calendar',
     icon: Calendar,
   },
 ];

@@ -95,7 +95,7 @@ export default function Index({ machines, filters }: IndexPageProps) {
         >
         </ListToolbar>
 
-        <CardGrid items={machines.data} renderCard={(machine) => <MachineCard machine={machine as MachineWithStats} />} />
+        <CardGrid items={machines.data} renderCard={(machine) => <MachineCard machine={machine as MachineWithStats} />} gridCols={4} />
 
         <Pagination paginated={machines} />
       </div>

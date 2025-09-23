@@ -18,11 +18,11 @@ const mainNavItems: NavItem[] = [
     href: '/machines',
     icon: Bolt,
   },
-  {
-    title: 'Equipment',
-    href: '/assets',
-    icon: Cog,
-  },
+  // {
+  //   title: 'Equipment',
+  //   href: '/assets',
+  //   icon: Cog,
+  // },
   {
     title: 'Start Inspections',
     href: '/inspections/start',
@@ -65,7 +65,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

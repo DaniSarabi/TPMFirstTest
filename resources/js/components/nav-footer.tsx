@@ -25,7 +25,7 @@ export function NavFooter({
                                 <SidebarMenuButton
                                     // Add the isActive prop to highlight the current page
                                     isActive={url.startsWith(item.href)}
-                                    className="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
+                                    
                                 >
                                     {/* The icon and title remain inside the button for styling */}
                                     {item.icon && <item.icon className="h-5 w-5" />}

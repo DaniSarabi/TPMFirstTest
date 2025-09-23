@@ -13,7 +13,7 @@ interface ListToolbarProps {
 export function ListToolbar({ onSearch, searchPlaceholder = 'Search...', createAction, children, viewOptionsAction }: ListToolbarProps) {
   return (
     <div className="flex items-center justify-between drop-shadow-lg">
-      <div className="flex flex-1 items-center space-x-2 ">
+      <div className="flex flex-1 items-center space-x-2  justify-between">
         {/* Conditionally render the search input only if onSearch is provided */}
         {onSearch && <Input placeholder={searchPlaceholder} className="h-9  max-w-sm border-ring " onChange={(e) => onSearch(e.target.value)} />}
         {/* This is where we will render the status filter */}

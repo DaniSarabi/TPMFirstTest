@@ -24,7 +24,7 @@ export function MaintenanceList({ maintenances }: MaintenanceListProps) {
   };
 
   return (
-    <Card>
+    <Card className='border-0 shadow-lg drop-shadow-lg'>
       <CardHeader>
         <CardTitle>Maintenance History</CardTitle>
       </CardHeader>

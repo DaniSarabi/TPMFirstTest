@@ -27,6 +27,7 @@ use App\Http\Controllers\Settings\EscalationPolicyController;
 use App\Http\Controllers\Settings\EscalationLevelController;
 use App\Http\Controllers\AssetGroupController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\DashboardController;
 
 
 
@@ -36,9 +37,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // * ***************************** Assets Routes *****************************
 

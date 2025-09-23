@@ -9,8 +9,8 @@ import { Head, router } from '@inertiajs/react';
 import { Edit, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
-import { CreateEditAssetModal } from './Components/Modals/CreateEditAssetModal';
 import { MaintenanceList } from './Components/MaintenanceList';
+import { CreateEditAssetModal } from './Components/Modals/CreateEditAssetModal';
 
 // Define los props que la página recibirá del controlador
 interface ShowPageProps {
@@ -58,7 +58,7 @@ export default function Show({ asset, maintenances, assetGroups }: ShowPageProps
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Columna Izquierda: Imagen y Detalles */}
           <div className="col-span-1 space-y-6">
-            <Card>
+            <Card className='bg-primary text-primary-foreground'>
               <CardHeader>
                 <img
                   src={asset.image_url || 'https://placehold.co/600x400?text=no+image'}
@@ -70,15 +70,15 @@ export default function Show({ asset, maintenances, assetGroups }: ShowPageProps
                 <CardTitle className="mb-4">Details</CardTitle>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status</span>
+                    <span className="">Status</span>
                     <span className="font-medium capitalize">{asset.status.replace(/_/g, ' ')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Group</span>
+                    <span className="">Group</span>
                     <span className="font-medium">{asset.asset_group?.name || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date Added</span>
+                    <span className="">Date Added</span>
                     <span className="font-medium">{new Date(asset.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>

@@ -10,9 +10,10 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Events\MachineStatusChanged;
+use App\Services\MachineHealthService;
+use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\TicketStatus;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\Tag;
 use App\Models\Ticket;
@@ -122,21 +123,21 @@ class MachineController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, Machine $machine)
+    public function show(Request $request, Machine $machine, MachineHealthService $healthService)
     {
         $machine->load(['subsystems.inspectionPoints', 'creator', 'tags']);
 
         $maintenanceData = $this->_getMaintenanceHistoryData($request, $machine);
         $ticketData = $this->_getTicketHistoryData($request, $machine);
 
-        $closingStatusIds = TicketStatus::whereHas('behaviors', fn($q) => $q->where('name', 'is_ticket_closing_status'))->pluck('id');
+        $closingStatusIds = TicketStatus::whereHas('behaviors', fn ($q) => $q->where('name', 'is_ticket_closing_status'))->pluck('id');
 
         $lastInspection = $machine->inspectionReports()->whereNotNull('completed_at')->latest('completed_at')->first();
         $lastMaintenance = $machine->scheduledMaintenances()->where('status', 'completed')->latest('scheduled_date')->first();
 
         $stats = [
             'subsystems_count' => $machine->subsystems->count(),
-            'inspection_points_count' => $machine->subsystems->reduce(fn($c, $s) => $c + $s->inspectionPoints->count(), 0),
+            'inspection_points_count' => $machine->subsystems->reduce(fn ($c, $s) => $c + $s->inspectionPoints->count(), 0),
             'open_tickets_count' => $machine->tickets()->whereNotIn('ticket_status_id', $closingStatusIds)->count(),
             'last_inspection_date' => $lastInspection?->completed_at->format('M d, Y'),
             'last_maintenance_date' => $lastMaintenance?->scheduled_date->format('M d, Y'),
@@ -147,13 +148,19 @@ class MachineController extends Controller
             'duration' => $lastDowntime?->end_time ? Carbon::parse($lastDowntime->end_time)->diffForHumans(null, true) : 'N/A',
         ];
 
+        $healthScores = [
+            'today' => $healthService->getHealthStatsForPeriod($machine, Carbon::today()->startOfDay(), Carbon::today()->endOfDay()),
+            'week' => $healthService->getHealthStatsForPeriod($machine, Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()),
+            'month' => $healthService->getHealthStatsForPeriod($machine, Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()),
+        ];
+
         return Inertia::render('Machines/Show', [
             'machine' => $machine,
             'uptime' => $uptime,
             'stats' => $stats,
+            'healthScores' => $healthScores,
             ...$maintenanceData,
             ...$ticketData,
-
         ]);
     }
 

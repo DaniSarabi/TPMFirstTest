@@ -8,6 +8,8 @@ use App\Models\AssetGroup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Builder;
 
 class AssetController extends Controller
 {
@@ -37,19 +39,49 @@ class AssetController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only('search');
-        $assets = Asset::with('assetGroup', 'tags')
-            // ACTION: Usamos withCount para contar los mantenimientos pendientes.
+        $search = $request->get('search', '');
+
+        // --- 1. Obtenemos los grupos que deben mostrarse como "tarjeta de teléfono" ---
+        $assetGroups = AssetGroup::where('maintenance_type', 'group')
+            // ACTION: Modificamos el 'with' para que cada asset miembro traiga su propio
+            // contador de mantenimientos pendientes.
+            ->with([
+                'assets' => function ($query) {
+                    $query->with('tags')->withCount(['scheduledMaintenances as pending_maintenances_count' => function ($q) {
+                        $q->where('status', '!=', 'completed');
+                    }]);
+                },
+                'machines.tags'
+            ])
+            ->when($search, function (Builder $query, string $search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('assets', fn(Builder $q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('machines', fn(Builder $q) => $q->where('name', 'like', "%{$search}%"));
+            })
+            ->orderBy('name')
+            ->get();
+
+        // --- 2. Obtenemos los equipos que se muestran como tarjetas individuales ---
+        $individualAssets = Asset::with(['assetGroup', 'tags'])
             ->withCount(['scheduledMaintenances as pending_maintenances_count' => function ($query) {
-                // Definimos "pendiente" como cualquier mantenimiento que no esté 'completed'.
                 $query->where('status', '!=', 'completed');
             }])
-            ->where('name', 'like', "%{$request->get('search')}%")
+            ->where(function (Builder $query) {
+                $query->whereNull('asset_group_id')
+                    ->orWhereHas('assetGroup', function (Builder $q) {
+                        $q->where('maintenance_type', 'individual');
+                    });
+            })
+            ->when($search, function (Builder $query, string $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
             ->paginate(12)
             ->withQueryString();
 
         return Inertia::render('Assets/Index', [
-            'assets' => $assets,
-            'assetGroups' => AssetGroup::orderBy('name')->get(),
+            'assetGroups' => $assetGroups,
+            'individualAssets' => $individualAssets,
+            'allAssetGroups' => AssetGroup::orderBy('name')->get(),
             'filters' => $filters,
         ]);
     }
@@ -75,22 +107,41 @@ class AssetController extends Controller
     }
 
     /**
-     * Actualiza un equipo existente.
-     * (Implementación básica para el futuro)
+     * Actualiza un Asset existente.
      */
-    public function update(Request $request, Asset $asset)
+    public function update(StoreAssetRequest $request, Asset $asset)
     {
-        // Lógica de actualización aquí...
-        return redirect()->route('assets.index')->with('success', 'Equipment updated successfully.');
+        $data = $request->validated();
+        $data['slug'] = Str::slug($data['name']);
+
+        if ($request->hasFile('image')) {
+            // 1. Borramos la imagen anterior para no dejar basura.
+            if ($asset->image_url) {
+                Storage::disk('public')->delete($asset->image_url);
+            }
+            // 2. Subimos la nueva imagen.
+            $data['image_url'] = $request->file('image')->store('assets', 'public');
+        }
+
+        // 3. Actualizamos el registro en la base de datos.
+        $asset->update($data);
+
+        return back()->with('success', 'Equipment updated successfully!');
     }
 
     /**
-     * Elimina un equipo.
-     * (Implementación básica para el futuro)
+     * Elimina un Asset.
      */
     public function destroy(Asset $asset)
     {
-        // Lógica de eliminación aquí...
-        return redirect()->route('assets.index')->with('success', 'Equipment deleted successfully.');
+        // 1. Borramos la imagen asociada del almacenamiento.
+        if ($asset->image_url) {
+            Storage::disk('public')->delete($asset->image_url);
+        }
+
+        // 2. Eliminamos el registro de la base de datos.
+        $asset->delete();
+
+        return redirect()->route('assets.index')->with('success', 'Equipment deleted successfully!');
     }
 }

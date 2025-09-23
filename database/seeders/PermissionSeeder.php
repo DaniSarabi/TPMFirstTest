@@ -70,8 +70,13 @@ class PermissionSeeder extends Seeder
             // * Preventive Maintenance permissions
             'preventive-maintenance.view',
             'preventive-maintenance.perform',
-            'preventive-maintenance.schedule'
+            'preventive-maintenance.schedule',
             
+            // * Assets permissions
+            'assets.view',
+            'assets.create',
+            'assets.edit',
+            'assets.delete',
         ];
 
         // Create permissions if they don't exist

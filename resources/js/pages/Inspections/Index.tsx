@@ -1,51 +1,41 @@
 import { CardGrid } from '@/components/card-grid';
 import { ListToolbar } from '@/components/list-toolbar';
+import { MultiSelectFilter } from '@/components/MultiSelectFilter';
 import { Pagination } from '@/components/pagination';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/lib/useCan';
 import { type BreadcrumbItem, type Filter, type Paginated, type User } from '@/types';
+import { Machine } from '@/types/machine';
 import { Head, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import * as React from 'react';
 import { DateRange } from 'react-day-picker';
+import { Role } from '../Roles/Columns';
 import { InspectionCard } from './InspectionCard';
 import { InspectionFilters } from './InspectionFilters';
-
 // --- Type Definitions for this page ---
-interface ReportStat {
-  ok_count: number;
-  warning_count: number;
-  critical_count: number;
-}
-
-interface Report {
-  id: number;
-  status: string;
-  start_date: string;
-  completion_date: string | null;
-  badge_text: string;
-  user_name: string;
-  machine_name: string;
-  machine_image_url: string | null;
-  stats: ReportStat;
-  duration: string | null;
-}
+import { Report } from '@/types/report';
 
 interface IndexPageProps {
   reports: Paginated<Report>;
-  filters: Filter & { user?: string; start_date?: string; end_date?: string };
+  filters: Filter & { machines?: number[]; user?: string; start_date?: string; end_date?: string; include_deleted?: boolean; role?: string };
   users: User[];
+  roles: Role[];
+  allMachines: Machine[];
 }
 
-export default function Index({ reports, filters, users }: IndexPageProps) {
+export default function Index({ reports, filters, users, roles, allMachines }: IndexPageProps) {
+  // --- State Management for Filters ---
+  const [selectedMachines, setSelectedMachines] = React.useState<Set<number | string>>(new Set(filters.machines || []));
   const [search, setSearch] = React.useState(filters.search || '');
   const [selectedUser, setSelectedUser] = React.useState<number | null>(filters.user ? Number(filters.user) : null);
   const [selectedDate, setSelectedDate] = React.useState<DateRange | undefined>(
     filters.start_date ? { from: new Date(filters.start_date), to: filters.end_date ? new Date(filters.end_date) : undefined } : undefined,
   );
+  const [includeDeleted, setIncludeDeleted] = React.useState(filters.include_deleted || false);
+  const [selectedRole, setSelectedRole] = React.useState<string | null>(filters.role || null);
 
   const isInitialMount = React.useRef(true);
-
   const can = useCan('inspections.administration');
 
   React.useEffect(() => {
@@ -55,23 +45,35 @@ export default function Index({ reports, filters, users }: IndexPageProps) {
     }
 
     const timeout = setTimeout(() => {
-      router.get(
-        route('inspections.index'),
-        {
-          search,
-          user: selectedUser,
-          start_date: selectedDate?.from ? format(selectedDate.from, 'yyyy-MM-dd') : undefined,
-          end_date: selectedDate?.to ? format(selectedDate.to, 'yyyy-MM-dd') : undefined,
-        },
-        {
-          preserveState: true,
-          replace: true,
-        },
-      );
+      const queryParams: Record<string, any> = {
+        machines: Array.from(selectedMachines),
+        user: selectedUser,
+        start_date: selectedDate?.from ? format(selectedDate.from, 'yyyy-MM-dd') : undefined,
+        end_date: selectedDate?.to ? format(selectedDate.to, 'yyyy-MM-dd') : undefined,
+        include_deleted: includeDeleted ? 1 : 0,
+        role: selectedRole,
+      };
+
+      Object.keys(queryParams).forEach((key) => {
+        const value = queryParams[key];
+        if (value === null || value === undefined || value === '') {
+          delete queryParams[key];
+        }
+      });
+      // ACTION: La condición ahora maneja correctamente el 0.
+      // Si include_deleted es 0 (falso), no es necesario enviarlo.
+      if (!queryParams.include_deleted) {
+        delete queryParams.include_deleted;
+      }
+
+      router.get(route('inspections.index'), queryParams, {
+        preserveState: true,
+        replace: true,
+      });
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, selectedUser, selectedDate]);
+  }, [selectedMachines, selectedUser, selectedDate, includeDeleted, selectedRole]);
 
   const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -80,12 +82,15 @@ export default function Index({ reports, filters, users }: IndexPageProps) {
       isCurrent: true,
     },
   ];
-  const isFiltered = !!search || !!selectedUser || !!selectedDate;
+
+  const isFiltered = selectedMachines.size > 0 || !!selectedUser || !!selectedDate || includeDeleted || !!selectedRole;
 
   const handleResetFilters = () => {
-    setSearch('');
+    setSelectedMachines(new Set());
     setSelectedUser(null);
     setSelectedDate(undefined);
+    setIncludeDeleted(false);
+    setSelectedRole(null);
   };
 
   return (
@@ -100,16 +105,27 @@ export default function Index({ reports, filters, users }: IndexPageProps) {
         </div>
 
         <div className="flex justify-between">
-          <ListToolbar onSearch={setSearch} searchPlaceholder="Search by machine name...">
+          <ListToolbar>
+            <MultiSelectFilter
+              title="Machines"
+              options={allMachines}
+              selectedValues={selectedMachines}
+              onSelectedValuesChange={setSelectedMachines}
+            />
             <InspectionFilters
               showUserFilter={can}
               users={users}
+              roles={roles}
               selectedUser={selectedUser}
               onUserChange={setSelectedUser}
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
               isFiltered={isFiltered}
               onReset={handleResetFilters}
+              includeDeleted={includeDeleted}
+              onIncludeDeletedChange={setIncludeDeleted}
+              selectedRole={selectedRole}
+              onRoleChange={setSelectedRole}
             />
           </ListToolbar>
         </div>

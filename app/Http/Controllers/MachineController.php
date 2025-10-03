@@ -22,6 +22,7 @@ use App\Models\ScheduledMaintenance;
 use App\Models\InspectionReport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MaintenancePlanExport;
+use Illuminate\Database\Eloquent\Builder;
 
 
 class MachineController extends Controller
@@ -31,63 +32,63 @@ class MachineController extends Controller
      */
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'statuses', 'tags']);
+        // 1. Validamos todos los filtros posibles.
+        $filters = $request->validate([
+            'search' => 'nullable|string',
+            'statuses' => 'nullable|array',
+            'statuses.*' => 'string|in:operational,out_of_service,new', // Se ajustan los estados a los correctos
+            'tags' => 'nullable|array',
+            'tags.*' => 'integer|exists:tags,id',
+            'include_deleted' => 'nullable|boolean',
+        ]);
 
+        $includeDeleted = $request->boolean('include_deleted');
+
+        // 2. Construimos la consulta base.
+        $machinesQuery = Machine::query()
+            ->with('creator', 'subsystems.inspectionPoints', 'tags')
+            ->when($includeDeleted, fn(Builder $q) => $q->withTrashed());
+
+        // 3. Obtenemos los IDs de los estatus de cierre para el conteo de tickets abiertos.
         $finalStatusIds = TicketStatus::whereHas('behaviors', function ($query) {
             $query->whereIn('name', ['is_ticket_closing_status', 'is_ticket_discard_status']);
         })->pluck('id');
 
-        $machines = Machine::with('creator', 'subsystems.inspectionPoints', 'tags')
-            ->withCount([
-                'tickets as open_tickets_count' => function ($query) use ($finalStatusIds) {
-                    $query->whereNotIn('ticket_status_id', $finalStatusIds);
-                },
-                'scheduledMaintenances as pending_maintenances_count' => function ($query) {
-                    $query->whereNotIn('status', ['completed', 'completed_overdue']);
-                }
-            ])
-            ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->where('name', 'like', '%' . $search . '%');
-            })
-            ->when($filters['statuses'] ?? null, function ($query, $statuses) {
-                $query->whereIn('status', $statuses);
-            })
-            ->when($filters['tags'] ?? null, function ($query, $tags) {
-                $query->whereHas('tags', function ($q) use ($tags) {
-                    $q->whereIn('tag_id', $tags);
-                });
-            })
-            ->latest()
-            ->paginate(12)
-            ->withQueryString();
+        // 4. Cargamos los contadores.
+        $machinesQuery->withCount([
+            'tickets as open_tickets_count' => fn(Builder $q) => $q->whereNotIn('ticket_status_id', $finalStatusIds),
+            'scheduledMaintenances as pending_maintenances_count' => fn(Builder $q) => $q->whereNotIn('status', ['completed', 'completed_overdue']),
+        ]);
+
+        // 5. Aplicamos los filtros.
+        $machinesQuery->when($filters['search'] ?? null, fn(Builder $q, string $search) => $q->where('name', 'like', '%' . $search . '%'));
+        $machinesQuery->when($filters['statuses'] ?? null, fn(Builder $q, array $statuses) => $q->whereIn('status', $statuses));
+        $machinesQuery->when($filters['tags'] ?? null, fn(Builder $q, array $tagIds) => $q->whereHas('tags', fn(Builder $subQ) => $subQ->whereIn('tag_id', $tagIds)));
+
+        // 6. Obtenemos los resultados y los transformamos.
+        $machines = $machinesQuery->latest()->paginate(12)->withQueryString();
 
         $machineIds = $machines->getCollection()->pluck('id');
         $latestInspections = InspectionReport::select('machine_id', DB::raw('MAX(completed_at) as last_date'))
-            ->whereIn('machine_id', $machineIds)
-            ->whereNotNull('completed_at')
-            ->groupBy('machine_id')
-            ->get()
-            ->keyBy('machine_id');
+            ->whereIn('machine_id', $machineIds)->whereNotNull('completed_at')->groupBy('machine_id')->get()->keyBy('machine_id');
 
         $machines->getCollection()->transform(function ($machine) use ($latestInspections) {
-            // Cálculo del uptime
-            $lastDowntime = $machine->downtimeLogs->whereNotNull('end_time')->sortByDesc('end_time')->first();
+            $lastDowntime = $machine->downtimeLogs()->whereNotNull('end_time')->latest('end_time')->first();
             $startTime = $lastDowntime ? Carbon::parse($lastDowntime->end_time) : $machine->created_at;
             $machine->current_uptime = $startTime->diffForHumans(null, true);
-
-            // ACTION: Adjuntar la fecha de la última inspección a cada máquina.
             $lastInspectionDate = $latestInspections->get($machine->id)?->last_date;
             $machine->last_inspection_date = $lastInspectionDate ? Carbon::parse($lastInspectionDate)->format('M d, Y') : null;
-
             return $machine;
         });
 
+        // 7. Renderizamos la vista con toda la data necesaria.
         return Inertia::render('Machines/Index', [
             'machines' => $machines,
             'filters' => $filters,
-            'tags' => Tag::orderBy('name')->get(),
-            // Definimos los estados primarios directamente ya que son fijos
-            'primaryStatuses' => ['new', 'in_service', 'out_of_service'],
+            'filterOptions' => [
+                'tags' => Tag::orderBy('name')->get(),
+                'statuses' => ['operational', 'out_of_service', 'new'],
+            ]
         ]);
     }
 
@@ -130,14 +131,14 @@ class MachineController extends Controller
         $maintenanceData = $this->_getMaintenanceHistoryData($request, $machine);
         $ticketData = $this->_getTicketHistoryData($request, $machine);
 
-        $closingStatusIds = TicketStatus::whereHas('behaviors', fn ($q) => $q->where('name', 'is_ticket_closing_status'))->pluck('id');
+        $closingStatusIds = TicketStatus::whereHas('behaviors', fn($q) => $q->where('name', 'is_ticket_closing_status'))->pluck('id');
 
         $lastInspection = $machine->inspectionReports()->whereNotNull('completed_at')->latest('completed_at')->first();
         $lastMaintenance = $machine->scheduledMaintenances()->where('status', 'completed')->latest('scheduled_date')->first();
 
         $stats = [
             'subsystems_count' => $machine->subsystems->count(),
-            'inspection_points_count' => $machine->subsystems->reduce(fn ($c, $s) => $c + $s->inspectionPoints->count(), 0),
+            'inspection_points_count' => $machine->subsystems->reduce(fn($c, $s) => $c + $s->inspectionPoints->count(), 0),
             'open_tickets_count' => $machine->tickets()->whereNotIn('ticket_status_id', $closingStatusIds)->count(),
             'last_inspection_date' => $lastInspection?->completed_at->format('M d, Y'),
             'last_maintenance_date' => $lastMaintenance?->scheduled_date->format('M d, Y'),

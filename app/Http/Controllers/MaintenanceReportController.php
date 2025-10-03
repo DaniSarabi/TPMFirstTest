@@ -17,10 +17,10 @@ class MaintenanceReportController extends Controller
     {
         // Eager load all the necessary relationships for the report view
         $maintenanceReport->load([
-            'user', // The user who completed the report
-            'results.photos', // The results and their photos
+            'user',
+            'results.photos',
             'scheduledMaintenance' => function ($query) {
-                $query->with('schedulable', 'template.tasks');
+                $query->with('schedulable', 'template.tasks', 'template.sections.tasks');
             },
         ]);
 

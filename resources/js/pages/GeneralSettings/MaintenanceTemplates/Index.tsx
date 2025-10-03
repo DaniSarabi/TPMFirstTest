@@ -197,7 +197,7 @@ export default function MaintenanceTemplatesIndex({ templates }: Props) {
           onOpenChange={() => setTemplateToDelete(null)}
           onConfirm={confirmDelete}
           title="Delete Template"
-          description="Are you sure you want to delete this template? This action cannot be undone."
+          description="Are you sure you want to delete this template? This action cannot be undone."  
         />
         <ConfirmDeleteDialog
           isOpen={!!navigationTarget}

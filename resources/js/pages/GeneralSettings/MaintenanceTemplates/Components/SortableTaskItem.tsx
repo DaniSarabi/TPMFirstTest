@@ -8,20 +8,20 @@ import { cn } from '@/lib/utils';
 import { MaintenanceTemplateTask } from '@/types/maintenance';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Camera, GripVertical, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { TaskSettingsPopover } from './TaskSettingsPopover';
+import { Camera, GripVertical, List, MessageSquare, PlusCircle, Trash2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { TaskSettingsPopover } from '../Components/TaskSettingsPopover';
 
 interface Props {
   task: MaintenanceTemplateTask;
-  activeDragType: string | null; // New prop to detect what's being dragged
+  activeDragType: string | null;
+  isOverlay?: boolean;
   onLabelChange: (taskId: number, newLabel: string) => void;
   onDelete: (taskId: number) => void;
   onOptionChange: (taskId: number, option: string, value: any) => void;
   onDescriptionChange: (taskId: number, newDescription: string) => void;
 }
 
-// A small component to render the editable label
 const EditableLabel = ({ task, onLabelChange }: { task: MaintenanceTemplateTask; onLabelChange: Props['onLabelChange'] }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(task.label);
@@ -59,17 +59,115 @@ const EditableLabel = ({ task, onLabelChange }: { task: MaintenanceTemplateTask;
       <label className="font-medium" onDoubleClick={() => setIsEditing(true)}>
         {task.label}
       </label>
-      {task.options?.is_mandatory && <span className="text-destructive shrink-0">*</span>}
-      {task.options?.photo_required && <Camera className="h-4 w-4 text-destructive shrink-0" />}
+      {task.options?.is_mandatory && <span className="font-bold text-destructive">*</span>}
+      <div className="flex items-center gap-1.5">
+        {task.options?.photo_requirement === 'optional' && <Camera className="h-4 w-4 text-muted-foreground" />}
+        {task.options?.photo_requirement === 'mandatory' && <Camera className="h-4 w-4 text-destructive" />}
+        {task.options?.comment_requirement === 'optional' && <MessageSquare className="h-4 w-4 text-muted-foreground" />}
+        {task.options?.comment_requirement === 'mandatory' && <MessageSquare className="h-4 w-4 text-destructive" />}
+      </div>
+    </div>
+  );
+};
+const EditableParagraph = ({ task, onDescriptionChange }: { task: MaintenanceTemplateTask; onDescriptionChange: Props['onDescriptionChange'] }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [text, setText] = useState(task.description || '');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (isEditing) textareaRef.current?.focus();
+  }, [isEditing]);
+  const handleSave = () => {
+    if (task.description !== text) onDescriptionChange(task.id, text);
+    setIsEditing(false);
+  };
+  if (isEditing) {
+    return <Textarea ref={textareaRef} value={text} onChange={(e) => setText(e.target.value)} onBlur={handleSave} />;
+  }
+  return (
+    <p className="rounded-sm border-1 border-primary p-3 text-muted-foreground" onDoubleClick={() => setIsEditing(true)}>
+      {task.description || 'Double-click to edit paragraph...'}
+    </p>
+  );
+};
+
+const BulletedList = ({ task, onOptionChange }: { task: MaintenanceTemplateTask; onOptionChange: Props['onOptionChange'] }) => {
+  const items = task.options?.list_items || [];
+
+  const handleItemChange = (index: number, value: string) => {
+    const newItems = [...items];
+    newItems[index] = value;
+    onOptionChange(task.id, 'list_items', newItems);
+  };
+
+  const handleAddItem = () => {
+    onOptionChange(task.id, 'list_items', [...items, '']);
+  };
+
+  const handleDeleteItem = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    onOptionChange(task.id, 'list_items', newItems);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const newItems = [...items];
+      newItems.splice(index + 1, 0, ''); // Inserta un nuevo item vacío después del actual
+      onOptionChange(task.id, 'list_items', newItems);
+      // Pequeño delay para que React actualice el DOM antes de hacer focus
+      setTimeout(() => {
+        const nextInput = document.getElementById(`list-item-${task.id}-${index + 1}`);
+        nextInput?.focus();
+      }, 50);
+    }
+    if (e.key === 'Backspace' && items[index] === '') {
+      e.preventDefault();
+      handleDeleteItem(index);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {items.map((item, index) => (
+        <div key={index} className="group/item flex items-center gap-2">
+          <List className="h-4 w-4 text-muted-foreground" />
+          <Input
+            id={`list-item-${task.id}-${index}`}
+            value={item}
+            onChange={(e) => handleItemChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+            className="h-8 flex-1"
+            placeholder="List item..."
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground opacity-0 group-hover/item:opacity-100"
+            onClick={() => handleDeleteItem(index)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+      <Button variant="ghost" size="sm" onClick={handleAddItem} className="mt-1 text-muted-foreground">
+        <PlusCircle className="mr-2 h-4 w-4" /> Add Item
+      </Button>
     </div>
   );
 };
 
-// Main component to render the correct form preview
-export function SortableTaskItem({ task, activeDragType, onLabelChange, onDelete, onOptionChange,onDescriptionChange }: Props) {
+export const SortableTaskItem = React.memo(function SortableTaskItem({
+  task,
+  activeDragType,
+  isOverlay,
+  onLabelChange,
+  onDelete,
+  onOptionChange,
+  onDescriptionChange,
+}: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
-    data: { type: 'canvas-item', task }, // Add data for the overlay
+    data: { type: 'canvas-item', task },
   });
 
   const style = {
@@ -79,6 +177,23 @@ export function SortableTaskItem({ task, activeDragType, onLabelChange, onDelete
 
   const renderTaskPreview = () => {
     switch (task.task_type) {
+      case 'header':
+        return (
+          <h2 className="text-xl font-bold">
+            <EditableLabel task={task} onLabelChange={onLabelChange} />
+          </h2>
+        );
+      case 'paragraph':
+        return <EditableParagraph task={task} onDescriptionChange={onDescriptionChange} />;
+      case 'bullet_list':
+        return (
+          <div>
+            <EditableLabel task={task} onLabelChange={onLabelChange} />
+            <div className="mt-2">
+              <BulletedList task={task} onOptionChange={onOptionChange} />
+            </div>
+          </div>
+        );
       case 'checkbox':
         return (
           <div className="flex items-center space-x-2">
@@ -125,8 +240,9 @@ export function SortableTaskItem({ task, activeDragType, onLabelChange, onDelete
     <div
       ref={setNodeRef}
       style={style}
-      className={cn('group flex items-center rounded-lg p-3 transition-colors hover:bg-muted/50', {
-        'opacity-50': isDragging, // Make the original item semi-transparent while dragging
+      // ENHANCEMENT: La opacidad no se aplica al overlay para mejor visibilidad
+      className={cn('group flex items-center rounded-lg bg-white p-3 transition-colors hover:bg-muted/50', {
+        'opacity-50': isDragging && !isOverlay,
         'pointer-events-none': activeDragType === 'toolbox-item',
       })}
     >
@@ -143,7 +259,7 @@ export function SortableTaskItem({ task, activeDragType, onLabelChange, onDelete
       </div>
       <div className="ml-2 flex-grow">{renderTaskPreview()}</div>
       <div className="flex h-full items-center">
-        <TaskSettingsPopover task={task} onOptionChange={onOptionChange}  onDescriptionChange={onDescriptionChange}/>
+        <TaskSettingsPopover task={task} onOptionChange={onOptionChange} onDescriptionChange={onDescriptionChange} />
         <Button
           variant="ghost"
           size="sm"
@@ -155,4 +271,4 @@ export function SortableTaskItem({ task, activeDragType, onLabelChange, onDelete
       </div>
     </div>
   );
-}
+});

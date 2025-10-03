@@ -1,76 +1,104 @@
 import { Button } from '@/components/ui/button';
+import { LayoutItem } from '@/hooks/useTemplateLayout';
 import { cn } from '@/lib/utils';
-import { MaintenanceTemplate, MaintenanceTemplateTask } from '@/types/maintenance';
+import { MaintenanceTemplate, MaintenanceTemplateSection, MaintenanceTemplateTask } from '@/types/maintenance';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Save } from 'lucide-react';
+import { SortableSectionItem } from './SortableSectionItem';
 import { SortableTaskItem } from './SortableTaskItem';
 
+// Interfaz de Props actualizada para incluir el item activo
 interface Props {
   template: MaintenanceTemplate;
-  tasks: MaintenanceTemplateTask[];
+  layoutItems: LayoutItem[];
   isDirty: boolean;
   isSaving: boolean;
-  activeDragType: string | null;
+  activeDragItem: LayoutItem | null; // AÑADIDO: para saber qué se está arrastrando
   onSave: () => void;
-  onLabelChange: (taskId: number, newLabel: string) => void;
-  onDelete: (taskId: number) => void;
-  onOptionChange: (taskId: number, option: string, value: any) => void;
-  onDescriptionChange: (taskId: number, newDescription: string) => void;
+  onTaskChange: (taskId: number, updatedProperties: Partial<MaintenanceTemplateTask>) => void;
+  onDeleteTask: (taskId: number) => void;
+  onSectionChange: (sectionId: number, updatedProperties: Partial<MaintenanceTemplateSection>) => void;
+  onDeleteSection: (sectionId: number) => void;
 }
 
-export function DroppableCanvas({ template, tasks, isDirty, isSaving, activeDragType, onSave, onLabelChange, onDelete, onOptionChange, onDescriptionChange }: Props) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: 'canvas-droppable-area',
-  });
+export function DroppableCanvas({
+  template,
+  layoutItems,
+  isDirty,
+  isSaving,
+  activeDragItem, // AÑADIDO
+  onSave,
+  onTaskChange,
+  onDeleteTask,
+  onSectionChange,
+  onDeleteSection,
+}: Props) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'root-droppable-area' });
+
+  // Obtenemos el tipo del elemento que se está arrastrando
+  const activeDragType = activeDragItem?.dndType;
 
   return (
-    <div className="min-h-[500px] rounded-md border bg-white p-8 shadow-lg drop-shadow-lg dark:bg-gray-900">
-      {/* Header Section inside the canvas */}
+    <div className="min-h-[500px] rounded-md border bg-card p-8 shadow-lg drop-shadow-lg">
       <div className="flex items-center justify-between border-b-2 border-primary pb-4">
         <div className="space-y-1.5">
           <h2 className="text-2xl font-bold tracking-tight">{template.name}</h2>
           <p className="line-clamp-2 text-muted-foreground">{template.description}</p>
         </div>
         {isDirty && (
-          <Button className='bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground' onClick={onSave} disabled={isSaving}>
+          <Button variant="secondary" onClick={onSave} disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         )}
       </div>
-
-      {/* Droppable Area */}
       <div
         ref={setNodeRef}
-        className={cn('mt-8 rounded-lg transition-colors', {
-          'border-primary ring-2 ring-primary/50': isOver,
+        className={cn('mt-8 min-h-[400px] rounded-lg border-2 border-dashed p-4 transition-colors', {
+          'border-primary bg-muted/20': isOver,
+          'border-muted-foreground/20': !isOver,
         })}
       >
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          {tasks.length > 0 ? (
-            <div className="dark:border-gray-600', h-full min-h-[400px] rounded-lg border-2 border-dashed border-primary p-2">
-              {tasks.map((task) => (
-                <SortableTaskItem
-                  key={task.id}
-                  task={task}
-                  activeDragType={activeDragType}
-                  onLabelChange={onLabelChange}
-                  onDelete={onDelete}
-                  onOptionChange={onOptionChange}
-                  onDescriptionChange={onDescriptionChange}
-                />
-              ))}
-            </div>
-          ) : (
-            <div
-              className={cn(
-                'flex h-full min-h-[400px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-center dark:border-gray-600',
-              )}
-            >
-              <p className="text-muted-foreground">Drag an icon from the toolbox above to start building your form.</p>
-            </div>
-          )}
+        <SortableContext items={layoutItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {/* AÑADIDO: Mensaje para el estado vacío */}
+            {layoutItems.length === 0 ? (
+              <div className="flex h-full min-h-[300px] items-center justify-center">
+                <p className="p-12 text-center text-sm text-muted-foreground">
+                  Arrastra elementos desde la caja de herramientas para comenzar a construir.
+                </p>
+              </div>
+            ) : (
+              layoutItems.map((item) => {
+                if (item.dndType === 'section') {
+                  return (
+                    <SortableSectionItem
+                      key={item.id}
+                      section={item.data}
+                      activeDragType={activeDragType}
+                      onSectionChange={onSectionChange}
+                      onDeleteSection={onDeleteSection}
+                      onTaskChange={onTaskChange}
+                      onDeleteTask={onDeleteTask}
+                    />
+                  );
+                }
+                return (
+                  <SortableTaskItem
+                    key={item.id}
+                    task={item.data}
+                    activeDragType={activeDragType}
+                    // CAMBIADO: Adaptamos los handlers específicos al genérico onTaskChange
+                    onLabelChange={(taskId, label) => onTaskChange(taskId, { label })}
+                    onDescriptionChange={(taskId, description) => onTaskChange(taskId, { description })}
+                    onOptionChange={(taskId, optionKey, value) => onTaskChange(taskId, { options: { [optionKey]: value } })}
+                    onDelete={onDeleteTask}
+                  />
+                );
+              })
+            )}
+          </div>
         </SortableContext>
       </div>
     </div>

@@ -5,11 +5,10 @@ import { FormEventHandler } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 //import AuthLayout from '@/layouts/auth-layout';
-import loginImg from '../../../../public/home.png';
 
 // Define the shape of the form data
 type LoginForm = {
@@ -39,23 +38,25 @@ export default function Login({ status, canResetPassword }: LoginProps) {
   };
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
+    <div
+      className="flex min-h-svh flex-col items-center justify-center bg-cover bg-center p-6 md:p-10"
+      style={{ backgroundImage: "url('/home.png')" }}
+    >
+      {' '}
       <Head title="Log in" />
-
-      <Card className="w-full max-w-4xl">
-        <CardContent className="grid p-0 pr-4 md:grid-cols-2">
+      <Card className="w-full max-w-4xl border-0 border-white/30 bg-white/20 text-white shadow-lg backdrop-blur-md">
+        <CardHeader className="text-center text-white">
+          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+          <CardDescription className="text-balance text-white">Login to your TPM account</CardDescription>
+          <p className="text-xs text-white">v0.9.1</p>
+        </CardHeader>
+        <CardContent>
           <form className="flex flex-col justify-center p-6 md:p-8" onSubmit={submit}>
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Welcome Back</h1>
-                <p className="text-balance text-muted-foreground">Login to your TPM account</p>
-                <p className="text-xs text-muted-foreground">v0.9.1</p>
-              </div>
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
-                    className="ring-1 ring-ring hover:bg-accent hover:text-accent-foreground"
                     id="email"
                     type="email"
                     placeholder="email@example.com"
@@ -71,19 +72,12 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     <Label htmlFor="password">Password</Label>
                     {/* Use your existing logic for the "Forgot Password" link */}
                     {canResetPassword && (
-                      <TextLink href={route('password.request')} className="ml-auto text-sm">
+                      <TextLink href={route('password.request')} className="ml-auto text-sm text-primary-foreground">
                         Forgot your password?
                       </TextLink>
                     )}
                   </div>
-                  <Input
-                    className="ring-1 ring-ring hover:bg-accent hover:text-accent-foreground"
-                    id="password"
-                    type="password"
-                    required
-                    value={data.password}
-                    onChange={(e) => setData('password', e.target.value)}
-                  />
+                  <Input id="password" type="password" required value={data.password} onChange={(e) => setData('password', e.target.value)} />
                   <InputError message={errors.password} />
                 </div>
               </div>
@@ -92,23 +86,11 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 Login
               </Button>
 
-              <div className="text-center text-sm">
-                Don&apos;t have an account? {/* Use your existing TextLink for the "Sign up" link */}
-                <TextLink href={route('register')}>Sign up</TextLink>
-              </div>
+              <div className="text-center text-sm">Don&apos;t have an account? {/* Use your existing TextLink for the "Sign up" link */}</div>
             </div>
           </form>
-          <div className="relative hidden rounded-lg bg-muted ring-1 ring-ring md:block">
-            <img
-              src={loginImg}
-              alt="TPM application visual"
-              className="absolute inset-0 h-full w-full rounded-lg object-cover"
-              //onError={(e) => (e.currentTarget.src = 'https://placehold.co/1080x1920/e2e8f0/e2e8f0?text=Image')}
-            />
-          </div>
         </CardContent>
       </Card>
-
       {status && <div className="mt-4 text-center text-sm font-medium text-green-600">{status}</div>}
     </div>
   );

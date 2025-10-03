@@ -30,7 +30,7 @@ export default function Show(props: ShowPageProps) {
         }, {
             preserveScroll: true,
         });
-    };
+    };  
     
     // The maintenance is considered "not started" only if the status is 'scheduled'.
     const hasNotStarted = scheduledMaintenance.status === 'scheduled'|| scheduledMaintenance.status === 'overdue' ;
@@ -42,10 +42,6 @@ export default function Show(props: ShowPageProps) {
                  {/* Page Header */}
                  <div>
                     <h1 className="text-2xl font-bold tracking-tight">{scheduledMaintenance.title}</h1>
-                    {/* <p className="text-muted-foreground">
-                        For Machine: {scheduledMaintenance.schedulable.machine?.name   || scheduledMaintenance.schedulable.name}
-                        {scheduledMaintenance.schedulable_type === 'App\\Models\\Subsystem' && ` > ${scheduledMaintenance.schedulable.name}`}
-                    </p> */}
                 </div>
 
                 {hasNotStarted 

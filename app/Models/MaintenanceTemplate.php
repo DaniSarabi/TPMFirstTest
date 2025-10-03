@@ -24,14 +24,19 @@ class MaintenanceTemplate extends Model
     ];
 
     /**
-     * Get the tasks associated with the maintenance template.
-     *
-     * This defines a one-to-many relationship. A template has many tasks.
-     * We are also ordering them by the 'order' column by default,
-     * which will be essential for displaying them correctly in the UI.
+     * Una plantilla ahora tiene muchas secciones.
+     */
+    public function sections(): HasMany
+    {
+        return $this->hasMany(MaintenanceTemplateSection::class)->orderBy('order');
+    }
+
+    /**
+     * ACTION: Se modifica la relación 'tasks' para que ahora solo devuelva
+     * las tareas "raíz" (aquellas cuyo section_id es NULL).
      */
     public function tasks(): HasMany
     {
-        return $this->hasMany(MaintenanceTemplateTask::class)->orderBy('order');
+        return $this->hasMany(MaintenanceTemplateTask::class)->whereNull('section_id')->orderBy('order');
     }
 }

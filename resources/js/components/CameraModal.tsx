@@ -19,7 +19,6 @@ export function CameraModal({ isOpen, onOpenChange, onCapture }: CameraModalProp
   const [devices, setDevices] = React.useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = React.useState<string | undefined>(undefined);
 
-  // --- ACTION: Consolidated all camera logic into a single, robust useEffect hook ---
   // This hook now manages starting and stopping the camera and fetching devices, preventing infinite loops.
   React.useEffect(() => {
     let stream: MediaStream | null = null;

@@ -65,4 +65,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(NotificationPreference::class);
     }
+     /**
+     * Get the tickets created by the user.
+     *
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'created_by');
+    }
 }

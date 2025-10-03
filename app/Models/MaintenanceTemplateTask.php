@@ -11,12 +11,11 @@ class MaintenanceTemplateTask extends Model
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Se actualiza 'fillable' para incluir el nuevo campo opcional 'section_id'.
      */
     protected $fillable = [
         'maintenance_template_id',
+        'section_id', // <-- Campo añadido
         'order',
         'task_type',
         'label',
@@ -24,26 +23,24 @@ class MaintenanceTemplateTask extends Model
         'options',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * This tells Laravel to automatically decode the 'options' JSON column
-     * into a PHP array whenever we access it, and encode it back to JSON
-     * when we save it. This is incredibly useful.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'options' => 'array',
     ];
 
     /**
-     * Get the template that this task belongs to.
-     *
-     * This defines the inverse of the one-to-many relationship.
+     * Una tarea siempre pertenece a una plantilla. (Se mantiene)
      */
     public function template(): BelongsTo
     {
         return $this->belongsTo(MaintenanceTemplate::class);
+    }
+
+    /**
+     * ACTION: Una tarea AHORA PUEDE pertenecer a una sección.
+     * Esta relación es opcional (`section_id` puede ser null).
+     */
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(MaintenanceTemplateSection::class);
     }
 }

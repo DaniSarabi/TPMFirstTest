@@ -1,132 +1,74 @@
-import { MaintenanceTemplate, MaintenanceTemplateTask } from '@/types/maintenance';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
-import { router } from '@inertiajs/react';
-import { isEqual } from 'lodash';
-import { useEffect, useState } from 'react';
+import { MaintenanceTemplate } from '@/types/maintenance';
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useState } from 'react';
+
+// Importa nuestro custom hook y los componentes
+import { useTemplateLayout } from '@/hooks/useTemplateLayout';
 import { DroppableCanvas } from './DroppableCanvas';
+import { SortableSectionItem } from './SortableSectionItem';
 import { SortableTaskItem } from './SortableTaskItem';
 import { TaskToolbox } from './TaskToolbox';
 import { ToolboxDragOverlayItem } from './ToolboxDragOverlayItem';
 
 interface Props {
   template: MaintenanceTemplate;
-  onDirtyChange: (isDirty: boolean) => void;
 }
 
-export function TemplateBuilder({ template, onDirtyChange }: Props) {
-  const [tasks, setTasks] = useState<MaintenanceTemplateTask[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [activeDragData, setActiveDragData] = useState<any | null>(null);
+export function TemplateBuilder({ template }: Props) {
+  // AÑADIDO: El estado de 'isDirty' ahora vive en este componente padre.
+  const [isDirty, setIsDirty] = useState(false);
 
-  useEffect(() => {
-    setTasks(JSON.parse(JSON.stringify(template.tasks)));
-  }, [template]);
+  
+  const {
+    layoutItems,
+    isSaving,
+    activeDragItem, // Usamos el del hook
+    handleDragStart, // Usamos el del hook
+    handleDragEnd,
+    handleSave,
+    handleTaskChange,
+    handleDeleteTask,
+    handleSectionChange,
+    handleDeleteSection,
+  } = useTemplateLayout(template, setIsDirty); // Pasamos el setter al hook
 
-  // This effect now reports changes up to the parent component
-  useEffect(() => {
-    const dirty = !isEqual(template.tasks, tasks);
-    onDirtyChange(dirty);
-  }, [tasks, template.tasks, onDirtyChange]);
+  // CORREGIDO: Se elimina el estado local de 'activeDragItem' para evitar duplicidad.
 
-  const handleLabelChange = (taskId: number, newLabel: string) => {
-    setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? { ...task, label: newLabel } : task)));
-  };
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
 
-  const handleDeleteTask = (taskId: number) => {
-    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
-  };
-
-  const handleOptionsChange = (taskId: number, option: string, value: any) => {
-    setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? { ...task, options: { ...task.options, [option]: value } } : task)));
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragData(event.active.data.current);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveDragData(null);
-    const { over, active } = event;
-
-    if (!over) return;
-
-    if (active.data.current?.type === 'canvas-item' && over.data.current?.type === 'canvas-item' && active.id !== over.id) {
-      setTasks((currentTasks) => {
-        const oldIndex = currentTasks.findIndex((task) => task.id === active.id);
-        const newIndex = currentTasks.findIndex((task) => task.id === over.id);
-        return arrayMove(currentTasks, oldIndex, newIndex);
-      });
-      return;
-    }
-
-    if (active.data.current?.type === 'toolbox-item') {
-      const taskData = active.data.current?.task;
-      const newTask: MaintenanceTemplateTask = {
-        id: -Math.floor(Math.random() * 10000),
-        maintenance_template_id: template.id,
-        order: 0,
-        task_type: taskData.id,
-        label: `${taskData.label} Label`,
-        description: '',
-        options: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      if (over.id === 'canvas-droppable-area') {
-        setTasks((currentTasks) => [...currentTasks, newTask]);
-        return;
-      }
-
-      if (over.data.current?.type === 'canvas-item') {
-        const overIndex = tasks.findIndex((task) => task.id === over.id);
-        setTasks((currentTasks) => {
-          const newTasks = [...currentTasks];
-          newTasks.splice(overIndex, 0, newTask);
-          return newTasks;
-        });
-      }
-    }
-  };
-
-  const handleSave = () => {
-    setIsSaving(true);
-    const tasksToSave = tasks.map((task, index) => ({ ...task, order: index }));
-
-    router.put(route('settings.maintenance-templates.sync-tasks', template.id), { tasks: tasksToSave } as any, {
-      preserveScroll: true,
-      onSuccess: () => onDirtyChange(false),
-      onFinish: () => setIsSaving(false),
-    });
-  };
-
-  const handleDescriptionChange = (taskId: number, newDescription: string) => {
-    setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? { ...task, description: newDescription } : task)));
-  };
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-      <div className="space-y-4">
-        <TaskToolbox />
-
-        <DroppableCanvas
-          template={template}
-          tasks={tasks}
-          isDirty={!isEqual(template.tasks, tasks)}
-          isSaving={isSaving}
-          activeDragType={activeDragData?.type || null}
-          onSave={handleSave}
-          onLabelChange={handleLabelChange}
-          onDelete={handleDeleteTask}
-          onOptionChange={handleOptionsChange}
-          onDescriptionChange={handleDescriptionChange}
-        />
+    // CORREGIDO: Pasamos los handlers del hook al DndContext
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex flex-col gap-4">
+        <div className="col-span-3">
+          <TaskToolbox />
+        </div>
+        <div className="col-span-9">
+          {/* CORREGIDO: Pasamos todas las props necesarias al Canvas */}
+          <DroppableCanvas
+            template={template}
+            layoutItems={layoutItems}
+            isDirty={isDirty}
+            isSaving={isSaving}
+            activeDragItem={activeDragItem}
+            onSave={handleSave}
+            onTaskChange={handleTaskChange}
+            onDeleteTask={handleDeleteTask}
+            onSectionChange={handleSectionChange}
+            onDeleteSection={handleDeleteSection}
+          />
+        </div>
       </div>
+
+      {/* El DragOverlay ahora usa 'activeDragItem' del hook */}
       <DragOverlay>
-        {activeDragData?.type === 'canvas-item' && (
-          <SortableTaskItem task={activeDragData.task} activeDragType={null} onLabelChange={() => {}} onDelete={() => {}} onOptionChange={() => {}} onDescriptionChange={() => {}} />
-        )}
-        {activeDragData?.type === 'toolbox-item' && <ToolboxDragOverlayItem task={activeDragData.task} />}
+        {activeDragItem?.type === 'toolbox-item' && <ToolboxDragOverlayItem task={activeDragItem.task} />}
+        {activeDragItem?.type === 'canvas-item' && <SortableTaskItem task={activeDragItem.task} isOverlay />}
+        {activeDragItem?.type === 'section-item' && <SortableSectionItem section={activeDragItem.section} isOverlay />}
       </DragOverlay>
     </DndContext>
   );

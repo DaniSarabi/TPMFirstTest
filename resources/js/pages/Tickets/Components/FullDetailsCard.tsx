@@ -3,17 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
 import { Ticket } from '@/types/ticket';
 import { Link } from '@inertiajs/react';
-import { Download, FileText, Flag, Image, ListChecks, View, Wrench, Eye } from 'lucide-react';
+import { Download, Eye, FileText, Flag, Image, ListChecks, Wrench } from 'lucide-react';
 import * as React from 'react';
 
 interface FullDetailsCardProps {
-  ticket: Ticket;
+  ticket: Ticket & { is_machine_deleted?: boolean };
 }
 
 export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
   const [isImageViewerOpen, setIsImageViewerOpen] = React.useState(false);
   const imageUrl = ticket.inspection_item?.image_url;
   const inspectionReportId = ticket.inspection_item?.inspection_report_id;
+  const machineName = ticket.machine?.name || 'Deleted Machine';
 
   return (
     <>
@@ -47,7 +48,9 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
             <div className="flex items-center gap-2">
               <Wrench className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold">Machine:</span>
-              <span>{ticket.machine.name}</span>
+              <h2 className="truncate text-xl leading-snug font-extrabold " title={machineName}>
+                {machineName}
+              </h2>
             </div>
             <div className="flex items-center gap-2">
               <ListChecks className="h-4 w-4 text-muted-foreground" />
@@ -73,11 +76,12 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
             {inspectionReportId && (
               <Button variant="outline" asChild>
                 <Link href={route('inspections.show', inspectionReportId)}>
-                <Eye className="mr-2 h-4 w-4" />
-                View Full Inspection Report</Link>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Full Inspection Report
+                </Link>
               </Button>
             )}
-            <Button className='hover:bg-secondary hover:text-secondary-foreground' variant={'default'} asChild>
+            <Button className="hover:bg-secondary hover:text-secondary-foreground" variant={'default'} asChild>
               <a href={route('tickets.pdf', ticket.id)} target="_blank">
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF

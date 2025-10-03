@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { InspectionPoint, Machine } from '@/types/machine';
-import { Head, router } from '@inertiajs/react';
+import { InspectionReport, InspectionStatus } from '@/types/inspection';
+import { InspectionPoint } from '@/types/machine';
+import { Head, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
+import { CircleX, Send } from 'lucide-react';
 import * as React from 'react';
 import { CameraModal } from '../../components/CameraModal';
 import { Ticket } from '../Tickets/Columns';
@@ -10,22 +12,7 @@ import { ChecklistCard } from './Components/CheckListCard';
 import { ExistingTicketsModal } from './Components/ExistingTicketsModal';
 import { InspectionResult } from './Components/InspectionPointRow';
 import { SummaryCard } from './Components/SummaryCard';
-
 // --- Type Definitions for this page ---
-
-export interface InspectionStatus {
-  id: number;
-  name: string;
-  severity: number;
-  bg_color: string;
-  text_color: string;
-  is_default: boolean;
-}
-
-interface InspectionReport {
-  id: number;
-  machine: Machine;
-}
 
 interface PerformPageProps {
   report: InspectionReport;
@@ -39,6 +26,7 @@ interface PerformPageProps {
 
 export default function Perform({ report, inspectionStatuses, uptime, stats }: PerformPageProps) {
   const { machine } = report;
+  const { errors } = usePage().props;
 
   const [inspectionResults, setInspectionResults] = React.useState<Record<number, InspectionResult>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -140,6 +128,7 @@ export default function Perform({ report, inspectionStatuses, uptime, stats }: P
 
         <ChecklistCard
           machine={machine}
+          errors={errors}
           inspectionStatuses={inspectionStatuses}
           inspectionResults={inspectionResults}
           onResultChange={handleResultChange}
@@ -148,8 +137,12 @@ export default function Perform({ report, inspectionStatuses, uptime, stats }: P
         />
 
         <div className="flex justify-end space-x-4">
-          <Button variant="secondary">Cancel</Button>
+          <Button variant="secondary" className="hover:bg-destructive hover:text-destructive-foreground">
+            <CircleX />
+            Cancel
+          </Button>
           <Button onClick={handleSubmitInspection} disabled={isSubmitting}>
+            <Send />
             {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
           </Button>
         </div>

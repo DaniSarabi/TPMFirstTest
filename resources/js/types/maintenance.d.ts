@@ -5,34 +5,47 @@ import { Machine, Subsystem } from './machine';
 
 // Represents a single task within a maintenance template checklist.
 // This corresponds to the `MaintenanceTemplateTask` Eloquent model.
+export interface TaskOptions {
+  is_mandatory?: boolean;
+  photo_requirement?: 'disabled' | 'optional' | 'mandatory';
+  comment_requirement?: 'disabled' | 'optional' | 'mandatory';
+  list_items?: string[];
+}
+
+// Corresponde al nuevo modelo `MaintenanceTemplateSection`
+export interface MaintenanceTemplateSection {
+  id: number;
+  maintenance_template_id: number;
+  title: string;
+  description: string | null;
+  order: number;
+  tasks: MaintenanceTemplateTask[];
+}
+
+// Corresponde al modelo `MaintenanceTemplateTask`
 export interface MaintenanceTemplateTask {
   id: number;
   maintenance_template_id: number;
+  section_id?: number | null; // Una tarea puede pertenecer a una sección (opcional)
   order: number;
-  task_type: 'checkbox' | 'pass_fail' | 'numeric_input' | 'text_observation';
+  task_type: 'checkbox' | 'pass_fail' | 'numeric_input' | 'text_observation' | 'header' | 'paragraph' | 'bullet_list';
   label: string;
   description: string | null;
-  options: {
-    photo_required?: boolean;
-    is_mandatory?: boolean;
-    comment_required_on_fail?: boolean;
-    comment_required?: boolean;
-  } | null;
+  options: TaskOptions;
   created_at: string;
   updated_at: string;
 }
 
-// Represents a full maintenance template, including its nested tasks.
-// This corresponds to the `MaintenanceTemplate` Eloquent model.
+// Corresponde al modelo `MaintenanceTemplate`
 export interface MaintenanceTemplate {
   id: number;
   name: string;
   description: string | null;
   category: string | null;
+  sections: MaintenanceTemplateSection[];
+  tasks: MaintenanceTemplateTask[];
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
-  tasks: MaintenanceTemplateTask[]; // A template has an array of tasks
 }
 
 // Represents a scheduled maintenance event formatted for the frontend calendar.

@@ -62,6 +62,7 @@ class PerformMaintenanceController extends Controller
         // This is a more reliable way to ensure all data is available on the frontend.
         $scheduledMaintenance->load([
             'report.results.photos', // Load the report and its results
+            'template.sections.tasks',
             'template.tasks',
             'schedulable'
         ]);
@@ -128,7 +129,12 @@ class PerformMaintenanceController extends Controller
      */
     public function submitReport(Request $request, ScheduledMaintenance $scheduledMaintenance, TagManagerService $tagManager, DowntimeService $downtimeService)
     {
-        $templateTasks = $scheduledMaintenance->template->tasks->keyBy('label');
+        // FIX: Get ALL tasks (root tasks + section tasks)
+        $rootTasks = $scheduledMaintenance->template->tasks;
+        $sectionTasks = $scheduledMaintenance->template->sections->flatMap(fn($section) => $section->tasks);
+        $allTasks = $rootTasks->merge($sectionTasks);
+        $templateTasks = $allTasks->keyBy('label');
+
         $resultsData = $request->input('results', []);
 
         $validator = Validator::make($request->all(), [
@@ -149,23 +155,36 @@ class PerformMaintenanceController extends Controller
 
                 if (!$task) continue;
 
-                $isMandatory = $task->options['is_mandatory'] ?? false;
-                $photoRequired = $task->options['photo_required'] ?? false;
-
-                // 1. Check for a result on mandatory tasks
-                if ($isMandatory && is_null($resultData['result'])) {
-                    $validator->errors()->add("results.{$index}.result", "A result is required for this mandatory task.");
+                // Skip content blocks (they don't need validation)
+                if (in_array($task->task_type, ['header', 'paragraph', 'bullet_list'])) {
+                    continue;
                 }
 
-                // 2. Check for a photo on mandatory, photo-required tasks
-                if ($isMandatory && $photoRequired) {
-                    // FIX: Check for both newly uploaded files and existing saved photos.
+                $isMandatory = $task->options['is_mandatory'] ?? false;
+                $photoRequirement = $task->options['photo_requirement'] ?? 'disabled';
+                $commentRequirement = $task->options['comment_requirement'] ?? 'disabled';
+
+                // 1. Check if the task itself is mandatory and has a result
+                if ($isMandatory && (is_null($resultData['result']) || $resultData['result'] === '')) {
+                    $validator->errors()->add("results.{$index}.result", "This task is mandatory and requires a response.");
+                }
+
+                // 2. Check for mandatory photo
+                if ($photoRequirement === 'mandatory') {
                     $hasNewPhoto = $request->hasFile("results.{$index}.photos");
-                    $reportResult = $scheduledMaintenance->report->results()->where('task_label', $taskLabel)->first();
+                    $reportResult = $scheduledMaintenance->report?->results()->where('task_label', $taskLabel)->first();
                     $hasExistingPhotos = $reportResult && $reportResult->photos()->count() > 0;
 
                     if (!$hasNewPhoto && !$hasExistingPhotos) {
-                        $validator->errors()->add("results.{$index}.result", "A photo is required for this mandatory task.");
+                        $validator->errors()->add("results.{$index}.result", "A photo is required for this task.");
+                    }
+                }
+
+                // 3. Check for mandatory comment
+                if ($commentRequirement === 'mandatory') {
+                    $comment = $resultData['comment'] ?? '';
+                    if (empty(trim($comment))) {
+                        $validator->errors()->add("results.{$index}.comment", "A comment is required for this task.");
                     }
                 }
             }
@@ -173,7 +192,7 @@ class PerformMaintenanceController extends Controller
 
         // If validation fails, redirect back with the errors AND the user's input.
         if ($validator->fails()) {
-            return Redirect::back()->withErrors($validator)->withInput();
+            return Redirect::back()->withErrors($validator)->withInput()->with('error', 'There are validation errors, please check your input.');
         }
 
         // If validation passes, proceed with saving
@@ -182,9 +201,7 @@ class PerformMaintenanceController extends Controller
 
         $isOverdue = in_array($scheduledMaintenance->status, ['overdue', 'in_progress_overdue']);
 
-        $finalStatus = $isOverdue
-            ? 'completed_overdue'
-            : 'completed';
+        $finalStatus = $isOverdue ? 'completed_overdue' : 'completed';
 
         $report->update(['completed_at' => now()]);
         $scheduledMaintenance->update([
@@ -192,23 +209,16 @@ class PerformMaintenanceController extends Controller
             'is_critical' => false,
         ]);
 
-
-        // After successfully completing the maintenance, we now check if we can remove any tags.
         $machine = $scheduledMaintenance->schedulable_type === 'App\\Models\\Machine'
             ? $scheduledMaintenance->schedulable
             : $scheduledMaintenance->schedulable->machine;
 
         if ($machine) {
-
-            // Tell the resolver to re-evaluate the state now that this maintenance is no longer a potential owner.
             $downtimeService->resolveDowntime($machine);
-
-            // Clean up all informational tags using the refactored helper method.
             $this->cleanupInformationalTags($machine, $scheduledMaintenance, $tagManager);
         }
 
-
-        return Redirect::route('maintenance-calendar.index')->with('success', 'Maintenance report submitted successfullyy.');
+        return Redirect::route('maintenance-calendar.index')->with('success', 'Maintenance report submitted successfully.');
     }
 
     /**

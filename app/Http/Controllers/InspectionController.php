@@ -23,6 +23,8 @@ use Carbon\Carbon;
 use App\Services\TagManagerService;
 use App\Services\DowntimeService;
 use App\Models\Tag;
+use Illuminate\Database\Eloquent\Builder;
+use Spatie\Permission\Models\Role;
 
 class InspectionController extends Controller
 {
@@ -36,42 +38,52 @@ class InspectionController extends Controller
      */
     public function index(Request $request)
     {
-        //  Get all filters from the request ---
-        $filters = $request->only(['search', 'user', 'start_date', 'end_date']);
+        // Se validan todos los filtros, incluyendo el nuevo de 'machines'
+        $filters = $request->validate([
+            'machines' => 'nullable|array',
+            'machines.*' => 'integer|exists:machines,id',
+            'user' => 'nullable|integer|exists:users,id',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'include_deleted' => 'nullable|boolean',
+            'role' => 'nullable|string|exists:roles,name',
+        ]);
 
-        $query = InspectionReport::with('user:id,name', 'machine:id,name,image_url', 'items.status')
-            ->where('status', 'completed')
-            ->latest('completed_at');
+        $query = InspectionReport::query()
+            ->with([
+                'machine' => fn($q) => $request->boolean('include_deleted') ? $q->withTrashed() : $q,
+                'user:id,name',
+                'items.status'
+            ])
+            ->where('status', 'completed');
 
-        if (! $request->user()->can('inspections.administration')) {
-            $query->where('user_id', $request->user()->id);
+        // Lógica para no mostrar reportes de máquinas borradas (a menos que se pida)
+        if (!$request->boolean('include_deleted')) {
+            $query->whereHas('machine');
         }
 
-        // ---  Apply all filters to the query ---
-        $query->when($filters['search'] ?? null, function ($query, $search) {
-            $query->whereHas('machine', function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%');
-            });
-        })->when($filters['user'] ?? null, function ($query, $userId) {
-            $query->where('user_id', $userId);
-        })->when($filters['start_date'] ?? null, function ($query, $startDate) {
-            $query->whereDate('completed_at', '>=', $startDate);
-        })->when($filters['end_date'] ?? null, function ($query, $endDate) {
-            $query->whereDate('completed_at', '<=', $endDate);
+        // Se aplican los filtros a la consulta
+        $query->when($filters['machines'] ?? null, fn(Builder $q, array $machineIds) => $q->whereIn('machine_id', $machineIds));
+        $query->when($filters['user'] ?? null, fn(Builder $q, int $userId) => $q->where('user_id', $userId));
+        $query->when($filters['start_date'] ?? null, fn(Builder $q, string $date) => $q->whereDate('completed_at', '>=', $date));
+        $query->when($filters['end_date'] ?? null, fn(Builder $q, string $date) => $q->whereDate('completed_at', '<=', $date));
+        $query->when($filters['role'] ?? null, function (Builder $query, string $roleName) {
+            $query->whereHas('user.roles', fn(Builder $q) => $q->where('name', $roleName));
         });
 
-        $reports = $query->paginate(12)->through(function ($report) {
+        $reports = $query->latest('completed_at')->paginate(12)->withQueryString()->through(function ($report) {
+            // ... (la transformación de datos se mantiene igual)
             $severityCounts = $report->items->countBy('status.severity');
-
             return [
                 'id' => $report->id,
                 'status' => $report->status,
                 'start_date' => $report->created_at->format('M d, Y, h:i A'),
-                'completion_date' => $report->completed_at ? $report->completed_at->format('M d, Y, h:i A') : null,
-                'badge_text' => $report->completed_at ? $report->completed_at->diffForHumans($report->created_at, true) : 'In Progress',
+                'completion_date' => $report->completed_at?->format('M d, Y, h:i A'),
+                'badge_text' => $report->completed_at?->diffForHumans($report->created_at, true),
                 'user_name' => $report->user->name,
-                'machine_name' => $report->machine->name,
-                'machine_image_url' => $report->machine->image_url,
+                'machine_name' => $report->machine?->name,
+                'is_machine_deleted' => $report->machine?->trashed(),
+                'machine_image_url' => $report->machine?->image_url,
                 'stats' => [
                     'ok_count' => $severityCounts->get(0, 0),
                     'warning_count' => $severityCounts->get(1, 0),
@@ -80,12 +92,27 @@ class InspectionController extends Controller
             ];
         });
 
+        $usersQuery = User::query();
+        if ($request->user()->can('inspections.administration')) {
+            $usersQuery->when($filters['role'] ?? null, function (Builder $query, string $roleName) {
+                $query->whereHas('roles', fn(Builder $q) => $q->where('name', $roleName));
+            });
+        }
+        $users = $request->user()->can('inspections.administration') ? $usersQuery->select('id', 'name')->orderBy('name')->get() : [];
+
+        $machinesQuery = Machine::orderBy('name');
+        if ($request->boolean('include_deleted')) {
+            // Si el filtro está activo, incluimos las borradas.
+            $machinesQuery->withTrashed();
+        }
+
         return Inertia::render('Inspections/Index', [
             'reports' => $reports,
             'filters' => $filters,
-            // --- Pass the list of users for the filter dropdown ---
-            // Only send users if the current user has permission to filter by them.
-            'users' => $request->user()->can('inspections.administration') ? User::select('id', 'name')->get() : [],
+            'users' => $users,
+            'roles' => $request->user()->can('inspections.administration') ? Role::all(['id', 'name']) : [],
+            // Se pasa la lista de todas las máquinas para el nuevo filtro
+            'allMachines' => $machinesQuery->get(['id', 'name', 'deleted_at']),
         ]);
     }
 
@@ -99,7 +126,7 @@ class InspectionController extends Controller
         // Eager-load all the necessary data in one go for efficiency
         $inspectionReport->load([
             'user:id,name',
-            'machine:id,name',
+            'machine' => fn($query) => $query->withTrashed(),
             'items' => function ($query) {
                 $query->with([
                     'point:id,name,subsystem_id',
@@ -131,7 +158,7 @@ class InspectionController extends Controller
             ];
         })->values();
 
-        // ---Determine if a status change was triggered by this report ---
+        // --- Determine if a status change was triggered by this report ---
         $statusChangeInfo = null;
         $highestSeverity = -1;
         $statusThatTriggeredChange = null;
@@ -157,8 +184,10 @@ class InspectionController extends Controller
             'status' => $inspectionReport->status,
             'start_date' => $inspectionReport->created_at->format('M d, Y, h:i A'),
             'completion_date' => $inspectionReport->completed_at ? $inspectionReport->completed_at->format('M d, Y, h:i A') : null,
+            'duration' => $inspectionReport->completed_at?->diffForHumans($inspectionReport->created_at, true),
             'user_name' => $inspectionReport->user->name,
-            'machine_name' => $inspectionReport->machine->name,
+            'machine_name' => $inspectionReport->machine?->name,
+            'is_machine_deleted' => $inspectionReport->machine?->trashed(),
             'grouped_items' => $formattedSubsystems,
             'status_change_info' => $statusChangeInfo,
         ];

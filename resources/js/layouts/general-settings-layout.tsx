@@ -8,11 +8,7 @@ import { Bolt, LayoutTemplate, Mail, Megaphone, ReceiptText, TicketCheck } from 
 import { type PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
-  {
-    title: 'Machine Statuses',
-    href: route('settings.machine-status.index'),
-    icon: Bolt,
-  },
+
   {
     title: 'Inspection Statuses',
     href: route('settings.inspection-status.index'),

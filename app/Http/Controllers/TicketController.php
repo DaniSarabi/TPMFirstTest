@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Machine;
+use App\Models\TicketUpdate;
+use App\Models\User;
 
 class TicketController extends Controller
 {
@@ -19,58 +23,75 @@ class TicketController extends Controller
      */
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'view', 'statuses']);
-        $viewMode = $filters['view'] ?? 'grid';
+        $filters = $request->validate([
+            'view' => 'nullable|string|in:open,all',
+            'machines' => 'nullable|array',
+            'machines.*' => 'integer|exists:machines,id',
+            'statuses' => 'nullable|array',
+            'statuses.*' => 'integer|exists:ticket_statuses,id',
+            'priorities' => 'nullable|array',
+            'priorities.*' => 'integer|in:1,2',
+            'user' => 'nullable|integer|exists:users,id',
+            'categories' => 'nullable|array',
+            'categories.*' => 'string',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'include_deleted' => 'nullable|boolean',
 
-        $relations = [
-            'creator:id,name,avatar_url,avatar_color', // Load all necessary fields
-            'status:id,name,bg_color,text_color',
-        ];
+        ]);
 
-        if ($viewMode === 'grid') {
-            $relations[] = 'machine:id,name,image_url';
-            $relations[] = 'inspectionItem:id,image_url';
-        } else {
-            $relations[] = 'machine:id,name';
+        $view = $filters['view'] ?? 'open';
+        $includeDeleted = $request->boolean('include_deleted');
+
+        $ticketsQuery = Ticket::query()
+            ->with([
+                'creator:id,name,avatar_url,avatar_color',
+                'status:id,name,bg_color,text_color',
+                'machine' => fn($q) => $includeDeleted ? $q->withTrashed() : $q,
+                'inspectionItem:id,image_url'
+            ]);
+
+        if ($view === 'open') {
+            $excludedStatuses = TicketStatus::whereHas('behaviors', fn($q) => $q->whereIn('name', ['is_ticket_closing_status', 'is_ticket_discard_status']))->pluck('id');
+            $ticketsQuery->whereNotIn('ticket_status_id', $excludedStatuses);
         }
 
-        $excludedStatuses = TicketStatus::whereHas('behaviors', function ($q) {
-            $q->whereIn('name', [
-                'is_ticket_closing_status',
-                'is_ticket_discard_status',
-            ]);
-        })->pluck('id');
+        if (!$includeDeleted) {
+            $ticketsQuery->whereHas('machine');
+        }
 
-        $ticketsQuery = Ticket::with($relations)->latest();
-
-        $ticketsQuery->when($filters['statuses'] ?? null, function ($query, $statusFilter) {
-            // If user explicitly requests specific statuses, only show those
-            $query->whereIn('ticket_status_id', $statusFilter);
-        }, function ($query) use ($excludedStatuses) {
-            // Otherwise, exclude closing + discarded tickets by default
-            if ($excludedStatuses->isNotEmpty()) {
-                $query->whereNotIn('ticket_status_id', $excludedStatuses);
-            }
+        $ticketsQuery->when($filters['machines'] ?? null, fn(Builder $q, array $ids) => $q->whereIn('machine_id', $ids));
+        $ticketsQuery->when($filters['statuses'] ?? null, fn(Builder $q, array $ids) => $q->whereIn('ticket_status_id', $ids));
+        $ticketsQuery->when($filters['priorities'] ?? null, fn(Builder $q, array $priorities) => $q->whereIn('priority', $priorities));
+        $ticketsQuery->when($filters['user'] ?? null, fn(Builder $q, int $userId) => $q->where('created_by', $userId));
+        $ticketsQuery->when($filters['start_date'] ?? null, fn(Builder $q, string $date) => $q->whereDate('created_at', '>=', $date));
+        $ticketsQuery->when($filters['end_date'] ?? null, fn(Builder $q, string $date) => $q->whereDate('created_at', '<=', $date));
+        $ticketsQuery->when($filters['categories'] ?? null, function (Builder $q, array $categories) {
+            $q->whereHas('updates', fn(Builder $subQ) => $subQ->whereIn('category', $categories));
         });
 
-        $ticketsQuery->when($filters['search'] ?? null, function ($query, $search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
-                    ->orWhereHas('machine', function ($q2) use ($search) {
-                        $q2->where('name', 'like', '%' . $search . '%');
-                    });
-            });
-        });
+        $tickets = $ticketsQuery->latest()->paginate(12)->withQueryString();
 
-        $tickets = $ticketsQuery->paginate(12)->withQueryString();
+        // ACTION: La consulta de máquinas para el filtro ahora es dinámica.
+        $machinesQuery = Machine::orderBy('name');
+        if ($includeDeleted) {
+            $machinesQuery->withTrashed();
+        }
+
 
         return Inertia::render('Tickets/Index', [
             'tickets' => $tickets,
             'filters' => $filters,
-            'ticketStatuses' => TicketStatus::all(),
-
+            'filterOptions' => [
+                'allMachines' => $machinesQuery->get(['id', 'name', 'deleted_at']),
+                // ACTION: Se cargan los behaviors para que el frontend pueda filtrar los estatus.
+                'ticketStatuses' => TicketStatus::with('behaviors')->get(),
+                'ticketCreators' => User::whereHas('tickets')->select('id', 'name')->orderBy('name')->get(),
+                'resolutionCategories' => TicketUpdate::whereNotNull('category')->distinct()->pluck('category'),
+            ],
         ]);
     }
+
 
     /**
      * Display the specified resource.
@@ -79,7 +100,7 @@ class TicketController extends Controller
     {
         // Eager-load all the necessary relationships for the details page
         $ticket->load([
-            'machine.tags',
+            'machine' => fn($query) => $query->withTrashed(),
             'creator', // Load the full creator object
             'status.behaviors',
             'inspectionItem:id,image_url,inspection_report_id,inspection_point_id',
@@ -90,13 +111,16 @@ class TicketController extends Controller
                     'user', // Load the full user object for each update
                     'oldStatus:id,name,bg_color,text_color',
                     'newStatus:id,name,bg_color,text_color',
-                    
+
                     'loggable', // We now load the new polymorphic 'loggable' relationship.
                     'photos',   // The new relationship for solution photos
 
                 ])->latest();
             },
         ]);
+
+        $ticket->is_machine_deleted = $ticket->machine?->trashed();
+
 
         $solvedBy = null;
         // First, find the status that has the closing behavior.
@@ -117,7 +141,12 @@ class TicketController extends Controller
         $relatedTickets = collect();
         $limit = 5;
 
-        $relationsForMiniCard = ['creator', 'status', 'machine', 'inspectionItem'];
+        $relationsForMiniCard = [
+            'creator',
+            'status',
+            'machine' => fn($query) => $query->withTrashed(),
+            'inspectionItem'
+        ];
 
         if ($ticket->inspectionItem) {
             // 1. Find by same inspection point
@@ -135,7 +164,7 @@ class TicketController extends Controller
 
         // 2. Si aún no tenemos 5, buscar por la misma máquina
         $remainingLimit = $limit - $relatedTickets->count();
-        if ($remainingLimit > 0) {
+        if ($remainingLimit > 0 && $ticket->machine) {
             $machineTickets = Ticket::with($relationsForMiniCard) // Eager-load relations
                 ->where('machine_id', $ticket->machine_id)
                 ->where('id', '!=', $ticket->id)

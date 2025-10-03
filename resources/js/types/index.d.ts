@@ -84,6 +84,7 @@ export interface Paginated<T> {
 
 // Define the shape of the filters object
 export interface Filter {
+  view?: string;
   search?: string;
   statuses?: string[];
 }

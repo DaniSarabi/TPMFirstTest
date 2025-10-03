@@ -186,8 +186,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['show'])
             ->middleware('permission:maintenance-templates.view'); // Or a new 'edit' permission
 
-        Route::put('maintenance-templates/{maintenanceTemplate}/sync-tasks', [MaintenanceTemplateController::class, 'syncTasks'])
-            ->name('maintenance-templates.sync-tasks')
+        Route::put('maintenance-templates/{maintenanceTemplate}/sync-layout', [MaintenanceTemplateController::class, 'syncLayout'])
+            ->name('maintenance-templates.sync-layout')
             ->middleware('permission:maintenance-templates.edit'); // Or a new 'edit' permission
 
         Route::resource('escalation-policies', EscalationPolicyController::class)

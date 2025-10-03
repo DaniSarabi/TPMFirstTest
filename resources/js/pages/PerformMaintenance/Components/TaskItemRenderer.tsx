@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { MaintenancePhoto, MaintenanceTemplateTask } from '@/types/maintenance';
-import { Camera, X } from 'lucide-react';
+import { Camera, Upload, X } from 'lucide-react';
 import React from 'react';
 
 interface Props {
@@ -14,15 +14,28 @@ interface Props {
   data: any;
   setData: (key: string, value: any) => void;
   errors: any;
-  onPhotoClick: () => void;
+  onTakePhoto: () => void;
+  onUploadPhoto: () => void;
   onRemovePhoto: (taskIndex: number, photoIndex: number) => void;
   onRemoveExistingPhoto: (photoId: number) => void;
   existingPhotos: MaintenancePhoto[];
 }
 
-export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoClick, onRemovePhoto, onRemoveExistingPhoto, existingPhotos }: Props) {
-  const resultValue = data.results[index].result;
-  const newPhotos = data.results[index].photos as File[];
+export function TaskItemRenderer({
+  task,
+  index,
+  data,
+  setData,
+  errors,
+  onTakePhoto,
+  onUploadPhoto,
+  onRemovePhoto,
+  onRemoveExistingPhoto,
+  existingPhotos,
+}: Props) {
+  const resultForTask = data.results[index] || {};
+  const resultValue = resultForTask.result;
+  const newPhotos = (resultForTask.photos as File[]) || [];
 
   const handleResultChange = (value: any) => {
     const newResults = [...data.results];
@@ -36,7 +49,36 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
     setData('results', newResults);
   };
 
-  const renderInput = () => {
+  // ACTION: Se determina si la tarea es un bloque de contenido o una tarea interactiva.
+  const isContentBlock = ['header', 'paragraph', 'bullet_list'].includes(task.task_type);
+
+  // --- RENDERIZADO PARA BLOQUES DE CONTENIDO (SIN TARJETA) ---
+  if (isContentBlock) {
+    switch (task.task_type) {
+      case 'header':
+        return <h2 className="pt-6 pb-2 text-2xl font-bold text-primary">{task.label}</h2>;
+      case 'paragraph':
+        return <p className="pb-4 text-muted-foreground">{task.description}</p>;
+      case 'bullet_list':
+        return (
+          <div className="py-4">
+            <Label className="text-base font-semibold">{task.label}</Label>
+            {task.description && <p className="py-0 text-sm text-muted-foreground italic">{task.description}</p>}
+            <ul className="list-disc space-y-1 pt-2 pl-5 text-muted-foreground">
+              {task.options?.list_items?.map((item, i) => <li key={i}>{item}</li>)}
+            </ul>
+          </div>
+        );
+      default:
+        return null;
+    }
+  }
+
+  // --- RENDERIZADO PARA TAREAS INTERACTIVAS (CON TARJETA) ---
+  const showPhotoUploader = task.options?.photo_requirement && task.options.photo_requirement !== 'disabled';
+  const showCommentBox = task.options?.comment_requirement && task.options.comment_requirement !== 'disabled';
+
+  const renderInteractiveInput = () => {
     switch (task.task_type) {
       case 'checkbox':
         return (
@@ -50,18 +92,18 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
           <RadioGroup className="flex space-x-4" value={resultValue} onValueChange={handleResultChange}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pass" id={`task-${task.id}-pass`} />
-              <Label htmlFor={`task-${task.id}-pass`}>Pass</Label>
+              <Label>Pass</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="fail" id={`task-${task.id}-fail`} />
-              <Label htmlFor={`task-${task.id}-fail`}>Fail</Label>
+              <Label>Fail</Label>
             </div>
           </RadioGroup>
         );
       case 'numeric_input':
         return (
           <Input
-            className="ring ring-ring"
+            className="border-primary"
             type="number"
             placeholder="Enter value..."
             value={resultValue || ''}
@@ -71,7 +113,7 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
       case 'text_observation':
         return (
           <Textarea
-            className="ring ring-ring"
+            className="border-primary"
             placeholder="Enter observation..."
             value={resultValue || ''}
             onChange={(e) => handleResultChange(e.target.value)}
@@ -83,7 +125,7 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
   };
 
   return (
-    <div className="space-y-4 rounded-md border bg-card p-4 shadow-sm drop-shadow-lg">
+    <div className="space-y-4 rounded-md border-0 bg-card p-4 shadow-sm drop-shadow-sm">
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
@@ -94,24 +136,30 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
         </div>
       </div>
 
-      <div className="pl-2">{renderInput()}</div>
+      <div className="pl-2">{renderInteractiveInput()}</div>
 
-      {task.options?.comment_required && (
-        <div className="pl-2">
+      {showCommentBox && (
+        <div className="space-y-1 pl-2">
+          <Label>
+            Comment
+            {task.options.comment_requirement === 'mandatory' && <span className="text-sm text-destructive"> *</span>}
+          </Label>
           <Textarea
-            className="ring ring-ring"
-            placeholder="Add an optional comment..."
-            value={data.results[index].comment}
+            className="border-primary"
+            placeholder={task.options.comment_requirement === 'optional' ? 'Add an optional comment...' : 'A comment is required...'}
+            value={resultForTask.comment || ''}
             onChange={handleCommentChange}
           />
         </div>
       )}
 
-      {task.options?.photo_required && (
+      {showPhotoUploader && (
         <div className="space-y-2 pl-2">
-          <Label>Photos</Label>
+          <Label>
+            Photos
+            {task.options.photo_requirement === 'mandatory' && <span className="text-sm text-destructive"> *</span>}
+          </Label>
           <div className="flex flex-wrap gap-2">
-            {/* Display existing photos with a delete button */}
             {existingPhotos.map((photo) => (
               <div key={photo.id} className="relative h-24 w-24">
                 <img src={photo.photo_url} alt="Existing maintenance photo" className="h-full w-full rounded-md object-cover" />
@@ -126,7 +174,6 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
                 </Button>
               </div>
             ))}
-            {/* Display newly added photos */}
             {newPhotos.map((file, photoIndex) => (
               <div key={photoIndex} className="relative h-24 w-24">
                 <img src={URL.createObjectURL(file)} alt={`New photo ${photoIndex + 1}`} className="h-full w-full rounded-md object-cover" />
@@ -141,8 +188,12 @@ export function TaskItemRenderer({ task, index, data, setData, errors, onPhotoCl
                 </Button>
               </div>
             ))}
-            <Button type="button" variant="outline" className="h-24 w-24" onClick={onPhotoClick}>
+            <Button type="button" variant="outline" className="h-24 w-24" onClick={onTakePhoto}>
               <Camera className="h-6 w-6" />
+            </Button>
+             <Button type="button" variant="outline" className="h-24 w-24 flex-col gap-1" onClick={onUploadPhoto}>
+              <Upload className="h-6 w-6" />
+              <span>Upload</span>
             </Button>
           </div>
         </div>

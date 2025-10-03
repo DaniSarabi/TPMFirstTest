@@ -12,6 +12,7 @@ interface FilterOption {
   name: string;
   // Opcional: para mostrar colores en las opciones
   bg_color?: string;
+  deleted_at?: string | null;
 }
 
 interface MultiSelectFilterProps {
@@ -35,9 +36,9 @@ export function MultiSelectFilter({ title, options, selectedValues, onSelectedVa
                 {selectedValues.size}
               </Badge>
               <div className="hidden space-x-1 lg:flex">
-                {selectedValues.size > 3 ? (
+                {selectedValues.size > 2 ? (
                   <Badge variant="secondary" className="rounded-sm px-1 font-normal">
-                    + {selectedValues.size} selected
+                    {selectedValues.size} selected
                   </Badge>
                 ) : (
                   options
@@ -53,8 +54,8 @@ export function MultiSelectFilter({ title, options, selectedValues, onSelectedVa
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
-        <Command>
+      <PopoverContent variant="glass" className="bg- p-0" align="start">
+        <Command variant="glass">
           <CommandInput placeholder={title} />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -81,8 +82,14 @@ export function MultiSelectFilter({ title, options, selectedValues, onSelectedVa
                     >
                       <Check className={cn('h-4 w-4')} />
                     </div>
+
                     {option.bg_color && <div className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: option.bg_color }} />}
                     <span>{option.name}</span>
+                    {option.deleted_at && (
+                      <Badge variant="destructive" className=" px-1.5 text-xs font-semibold">
+                        Deleted
+                      </Badge>
+                    )}
                   </CommandItem>
                 );
               })}

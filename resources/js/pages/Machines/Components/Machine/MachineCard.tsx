@@ -27,7 +27,6 @@ const StatCard = ({ icon, label, value }: { icon: React.ElementType; label: stri
 );
 
 export function MachineCard({ machine }: MachineCardProps) {
- 
   const totalInspectionPoints =
     machine.subsystems?.reduce((acc, sub) => {
       return acc + (sub.inspection_points?.length ?? 0);
@@ -78,7 +77,7 @@ export function MachineCard({ machine }: MachineCardProps) {
                   <Wrench className="mr-2 h-5 w-5" />
                   {machine.subsystems?.length ?? 0}
                 </p>
-                <p className="flex items-center font-medium">
+              <p className="flex items-center font-medium">
                   <ListChecks className="mr-2 h-5 w-5" />
                   {totalInspectionPoints}
                 </p>

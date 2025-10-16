@@ -16,6 +16,7 @@ use App\Models\EscalationPolicy;
 use Illuminate\Support\Facades\DB;
 use App\Models\Subsystem;
 use App\Models\Machine;
+use App\Models\MaintenanceProgressSnapshot;
 
 class CheckMaintenanceStatus extends Command
 {
@@ -27,7 +28,7 @@ class CheckMaintenanceStatus extends Command
     /**
      * The console command description.
      */
-    protected $description = 'Checks for upcoming and overdue maintenance tasks, sends notifications, and applies tags.';
+    protected $description = 'Checks for upcoming and overdue maintenance tasks, sends notifications, applies tags, and logs daily progress.';
 
     /**
      * Inject the TagManagerService.
@@ -64,6 +65,8 @@ class CheckMaintenanceStatus extends Command
             $this->handleUpcomingTags($maintenance);
             $this->handleOverdueStatusAndTags($maintenance);
         }
+        $this->logMaintenanceProgressSnapshot();
+
 
         $this->info('Maintenance status check complete.');
         Log::info('TPM Scheduler: Finished maintenance status check.');
@@ -198,5 +201,77 @@ class CheckMaintenanceStatus extends Command
                 }
             }
         }
+    }
+
+    /**
+     * Calculates and logs the daily maintenance completion progress for the current month.
+     */
+    private function logMaintenanceProgressSnapshot()
+    {
+        $this->info('Logging daily maintenance progress snapshot...');
+        Log::info('TPM Scheduler: Starting daily maintenance progress snapshot calculation.');
+
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+
+        $maintenancesThisMonth = ScheduledMaintenance::with([
+            'report.results:id,maintenance_report_id,result,task_label',
+            'template.tasks',
+            'template.sections.tasks'
+        ])
+            ->whereBetween('scheduled_date', [$startOfMonth, $endOfMonth])
+            ->whereHasMorph('schedulable', [Machine::class]) // This is the key!
+            ->get();
+
+
+        if ($maintenancesThisMonth->isEmpty()) {
+            Log::info('TPM Scheduler: No scheduled maintenances for Machines found this month.');
+            // Still log a zero-progress snapshot if none exist
+            MaintenanceProgressSnapshot::updateOrCreate(['date' => today()], [
+                'completion_percentage' => 0,
+                'completed_tasks' => 0,
+                'total_tasks' => 0,
+            ]);
+            return;
+        }
+
+        $totalTasksInMonth = 0;
+        $completedTasksInMonth = 0;
+
+        foreach ($maintenancesThisMonth as $maintenance) {
+            if (!$maintenance->template) continue;
+
+            $rootTasks = $maintenance->template->tasks ?? collect();
+            $sectionTasks = $maintenance->template->sections->flatMap(fn($section) => $section->tasks) ?? collect();
+            $allTasks = $rootTasks->merge($sectionTasks);
+
+            $interactiveTasks = $allTasks->filter(
+                fn($task) => !in_array($task->task_type, ['header', 'paragraph', 'bullet_list'])
+            );
+
+            $totalTasksInMonth += $interactiveTasks->count();
+
+            if ($maintenance->report) {
+                $completedCount = $interactiveTasks->filter(function ($task) use ($maintenance) {
+                    $result = $maintenance->report->results->firstWhere('task_label', $task->label);
+                    return $result && $result->result !== null && $result->result !== '';
+                })->count();
+                $completedTasksInMonth += $completedCount;
+            }
+        }
+
+        $percentage = $totalTasksInMonth > 0 ? ($completedTasksInMonth / $totalTasksInMonth) * 100 : 0;
+
+        MaintenanceProgressSnapshot::updateOrCreate(
+            ['date' => today()],
+            [
+                'completion_percentage' => $percentage,
+                'completed_tasks' => $completedTasksInMonth,
+                'total_tasks' => $totalTasksInMonth,
+            ]
+        );
+
+        $this->info("Snapshot logged: {$completedTasksInMonth}/{$totalTasksInMonth} tasks completed ({$percentage}%).");
+        Log::info("TPM Scheduler: Snapshot logged. Progress: {$completedTasksInMonth}/{$totalTasksInMonth} ({$percentage}%).");
     }
 }

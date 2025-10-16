@@ -13,29 +13,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
-        // $this->call(PermissionSeeder::class);
-        // $this->call(UserSeeder::class);
-        // //$this->call(MachineStatusSeeder::class);
-        // $this->call(TagSeeder::class);
-        // $this->call(MachineSeeder::class);
-        // $this->call(SubsystemAndPointsSeeder::class);
-        // $this->call(BehaviorSeeder::class);
-        // $this->call(InspectionStatusSeeder::class);
-        // $this->call(TicketStatusSeeder::class);
-        // $this->call(EmailContactSeeder::class);
-        // $this->call(HuberMachineSeeder::class);
+        $this->call(PermissionSeeder::class);
+        $this->call(UserSeeder::class);
+        $this->call(MachineStatusSeeder::class);
+        $this->call(TagSeeder::class);
+        $this->call(MachineSeeder::class);
+        $this->call(SubsystemAndPointsSeeder::class);
+        $this->call(BehaviorSeeder::class);
+        $this->call(InspectionStatusSeeder::class);
+        $this->call(TicketStatusSeeder::class);
+        $this->call(EmailContactSeeder::class);
+        $this->call(HuberMachineSeeder::class);
         $this->call(HVManualWindingSeeder::class);
         $this->call(LVWindingMachineSeeder::class);
         $this->call(OvenMachineSeeder::class);
+        $this->call(HuberTemplateSeeder::class);
         //$this->call(NotificationSeeder::class);
         //$this->call(PolicySeeder::class);
-        //$this->call(MaintenanceTemplateSeeder::class);
-        //$this->call(PreventiveMaintenanceSeeder::class);
+
     }
 }

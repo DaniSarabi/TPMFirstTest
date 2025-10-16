@@ -45,7 +45,7 @@ function MachineCombobox({ machines }: { machines: Machine[] }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className="text-md h-12 w-full justify-between">
+        <Button variant="outline" role="combobox" aria-expanded={open} className="border-0 text-md h-12 w-full justify-between">
           {value ? machines.find((machine) => String(machine.id) === value)?.name : 'Select machine...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>

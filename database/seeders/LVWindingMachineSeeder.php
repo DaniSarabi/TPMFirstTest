@@ -21,7 +21,7 @@ class LVWindingMachineSeeder extends Seeder
 
         // Create the LV Winding Machine
         $lvWinding = Machine::updateOrCreate(
-            ['name' => 'LV Winding Machine'],
+            ['name' => 'LV Winding Machine II'],
             [
                 'description' => 'Automated equipment for the precise winding of copper or aluminum conductors to form the low-voltage (LV) side coils of transformers.',
                 'created_by' => $user->id,

@@ -86,7 +86,7 @@ export function MultiSelectFilter({ title, options, selectedValues, onSelectedVa
                     {option.bg_color && <div className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: option.bg_color }} />}
                     <span>{option.name}</span>
                     {option.deleted_at && (
-                      <Badge variant="destructive" className=" px-1.5 text-xs font-semibold">
+                      <Badge variant="destructive" className="px-1.5 text-xs font-semibold">
                         Deleted
                       </Badge>
                     )}

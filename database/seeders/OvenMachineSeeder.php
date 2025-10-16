@@ -21,7 +21,7 @@ class OvenMachineSeeder extends Seeder
 
         // Create the Oven machine
         $oven = Machine::updateOrCreate(
-            ['name' => 'Curing Oven'],
+            ['name' => 'Curing Oven II'],
             [
                 'description' => 'Industrial oven used for curing coils and other components, ensuring material integrity through controlled temperature cycles.',
                 'created_by' => $user->id,

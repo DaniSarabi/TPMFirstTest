@@ -78,7 +78,7 @@ export function ActionsCard({ ticket, statuses, purchasingContacts }: ActionsCar
         )}
 
         {isAwaitingPartsStatus && (
-          <Button className="w-full bg-green-600 transition-all duration-300 hover:-translate-y-1" onClick={() => setIsResumeWorkModalOpen(true)}>
+          <Button className="w-full flex-1 bg-green-600 transition-all duration-300 hover:-translate-y-1" onClick={() => setIsResumeWorkModalOpen(true)}>
             <Play className="mr-2 h-4 w-4" />
             Resume Work
           </Button>

@@ -38,7 +38,13 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-
+    Route::get('/dashboard/downtime-data', [DashboardController::class, 'getDowntimeData'])->name('dashboard.downtime.data');
+    Route::get('/dashboard/performance-trends', [DashboardController::class, 'getPerformanceTrends'])
+        ->name('dashboard.performance-trends');
+    Route::get('/dashboard/progress-tend', [DashboardController::class, 'getMonthlyProgressTrend'])
+        ->name('dashboard.progress-trend');
+    Route::get('/dashboard/this-week-glance', [DashboardController::class, 'getThisWeekGlance'])
+        ->name('dashboard.this-week-glance');
     // * ***************************** Assets Routes *****************************
 
 

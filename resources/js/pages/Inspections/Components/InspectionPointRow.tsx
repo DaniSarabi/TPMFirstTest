@@ -78,7 +78,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
     }
   };
   return (
-    <div className="mb-4 flex cursor-pointer flex-col rounded-md bg-muted/30 p-2 shadow-lg shadow-primary drop-shadow-lg transition-colors hover:bg-accent">
+    <div className="mb-4 flex cursor-pointer flex-col rounded-md bg-muted/30 p-2 shadow-lg shadow-primary drop-shadow-lg transition-colors hover:bg-muted/60">
       {/* Main Row: Point Name and Status Selector */}
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger className="" asChild>
@@ -108,7 +108,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
               <button
                 key={status.id}
                 onClick={() => handleSelectStatus(status.id)}
-                className="flex w-full items-center rounded-md p-2 text-left text-sm transition-colors hover:bg-accent"
+                className="flex w-full items-center rounded-md p-2 text-left text-sm transition-colors hover:cursor-pointer hover:bg-accent"
               >
                 <div className="mr-2 h-3 w-3 rounded-full" style={{ backgroundColor: status.bg_color }} />
                 <span>{status.name}</span>
@@ -131,7 +131,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
               onChange={handleCommentChange}
               placeholder="Describe the situation or issue..."
               required={isCommentRequired}
-              className="ring-1 hover:bg-accent hover:text-accent-foreground hover:ring-primary"
+              className="bg-background ring-1 hover:bg-background"
             />
             <InputError message={errors?.[`results.${point.id}.comment`]} />
           </div>
@@ -144,7 +144,13 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
                 <img src={imagePreview || result.original_image_url} alt="Previsualización" className="h-20 w-20 rounded-md object-cover" />
               )}
               <div className="flex flex-1 flex-col gap-2">
-                <Button type="button" variant="outline" className="w-full" onClick={onTakePhoto} disabled={isPing}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-0 hover:bg-muted hover:text-muted-foreground"
+                  onClick={onTakePhoto}
+                  disabled={isPing}
+                >
                   <Camera className="mr-2 h-4 w-4" />
                   {result.image || result.original_image_url ? 'Take another' : 'Take photo'}
                 </Button>

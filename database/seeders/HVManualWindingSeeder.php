@@ -21,7 +21,7 @@ class HVManualWindingSeeder extends Seeder
 
         // Crear la máquina HV-Manual Winding
         $hvWinding = Machine::updateOrCreate(
-            ['name' => 'HV-Manual Winding'],
+            ['name' => 'HV-Manual Winding II'],
             [
                 'description' => 'Automated equipment for the precise winding of conductors to form high-voltage (HV) coils for power transformers.',
                 'created_by' => $user->id,

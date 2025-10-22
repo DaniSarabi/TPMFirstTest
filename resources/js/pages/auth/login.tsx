@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import homeBg from '/public/home.png';
+
 //import AuthLayout from '@/layouts/auth-layout';
 
 // Define the shape of the form data
@@ -40,7 +42,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
   return (
     <div
       className="flex min-h-svh flex-col items-center justify-center bg-cover bg-center p-6 md:p-10"
-      style={{ backgroundImage: "url('/home.png')" }}
+      style={{ backgroundImage: `url(${homeBg})` }}
     >
       {' '}
       <Head title="Log in" />

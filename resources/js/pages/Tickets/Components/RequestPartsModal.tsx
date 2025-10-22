@@ -132,7 +132,7 @@ export function RequestPartsModal({ ticket, purchasingContacts, isOpen, onOpenCh
                 <p></p>
                 <p>Thank you,</p>
                 <p></p>
-                <p><strong>  ${ticket.creator.name}</strong></p>
+                
                 <p>JST Power Equipment</p>
             `;
 

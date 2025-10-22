@@ -15,9 +15,12 @@ use App\Events\TicketCommentAdded;
 use App\Events\TicketStatusChanged;
 use App\Events\MaintenanceReminderSent;
 use App\Models\Machine;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
-class SendInAppNotificationListener
+class SendInAppNotificationListener 
 {
+
     /**
      * Create the event listener.
      */
@@ -90,12 +93,14 @@ class SendInAppNotificationListener
     private function handleTicketCreated(TicketCreated $event): void
     {
         $ticket = $event->ticket;
+        $machine = $ticket->machine; // 1. Get the machine from the ticket
         $notificationType = 'ticket.created';
 
-        $message = "New ticket (#{$ticket->id}) created for {$ticket->machine->name}.";
+        $message = "New ticket (#{$ticket->id}) created for {$machine->name}.";
         $url = route('tickets.show', $ticket->id);
 
-        $this->notifySubscribedUsers($notificationType, $message, $url);
+        // 2. Pass the machine to the notifier
+        $this->notifySubscribedUsers($notificationType, $message, $url, $machine);
     }
     /**
      * Handle the TicketStatusChanged event.
@@ -172,18 +177,22 @@ class SendInAppNotificationListener
      */
     private function notifySubscribedUsers(string $notificationType, string $message, string $url, ?Machine $machine = null): void
     {
+        // This method's logic is already perfect and doesn't need to change.
         $usersToNotify = User::whereHas('notificationPreferences', function ($query) use ($notificationType, $machine) {
             $query->where('notification_type', $notificationType)
+                // This 'when' clause only runs if $machine is not null.
                 ->when($machine, function ($q) use ($machine) {
-                    // This 'when' clause adds the logic for machine-specific subscriptions.
-                    // It finds users who have EITHER a global preference OR a preference for this specific machine.
                     $q->where(function ($subQuery) use ($machine) {
-                        $subQuery->whereNull('preferable_id')
+                        $subQuery->whereNull('preferable_id') // Global subscribers
                             ->orWhere(function ($machineQuery) use ($machine) {
+                                // Machine-specific subscribers
                                 $machineQuery->where('preferable_type', 'App\\Models\\Machine')
                                     ->where('preferable_id', $machine->id);
                             });
                     });
+                }, function ($q) {
+                    // This runs if $machine is null (for global-only notifications)
+                    $q->whereNull('preferable_id');
                 });
         })->get();
 

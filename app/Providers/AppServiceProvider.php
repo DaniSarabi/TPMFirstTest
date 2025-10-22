@@ -14,7 +14,8 @@ use App\Listeners\SendInAppNotificationListener;
 use App\Models\TicketUpdate;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use App\Events\MaintenanceReminderSent; 
+use App\Events\MaintenanceReminderSent;
+use App\Listeners\SendNewTicketEmailNotification;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,10 +32,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
         // * Tickets events
         Event::listen(
             TicketCreated::class,
-            SendInAppNotificationListener::class
+            SendInAppNotificationListener::class,
+            //  SendNewTicketEmailNotification::class
         );
         Event::listen(
             TicketStatusChanged::class,

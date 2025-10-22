@@ -10,6 +10,7 @@ import { Camera, Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
 import { QrScannerModal } from './Components/QrScannerModal';
 import { Machine } from '@/types/machine';
+import homeBg from '/public/home.png';
 
 // Define the shape of the machine data passed from the controller
 
@@ -91,7 +92,7 @@ export default function Start({ machines }: StartPageProps) {
       <Head title="Start Inspection" />
       <div
         className="flex min-h-full items-center justify-center bg-cover bg-center p-4"
-        style={{ backgroundImage: "url('/home.png')" }}
+      style={{ backgroundImage: `url(${homeBg})` }}
       >
         <Card className="w-full max-w-4xl border-0 bg-background/60 shadow-lg backdrop-blur-sm">
           <CardHeader>

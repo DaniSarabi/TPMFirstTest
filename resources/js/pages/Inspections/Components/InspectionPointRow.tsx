@@ -137,7 +137,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
           </div>
           <div className="space-y-2">
             <Label>
-              Foto <span className={isPhotoRequired ? 'text-destructive' : 'text-muted-foreground'}>{isPhotoRequired ? '(Requerida)' : ''}</span>
+              Photo <span className={isPhotoRequired ? 'text-destructive' : 'text-muted-foreground'}>{isPhotoRequired ? '(Required)' : ''}</span>
             </Label>
             <div className="flex items-center gap-4">
               {(imagePreview || result.original_image_url) && (

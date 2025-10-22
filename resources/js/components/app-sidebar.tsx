@@ -4,43 +4,40 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Bolt, Calendar, Cog, FileClock, LayoutGrid, ReceiptText, Settings, Shield, Ticket, UserRound } from 'lucide-react';
+import { Bolt, Calendar, FileClock, LayoutGrid, ReceiptText, Settings, Shield, Ticket, UserRound } from 'lucide-react';
 import AppLogo from './app-logo';
+
+// --- FIX: All hrefs now use the route() helper for consistency ---
 
 const mainNavItems: NavItem[] = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
+    href: route('dashboard'),
     icon: LayoutGrid,
   },
   {
     title: 'Machines',
-    href: '/machines',
+    href: route('machines.index'),
     icon: Bolt,
   },
-  // {
-  //   title: 'Equipment',
-  //   href: '/assets',
-  //   icon: Cog,
-  // },
   {
     title: 'Start Inspections',
-    href: '/inspections/start',
+    href: route('inspections.start'),
     icon: ReceiptText,
   },
   {
     title: 'Inspections History',
-    href: '/inspections',
+    href: route('inspections.index'),
     icon: FileClock,
   },
   {
     title: 'Tickets',
-    href: '/tickets',
+    href: route('tickets.index'),
     icon: Ticket,
   },
   {
     title: 'Maintenances',
-    href: '/maintenance-calendar',
+    href: route('maintenance-calendar.index'),
     icon: Calendar,
   },
 ];
@@ -48,12 +45,12 @@ const mainNavItems: NavItem[] = [
 const footerNavItems: NavItem[] = [
   {
     title: 'Users',
-    href: '/users',
+    href: route('users.index'),
     icon: UserRound,
   },
   {
     title: 'Roles',
-    href: '/roles',
+    href: route('roles.index'),
     icon: Shield,
   },
   {
@@ -70,7 +67,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard" prefetch>
+              <Link href={route('dashboard')} prefetch>
                 <AppLogo />
               </Link>
             </SidebarMenuButton>

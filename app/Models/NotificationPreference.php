@@ -26,7 +26,7 @@ class NotificationPreference extends Model
     protected $fillable = [
         'user_id',
         'notification_type',
-          'preferable_id',
+        'preferable_id',
         'preferable_type',
     ];
 
@@ -44,7 +44,7 @@ class NotificationPreference extends Model
     {
         return $this->belongsTo(User::class);
     }
-     /**
+    /**
      * Get the parent preferable model (e.g., a Machine).
      * This is the polymorphic relationship definition.
      */

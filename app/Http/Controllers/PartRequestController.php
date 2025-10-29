@@ -34,6 +34,12 @@ class PartRequestController extends Controller
             $ccEmails = array_map('trim', explode(',', $validated['cc']));
         }
 
+        $senderEmail = $request->user()->email;
+        
+        if (!in_array($senderEmail, $validated['to']) && !in_array($senderEmail, $ccEmails)) {
+            $ccEmails[] = $senderEmail;
+        }
+
         $mail = Mail::to($validated['to']);
         if (!empty($ccEmails)) {
             $mail->cc($ccEmails);
@@ -63,7 +69,7 @@ class PartRequestController extends Controller
             "Sent a part request to: " . implode(', ', $validated['to']),
             $request->user()
         );
-        
+
         // --- The old, redundant ticket->updates()->create() call has been removed. ---
 
         return back()->with('success', 'Part request sent successfully.');

@@ -52,6 +52,7 @@ export interface Ticket {
   id: number;
   title: string;
   description: string | null;
+  image_url: string | null;
   priority: number;
   resolution_category: string;
   created_at: string;

@@ -183,7 +183,6 @@ class TicketActionService
 
         // Check 1: Should the 'open-ticket' tag be removed?
         $hasAnyOtherOpenTickets = Ticket::where('machine_id', $machine->id)
-            ->where('id', '!=', $ticket->id)
             ->whereDoesntHave('status.behaviors', function ($q) use ($finalStatusBehaviors) {
                 $q->whereIn('name', $finalStatusBehaviors);
             })

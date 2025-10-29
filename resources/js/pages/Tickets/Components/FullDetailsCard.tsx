@@ -12,7 +12,7 @@ interface FullDetailsCardProps {
 
 export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
   const [isImageViewerOpen, setIsImageViewerOpen] = React.useState(false);
-  const imageUrl = ticket.inspection_item?.image_url;
+  const imageUrl = ticket.image_url || ticket.inspection_item?.image_url || ticket.machine?.image_url || 'https://placehold.co/600x400?text=No+Image';
   const inspectionReportId = ticket.inspection_item?.inspection_report_id;
   const machineName = ticket.machine?.name || 'Deleted Machine';
 
@@ -48,7 +48,7 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
             <div className="flex items-center gap-2">
               <Wrench className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold">Machine:</span>
-              <h2 className="truncate text-xl leading-snug font-extrabold " title={machineName}>
+              <h2 className="truncate text-xl leading-snug font-extrabold" title={machineName}>
                 {machineName}
               </h2>
             </div>

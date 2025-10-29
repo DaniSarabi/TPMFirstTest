@@ -22,6 +22,7 @@ interface InspectionPointRowProps {
   statuses: InspectionStatus[];
   result: InspectionResult;
   errors: any;
+  isComplete: boolean;
   onResultChange: (newResult: InspectionResult) => void;
   onStatusChange: (pointId: number, statusId: number) => void; // Add this prop
   onTakePhoto: () => void; // Add a handler for opening the camera
@@ -42,7 +43,7 @@ const StatusIcon = ({ status }: { status: InspectionStatus | undefined }) => {
   }
 };
 
-export function InspectionPointRow({ point, statuses, result, errors, onResultChange, onStatusChange, onTakePhoto }: InspectionPointRowProps) {
+export function InspectionPointRow({ point, statuses, result, errors, onResultChange, onStatusChange, onTakePhoto, isComplete }: InspectionPointRowProps) {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const selectedStatus = statuses.find((s) => s.id === result.status_id);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false); // Estado para controlar el popover
@@ -78,7 +79,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
     }
   };
   return (
-    <div className="mb-4 flex cursor-pointer flex-col rounded-md bg-muted/30 p-2 shadow-lg shadow-primary drop-shadow-lg transition-colors hover:bg-muted/60">
+    <div className="mb-4 flex cursor-pointer flex-col rounded-md bg-muted/30 p-2 drop-shadow-md transition-colors hover:bg-muted/60">
       {/* Main Row: Point Name and Status Selector */}
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger className="" asChild>

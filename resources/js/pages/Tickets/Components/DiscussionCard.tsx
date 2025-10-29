@@ -69,6 +69,15 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
     });
   };
 
+  const formatTimestamp = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <Card className="transition-500 overflow-y-auto shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-1">
       <CardHeader>
@@ -86,12 +95,15 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
             discussionItems.map((item) => (
               <div key={item.id} className="flex items-start gap-3 pt-1.5 pl-1.5">
                 <UserAvatar user={item.user} className="h-8 w-8" />
-
                 <div className="flex-1 rounded-md bg-muted p-3 text-sm shadow backdrop-blur-lg">
-                  <p className="font-semibold text-primary">{item.user.name}</p>
-                  <p className="whitespace-pre-wrap">{item.comment}</p>
-                  {item.is_initial && <p className="mt-1 text-xs text-muted-foreground">Initial problem description</p>}
-                </div>
+                  {/* --- ¡AQUÍ ESTÁ EL CAMBIO! --- */}{' '}
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-primary">{item.user.name}</p>
+                    <time className="text-xs text-muted-foreground">{formatTimestamp(item.created_at)}</time>{' '}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap">{item.comment}</p>{' '}
+                  {item.is_initial && <p className="mt-1 text-xs text-muted-foreground">Initial problem description</p>}{' '}
+                </div>{' '}
               </div>
             ))
           ) : (

@@ -5,11 +5,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { Camera, Check, ChevronsUpDown } from 'lucide-react';
+import { Machine } from '@/types/machine';
+import { Head, Link, router } from '@inertiajs/react';
+import { AlertTriangle, Camera, Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
 import { QrScannerModal } from './Components/QrScannerModal';
-import { Machine } from '@/types/machine';
 import homeBg from '/public/home.png';
 
 // Define the shape of the machine data passed from the controller
@@ -46,7 +46,7 @@ function MachineCombobox({ machines }: { machines: Machine[] }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className="border-0 text-md h-12 w-full justify-between">
+        <Button variant="outline" role="combobox" aria-expanded={open} className="text-md h-12 w-full justify-between border-0">
           {value ? machines.find((machine) => String(machine.id) === value)?.name : 'Select machine...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -75,12 +75,12 @@ export default function Start({ machines }: StartPageProps) {
   const [isScannerOpen, setIsScannerOpen] = React.useState(false);
 
   React.useEffect(() => {
-        document.body.classList.add('overflow-hidden');
-        return () => {
-            document.body.classList.remove('overflow-hidden');
-        };
-    }, []);
-    
+    document.body.classList.add('overflow-hidden');
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, []);
+
   const handleScan = (url: string) => {
     if (url) {
       router.visit(url);
@@ -90,10 +90,7 @@ export default function Start({ machines }: StartPageProps) {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Start Inspection" />
-      <div
-        className="flex min-h-full items-center justify-center bg-cover bg-center p-4"
-      style={{ backgroundImage: `url(${homeBg})` }}
-      >
+      <div className="flex min-h-full items-center justify-center bg-cover bg-center p-4" style={{ backgroundImage: `url(${homeBg})` }}>
         <Card className="w-full max-w-4xl border-0 bg-background/60 shadow-lg backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-center text-3xl font-bold">Start a New Inspection</CardTitle>
@@ -118,6 +115,18 @@ export default function Start({ machines }: StartPageProps) {
                 <div className="w-full">
                   <MachineCombobox machines={machines} />
                 </div>
+              </div>
+
+              <div className="flex flex-col col-span-2 items-center justify-center space-y-3 rounded-lg bg-red-900/10 p-4  transition-all hover:bg-red-900/20">
+                <h3 className="text-xl font-semibold">Report a Fault</h3>
+                <p className="text-center text-sm text-muted-foreground">Machine broken? Report a new fault ticket without starting an inspection.</p>
+                {/* Usamos 'asChild' para que el Link de Inertia tenga el estilo de un Button */}
+                <Button asChild size="lg" className="h-10 min-w-md text-lg" variant="destructive">
+                  <Link href={route('tickets.create.standalone')}>
+                    <AlertTriangle className="mr-4 h-8 w-8" />
+                    Create Ticket
+                  </Link>
+                </Button>
               </div>
             </div>
           </CardContent>

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 
 class Ticket extends Model
 {
@@ -23,11 +25,26 @@ class Ticket extends Model
         'machine_id',
         'title',
         'description',
+        'image_url', // <-- ¡Importante! El campo que añadimos
         'created_by',
         'ticket_status_id',
         'priority',
     ];
+    /**
+     * Get the full URL for the ticket image.
+     */
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value, $attributes) {
+                // 1. Busca la imagen del ticket standalone
+                $path = $attributes['image_url'] ?? null;
 
+                // 2. Devuelve la URL completa del storage solo si existe
+                return $path ? Storage::url($path) : null;
+            }
+        );
+    }
     /**
      * The attributes that should be cast.
      *

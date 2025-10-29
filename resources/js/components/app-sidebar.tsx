@@ -7,7 +7,6 @@ import { Link } from '@inertiajs/react';
 import { Bolt, Calendar, FileClock, LayoutGrid, ReceiptText, Settings, Shield, Ticket, UserRound } from 'lucide-react';
 import AppLogo from './app-logo';
 
-// --- FIX: All hrefs now use the route() helper for consistency ---
 
 const mainNavItems: NavItem[] = [
   {

@@ -88,37 +88,59 @@ export default function Perform({ report, inspectionStatuses, uptime, stats }: P
   };
 
   const handleSubmitInspection = () => {
-    // Client-side validation before submitting
-    for (const point of machine.subsystems.flatMap((s) => s.inspection_points)) {
-      const result = inspectionResults[point.id];
-      if (!result?.status_id) {
-        alert(`Please select a status for all inspection points. Missing status for: ${point.name}`);
-        return;
-      }
-      if (!result.pinged_ticket_id && !result.image) {
-        alert(`A photo is required for all inspection points. Missing photo for: ${point.name}`);
-        return;
-      }
-      const selectedStatus = inspectionStatuses.find((s) => s.id === result.status_id);
-      if (selectedStatus && selectedStatus.severity > 0 && !result.comment) {
-        alert(`A comment is required for points with issues. Missing comment for: ${point.name}`);
-        return;
-      }
-    }
-
+    // Ya no necesitamos la validación de 'alert()' aquí,
+    // porque el botón estará deshabilitado si algo falta.
     setIsSubmitting(true);
-    router.post(
-      route('inspections.update', report.id),
-      {
-        _method: 'put',
-        results: inspectionResults,
-      },
-      {
-        onFinish: () => setIsSubmitting(false),
-      },
-    );
+    router.post(route('inspections.update', report.id), { _method: 'put', results: inspectionResults }, { onFinish: () => setIsSubmitting(false) });
   };
 
+  const { completedPoints, totalPoints, progressPercentage, isSubmitDisabled, pointsStatus } = React.useMemo(() => {
+    const isPointComplete = (point: InspectionPoint, result: InspectionResult | undefined): boolean => {
+      if (!result?.status_id) return false; // 1. ¿Tiene estatus?
+
+      const selectedStatus = inspectionStatuses.find((s) => s.id === result.status_id);
+      if (!selectedStatus) return false;
+
+      // Si el ticket fue "pingeado", no requiere ni foto ni comentario
+      if (result.pinged_ticket_id) return true;
+
+      // Lógica de Foto (siempre requerida si no es ping)
+      if (!result.image) return false; // 2. ¿Tiene foto?
+
+      // Lógica de Comentario (solo si es grave)
+      if (selectedStatus.severity > 0 && (!result.comment || result.comment.trim() === '')) {
+        return false; // 3. ¿Es grave Y no tiene comentario?
+      }
+
+      return true; // ¡Si pasó todo, está completa!
+    };
+
+    const allPoints = machine.subsystems.flatMap((s) => s.inspection_points);
+    let completedCount = 0;
+
+    // Un mapa para saber el estado de cada punto
+    const pointsStatus = new Map<number, boolean>();
+
+    allPoints.forEach((point) => {
+      const result = inspectionResults[point.id];
+      const isComplete = isPointComplete(point, result);
+      pointsStatus.set(point.id, isComplete);
+      if (isComplete) {
+        completedCount++;
+      }
+    });
+
+    const total = allPoints.length;
+    const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+    return {
+      completedPoints: completedCount,
+      totalPoints: total,
+      progressPercentage: percentage,
+      isSubmitDisabled: completedCount !== total, // Deshabilitado si no está al 100%
+      pointsStatus: pointsStatus, // El mapa de (point.id -> true/false)
+    };
+  }, [machine.subsystems, inspectionResults, inspectionStatuses]);
   return (
     <AppLayout breadcrumbs={[]}>
       <Head title={`Inspecting: ${machine.name}`} />
@@ -131,6 +153,10 @@ export default function Perform({ report, inspectionStatuses, uptime, stats }: P
           errors={errors}
           inspectionStatuses={inspectionStatuses}
           inspectionResults={inspectionResults}
+          pointsStatus={pointsStatus}
+          completedPoints={completedPoints}
+          totalPoints={totalPoints}
+          progressPercentage={progressPercentage}
           onResultChange={handleResultChange}
           onStatusChange={handleStatusChange}
           onTakePhoto={handleTakePhoto}
@@ -141,11 +167,12 @@ export default function Perform({ report, inspectionStatuses, uptime, stats }: P
             <CircleX />
             Cancel
           </Button>
-          <Button onClick={handleSubmitInspection} disabled={isSubmitting}>
+          <Button onClick={handleSubmitInspection} disabled={isSubmitDisabled || isSubmitting}>
             <Send />
             {isSubmitting ? 'Submitting...' : 'Submit Inspection'}
           </Button>
         </div>
+        {isSubmitDisabled && <p className="text-right text-sm text-red-600">* Please complete all required fields before submitting.</p>}
       </div>
 
       <ExistingTicketsModal

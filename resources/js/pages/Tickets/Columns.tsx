@@ -47,6 +47,7 @@ export interface Ticket {
   id: number;
   title: string;
   description: string | null;
+  image_url: string | null;
   priority: number;
   created_at: string;
   creator: GlobalUserType;

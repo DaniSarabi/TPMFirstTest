@@ -15,6 +15,15 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Models\Machine;
 use App\Models\TicketUpdate;
 use App\Models\User;
+use Inertia\Response;
+use Illuminate\Http\RedirectResponse;
+use App\Events\TicketCreated;
+use App\Services\TagManagerService;
+use App\Services\DowntimeService;
+use App\Models\InspectionStatus; // 1. Importar InspectionStatus
+use App\Models\Tag; // 2. Importar Tag
+use Illuminate\Support\Facades\Log;
+
 
 class TicketController extends Controller
 {
@@ -49,7 +58,9 @@ class TicketController extends Controller
                 'status:id,name,bg_color,text_color',
                 'machine' => fn($q) => $includeDeleted ? $q->withTrashed() : $q,
                 'inspectionItem:id,image_url'
-            ]);
+            ])->withCount(['updates as pings_count' => function (Builder $query) {
+                $query->where('comment', 'like', 'Ping:%');
+            }]);;
 
         if ($view === 'open') {
             $excludedStatuses = TicketStatus::whereHas('behaviors', fn($q) => $q->whereIn('name', ['is_ticket_closing_status', 'is_ticket_discard_status']))->pluck('id');
@@ -98,6 +109,10 @@ class TicketController extends Controller
      */
     public function show(Ticket $ticket)
     {
+        Log::info('Ticket image_url BEFORE load:', ['image_url' => $ticket->image_url]);
+
+        $ticket->refresh();
+
         // Eager-load all the necessary relationships for the details page
         $ticket->load([
             'machine' => fn($query) => $query->withTrashed(),
@@ -118,6 +133,8 @@ class TicketController extends Controller
                 ])->latest();
             },
         ]);
+
+        Log::info('Ticket image_url AFTER load:', ['image_url' => $ticket->image_url]);
 
         $ticket->is_machine_deleted = $ticket->machine?->trashed();
 
@@ -182,6 +199,7 @@ class TicketController extends Controller
             $query->where('name', 'is_ticket_closing_status');
         })->get();
 
+
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
             'timeOpen' => $timeOpen,
@@ -217,5 +235,91 @@ class TicketController extends Controller
 
         // Return the PDF as a download
         return $pdf->download('ticket-report-' . $ticket->id . '.pdf');
+    }
+
+    /**
+     * Muestra la página del formulario para crear un ticket independiente.
+     * (Paso 1 del Plan)
+     */
+    public function createStandalone(): Response
+    {
+        return Inertia::render('Tickets/CreateStandalone', [
+            'machines' => Machine::orderBy('name')->get(['id', 'name'])
+        ]);
+    }
+
+    /**
+     * Guarda el nuevo ticket independiente en la base de datos.
+     * (Paso 2 del Plan)
+     */
+    public function storeStandalone(Request $request, TagManagerService $tagManager, DowntimeService $downtimeService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'machine_id' => 'required|exists:machines,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'required|integer|in:1,2',
+            'image' => 'required|image|max:2048',
+        ]);
+
+        // 5. Envolver toda la lógica en una transacción
+        $ticket = DB::transaction(function () use ($request, $validated, $tagManager, $downtimeService) {
+
+            $openStatus = TicketStatus::whereHas('behaviors', function ($query) {
+                $query->where('name', 'is_opening_status');
+            })->firstOrFail();
+
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('ticket_images', 'public');
+            }
+
+            $ticket = Ticket::create([
+                'machine_id' => $validated['machine_id'],
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'priority' => $validated['priority'],
+                'image_url' => $imagePath,
+                'created_by' => Auth::id(),
+                'ticket_status_id' => $openStatus->id,
+                'inspection_report_item_id' => null,
+            ]);
+
+            $ticket->updates()->create([
+                'user_id' => Auth::id(),
+                'comment' => 'Ticket created (Standalone Report).', // Mensaje clave
+                'new_status_id' => $openStatus->id,
+            ]);
+
+            event(new TicketCreated($ticket));
+
+            // --- 6. ¡AQUÍ ESTÁ LA LÓGICA QUE FALTABA! ---
+
+            // 6a. Cargar la máquina y encontrar el "status" equivalente
+            $machine = Machine::find($validated['machine_id']);
+            $status = InspectionStatus::with('behaviors')
+                ->where('severity', $ticket->priority)
+                ->first();
+
+            // 6b. Aplicar tags (copiado del InspectionController)
+            if ($status) {
+                foreach ($status->behaviors as $behavior) {
+                    if ($behavior->name === 'applies_machine_tag') {
+                        $tagId = $behavior->pivot->tag_id;
+                        $tag = Tag::find($tagId);
+                        if ($tag) {
+                            $tagManager->applyTag($machine, $tag->slug, $ticket);
+                        }
+                    }
+                }
+            }
+
+            // 6c. Resolver el downtime (copiado del InspectionController)
+            $downtimeService->resolveDowntime($machine);
+
+            return $ticket; // Devolvemos el ticket de la transacción
+        });
+
+        return redirect()->route('inspections.start')->with('success', 'Ticket created successfully!');
     }
 }

@@ -57,7 +57,8 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
       >
         <Heading3 className="h-4 w-4" />
       </Toggle>
-<Separator orientation="vertical" className="h-full rounded-2xl border-3 border-secondary" />      <Toggle
+      <Separator orientation="vertical" className="h-full rounded-2xl border-3 border-secondary" />{' '}
+      <Toggle
         className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary"
         size="sm"
         pressed={editor.isActive('bold')}
@@ -201,9 +202,10 @@ export function RequestPartsModal({ ticket, purchasingContacts, isOpen, onOpenCh
               <span className="text-sm text-muted-foreground">Suggestions:</span>
               {purchasingContacts.map((contact) => (
                 <button key={contact.id} type="button" onClick={() => addRecipient(contact.email)}>
-                  <Badge className="bg-secondary text-secondary-foreground hover:bg-primary hover:text-accent-primary">
+                  <Badge className="hover:text-accent-primary bg-secondary text-secondary-foreground hover:bg-primary">
                     <PlusCircle className="h-4 w-4 stroke-3" />
-                    {contact.name}</Badge>
+                    {contact.name}
+                  </Badge>
                 </button>
               ))}
             </div>

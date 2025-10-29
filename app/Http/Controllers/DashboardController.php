@@ -112,62 +112,62 @@ class DashboardController extends Controller
     {
         $trends = [];
 
+        // --- 1. Pre-calcular todos los tickets cerrados y su duración ---
+        // Hacemos esto una sola vez para no repetirlo 30 veces en el bucle.
         $closedTicketsWithDurations = $tickets->map(function ($ticket) {
-            $finalUpdate = $ticket->updates
+            // Encuentra la última actualización que sea un estado de cierre
+            $closingUpdate = $ticket->updates
+                ->filter(fn($update) => $update->newStatus && $update->newStatus->behaviors->contains('name', 'is_ticket_closing_status'))
                 ->sortByDesc('created_at')
-                ->first(function ($update) {
-                    if (!$update->newStatus) return false;
+                ->first();
 
-                    $isClosing = $update->newStatus->behaviors->contains('name', 'is_ticket_closing_status');
-                    $isDiscard = $update->newStatus->behaviors->contains('name', 'is_ticket_discard_status');
+            if (!$closingUpdate) return null; // El ticket no está cerrado
 
-                    return $isClosing && !$isDiscard;
-                });
-
-            if (!$finalUpdate) return null;
+            $createdAt = new Carbon($ticket->created_at);
+            $completedAt = new Carbon($closingUpdate->created_at);
 
             return [
-                'closed_at' => new Carbon($finalUpdate->created_at),
-                'duration' => (new Carbon($ticket->created_at))->diffInMinutes(new Carbon($finalUpdate->created_at)),
+                'closed_at' => $completedAt,
+                'duration'  => $createdAt->diffInMinutes($completedAt), // Duración total en minutos
             ];
-        })->filter();
+        })->filter(); // Quita los nulos (tickets aún abiertos)
 
+
+        // --- 2. Iterar por cada día en el rango de 30 días ---
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i)->startOfDay();
             $dateEnd = now()->subDays($i)->endOfDay();
 
+            // --- CÁLCULO DE UPTIME (Sin cambios) ---
             $totalMinutesInDay = 1440 * $machines->count();
             $downtimeMinutes = $this->calculateDowntimeMinutes($downtimeLogs, $date, $dateEnd);
             $uptimePercentage = $totalMinutesInDay > 0
                 ? (($totalMinutesInDay - $downtimeMinutes) / $totalMinutesInDay) * 100
                 : 100;
 
+            // --- CÁLCULO DE MTBF (Sin cambios, usa fallas creadas) ---
             $failuresToday = $tickets->filter(fn($ticket) => (new Carbon($ticket->created_at))->between($date, $dateEnd));
             $failureCount = $failuresToday->count();
             $operationalMinutes = $totalMinutesInDay - $downtimeMinutes;
+            $mtbf = $failureCount > 0 ? ($operationalMinutes / $failureCount) / 60 : 24; // en horas
 
-            $mtbfMinutes = $failureCount > 0
-                ? $operationalMinutes / $failureCount
-                : $operationalMinutes;
+            // --- NUEVO CÁLCULO DE MTTR (Media Móvil de 7 días) ---
+            $rollingStartDate = $date->copy()->subDays(6); // Ventana de 7 días
 
-            $mtbf = $this->formatTimeValue($mtbfMinutes);
-
-            $rollingStartDate = $date->copy()->subDays(6);
             $ticketsInWindow = $closedTicketsWithDurations->filter(
                 fn($t) => $t['closed_at']->between($rollingStartDate, $dateEnd)
             );
 
             $totalRepairMinutes = $ticketsInWindow->sum('duration');
             $closedCount = $ticketsInWindow->count();
-            $mttrMinutes = $closedCount > 0 ? $totalRepairMinutes / $closedCount : 0;
-
-            $mttr = $this->formatTimeValue($mttrMinutes);
+            // Evita la división por cero y convierte minutos a horas
+            $mttr = $closedCount > 0 ? ($totalRepairMinutes / $closedCount) / 60 : 0;
 
             $trends[] = [
                 'date' => $date->format('Y-m-d'),
                 'uptime' => round($uptimePercentage, 2),
-                'mtbf' => $mtbf,
-                'mttr' => $mttr,
+                'mtbf' => round($mtbf, 2),
+                'mttr' => round($mttr, 2),
             ];
         }
 

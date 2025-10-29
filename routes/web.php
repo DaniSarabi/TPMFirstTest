@@ -111,16 +111,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // * ***************************** Tickets module Routes *****************************
 
 
-    Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
-
+    
     Route::patch('/tickets/{ticket}/start-work', [TicketActionsController::class, 'startWork'])->name('tickets.start-work')->middleware('permission:tickets.perform');
     Route::patch('/tickets/{ticket}/resume-work', [TicketActionsController::class, 'resumeWork'])->name('tickets.resume-work')->middleware('permission:tickets.perform');
     Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close')->middleware('permission:tickets.close');
     Route::patch('/tickets/{ticket}/escalate', [TicketActionsController::class, 'escalate'])->name('tickets.escalate')->middleware('permission:tickets.escalate');
     Route::patch('/tickets/{ticket}/downgrade', [TicketActionsController::class, 'downgrade'])->name('tickets.downgrade')->middleware('permission:tickets.discard');
     Route::patch('/tickets/{ticket}/discard', [TicketActionsController::class, 'discard'])->name('tickets.discard')->middleware('permission:tickets.discard');
-
-
+    
+    Route::get('/tickets/create-standalone', [TicketController::class, 'createStandalone'])
+    ->name('tickets.create.standalone')
+    ->middleware('permission:inspections.perform'); // Reutilizamos el permiso
+    
+    Route::post('/tickets/standalone', [TicketController::class, 'storeStandalone'])
+    ->name('tickets.store.standalone')
+    ->middleware('permission:inspections.perform');
+    
+    Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
     // This route will handle downloading the ticket PDF
     Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf')->middleware('permission:tickets.view');
 

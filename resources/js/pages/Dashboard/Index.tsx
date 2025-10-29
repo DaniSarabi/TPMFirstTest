@@ -30,7 +30,7 @@ export default function Dashboard({ machines, scheduledMaintenances, todayDownti
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Dashboard" />
-      <div className="bg-muted rounded-b-2xl flex h-full flex-1 flex-col gap-4 p-4">
+      <div className=" rounded-b-2xl flex h-full flex-1 flex-col gap-4 p-4">
         <Tabs defaultValue="live_status" className="w-full">
           {/* Las "píldoras" para seleccionar la vista */}
           {/* <TabsList className="grid grid-cols-2">

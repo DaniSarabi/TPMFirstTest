@@ -8,6 +8,7 @@ export interface InspectionPoint {
   id: number;
   name: string;
   description: string | null;
+  is_deleted: boolean;
 }
 
 // Corresponds to the `Subsystem` model
@@ -15,6 +16,7 @@ export interface Subsystem {
   id: number;
   name: string;
   inspection_points: InspectionPoint[];
+  is_deleted: boolean;
 }
 
 

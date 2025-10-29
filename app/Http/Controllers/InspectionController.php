@@ -129,9 +129,9 @@ class InspectionController extends Controller
             'machine' => fn($query) => $query->withTrashed(),
             'items' => function ($query) {
                 $query->with([
-                    'point:id,name,subsystem_id',
+                    'point' => fn($q) => $q->withTrashed()->select('id', 'name', 'description', 'subsystem_id','deleted_at'),
                     'status',
-                    'point.subsystem:id,name',
+                    'point.subsystem' => fn($q) => $q->withTrashed()->select('id', 'name','deleted_at'), // ← AGREGADO withTrashed()
                     'ticket:id,inspection_report_item_id', // Load the ticket ID
                 ]);
             },
@@ -141,16 +141,21 @@ class InspectionController extends Controller
 
         // Format the data to match the structure the frontend component expects
         $formattedSubsystems = $groupedItems->map(function ($items, $subsystemName) {
+            $subsystem = $items->first()->point->subsystem;
             return [
                 'id' => $items->first()->point->subsystem->id,
                 'name' => $subsystemName,
+                'is_deleted' => $subsystem->trashed(), // ← Agregar este flag
                 'report_items' => $items->map(function ($item) {
                     return [
                         'id' => $item->id,
                         'comment' => $item->comment,
                         'image_url' => $item->image_url,
                         'status' => $item->status,
-                        'point' => $item->point,
+                        'point' => [
+                            ...$item->point->toArray(),
+                            'is_deleted' => $item->point->trashed(), // ← También para points
+                        ],
                         'ticket' => $item->ticket,
                         'pinged_ticket' => $item->pingedTicket,
                     ];
@@ -158,6 +163,7 @@ class InspectionController extends Controller
             ];
         })->values();
 
+        // dd($formattedSubsystems);
         // --- Determine if a status change was triggered by this report ---
         $statusChangeInfo = null;
         $highestSeverity = -1;

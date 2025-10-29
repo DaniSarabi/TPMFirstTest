@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Machine;
 use App\Models\Subsystem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
+
 
 class SubsystemController extends Controller
 {
@@ -94,21 +97,25 @@ class SubsystemController extends Controller
         return back()->with('success', 'Subsystem updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy(Subsystem $subsystem)
+    public function destroy(Subsystem $subsystem): RedirectResponse
     {
-        // You can add authorization here if needed, e.g.,
         // $this->authorize('delete', $subsystem);
 
-        // Delete the subsystem. Laravel will automatically delete its inspection points
-        // because of the 'onDelete('cascade')' we set up in the migration.
-        $subsystem->delete();
+        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+        // Lo envolvemos en una transacción para que, si algo falla, no se haga nada.
+        DB::transaction(function () use ($subsystem) {
 
-        // Redirect back to the previous page with a success message.
-        return back()->with('success', 'Subsystem deleted successfully.');
+            // 2. Primero, borramos "suavemente" todos los hijos (puntos de inspección)
+            // Como InspectionPoint usa SoftDeletes, esto también será un soft delete.
+            $subsystem->inspectionPoints()->delete();
+
+            // 3. Ahora sí, borramos "suavemente" al padre (el subsistema)
+            $subsystem->delete();
+        });
+
+        // El comentario viejo era incorrecto. La cascada de la BD no se activa.
+        // Lo hacemos manualmente como arriba.
+
+        return back()->with('success', 'Subsystem and all its inspection points deleted successfully.');
     }
 }

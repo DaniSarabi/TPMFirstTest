@@ -44,7 +44,7 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
           </div>
 
           {/* --- Location & Context --- */}
-          <div className="space-y-2 rounded-md border p-4 shadow-lg drop-shadow-lg">
+          <div className="space-y-2 rounded-md bg-muted p-4 drop-shadow-lg">
             <div className="flex items-center gap-2">
               <Wrench className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold">Machine:</span>
@@ -64,7 +64,7 @@ export function FullDetailsCard({ ticket }: FullDetailsCardProps) {
             </div>
             {/* ---  inspection point's description --- */}
             {ticket.inspection_item?.point.description && (
-              <div className="mt-2 flex items-start gap-2 border-t pt-2">
+              <div className="mt-2 flex items-start gap-2 border-t border-primary pt-2">
                 <FileText className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground italic">"{ticket.inspection_item.point.description}"</p>
               </div>

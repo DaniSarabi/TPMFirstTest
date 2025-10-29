@@ -119,8 +119,8 @@ class TicketController extends Controller
             'creator', // Load the full creator object
             'status.behaviors',
             'inspectionItem:id,image_url,inspection_report_id,inspection_point_id',
-            'inspectionItem.point:id,name,description,subsystem_id',
-            'inspectionItem.point.subsystem:id,name',
+            'inspectionItem.point' => fn($q) => $q->withTrashed()->select('id', 'name', 'description', 'subsystem_id'),
+            'inspectionItem.point.subsystem' => fn($q) => $q->withTrashed()->select('id', 'name'),
             'updates' => function ($query) {
                 $query->with([
                     'user', // Load the full user object for each update

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { DetailedReport, InspectionReportItem } from '@/types/inspection';
@@ -83,7 +84,7 @@ export default function Show({ report }: ShowPageProps) {
 
     const timer = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % allImages.length);
-    }, 3000); // Cambia la imagen cada 3 segundos
+    }, 3000);
 
     return () => clearInterval(timer);
   }, [allImages.length]);
@@ -197,23 +198,64 @@ export default function Show({ report }: ShowPageProps) {
               <CardContent className="space-y-6">
                 {report.grouped_items?.map((subsystem) => (
                   <div key={subsystem.id}>
+                    {/* ACTION: Subsystem header con indicador de eliminado */}
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${subsystem.is_deleted ? 'bg-gray-300' : 'bg-primary/10 text-primary'}`}>
                         <Wrench className="h-5 w-5" />
                       </div>
-                      <h3 className="text-lg font-semibold">{subsystem.name}</h3>
+                      <h3 className={`text-lg font-semibold ${subsystem.is_deleted ? 'text-muted-foreground' : ''}`}>
+                        {subsystem.name}
+                      </h3>
+                      {/* ACTION: Badge indicando que el subsystem fue eliminado */}
+                      {subsystem.is_deleted && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className=" bg-gray-300 text-gray-600 ">
+                                <Trash2 className="mr-1 h-3 w-3" />
+                                Deleted
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>This subsystem no longer exists in the current system configuration</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
-                    <div className="mt-2 ml-4 border-l-2 border-primary/20 pl-7">
+                    <div className={`mt-2 ml-4 border-l-2 pl-7 ${subsystem.is_deleted ? 'border-gray-300' : 'border-primary/20'}`}>
                       {subsystem.report_items?.map((item) => {
                         const ticketToShow = item.ticket || item.pinged_ticket;
+                        const isPointDeleted = item.point?.is_deleted;
+                        
                         return (
-                          <div key={item.id} className="py-4">
+                          <div key={item.id} className={`py-4 ${isPointDeleted ? 'opacity-70' : ''}`}>
                             <div className="flex flex-col gap-4">
                               <div className="flex w-full items-center justify-between">
                                 <div className="flex items-start gap-4">
                                   <StatusIcon severity={item.status.severity} />
                                   <div>
-                                    <p className="font-medium">{item.point.name}</p>
+                                    <div className="flex items-center gap-2">
+                                      <p className={`font-medium ${isPointDeleted ? 'text-muted-foreground' : ''}`}>
+                                        {item.point.name}
+                                      </p>
+                                      {/* ACTION: Badge indicando que el inspection point fue eliminado */}
+                                      {isPointDeleted && (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Badge variant="outline"  className=" bg-gray-300 text-gray-600 text-">
+                                                <Trash2 className="mr-1 h-2.5 w-2.5" />
+                                                Deleted Point
+                                              </Badge>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>This inspection point was removed from the system</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                    </div>
                                     <Badge className="mt-1" style={{ backgroundColor: item.status.bg_color, color: item.status.text_color }}>
                                       {item.status.name}
                                     </Badge>

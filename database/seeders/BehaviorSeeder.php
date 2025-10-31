@@ -24,14 +24,13 @@ class BehaviorSeeder extends Seeder
             ['name' => 'is_ticket_closing_status', 'title' => 'Is a Closing Status', 'description' => 'Marks a ticket as "Resolved" or "Closed". There can only be one of these.', 'scope' => 'ticket'],
             ['name' => 'awaits_non_critical_parts', 'title' => 'Awaits Non-Critical Parts', 'description' => 'Indicates the ticket is paused while waiting for parts, but the machine is still running.', 'scope' => 'ticket'],
             ['name' => 'awaits_critical_parts', 'title' => 'Awaits Critical Parts', 'description' => 'Indicates the ticket is paused while waiting for parts and the machine is down.', 'scope' => 'ticket'],
+            ['name' => 'is_stand_by_status', 'title' => 'Is a Stand-By Status', 'description' => 'Marks this status as a "pause" or "on-hold" state.', 'scope' => 'ticket'],
 
             ['name' => 'is_protected', 'title' => 'Is a Protected Status', 'description' => 'A status with this behavior cannot be deleted from the system.', 'scope' => 'ticket'],
             ['name' => 'is_opening_status', 'title' => 'Is the Opening Status', 'description' => 'Marks this status as the default for all newly created tickets. There can only be one of these.', 'scope' => 'ticket'],
             ['name' => 'is_in_progress_status', 'title' => 'Is an In-Progress Status', 'description' => 'Marks a ticket as being actively worked on.', 'scope' => 'ticket'],
 
             ['name' => 'is_ticket_discard_status', 'title' => 'Is a Discard Status', 'description' => 'Marks a ticket as "Discarded". This is a final, non-resolved closing state.', 'scope' => 'ticket'], // ACTION: Our new behavior
-
-            //['name' => 'is_default_sev2_status', 'title' => 'Is Default High-Priority Status', 'description' => 'The status a ticket is moved to when it is escalated.', 'scope' => 'ticket'],
 
         ];
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ticket;
 use App\Models\TicketStatus;
 use App\Models\User;
+use App\Models\Machine;
 use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -25,16 +26,9 @@ class TicketActionService
             $oldStatus = $ticket->status->load('behaviors');
             $newStatus = TicketStatus::with('behaviors')->findOrFail($newStatusId);
 
-            $oldStatusWasAwaitingParts = $oldStatus->behaviors->contains(
-                fn($b) =>
-                in_array($b->name, ['awaits_critical_parts', 'awaits_non_critical_parts'])
-            );
-
-            if ($oldStatusWasAwaitingParts) {
-                $this->tagManager->removeTag($ticket->machine, 'awaiting-parts', $ticket);
-            }
-
+            // Update ticket status
             $ticket->update(['ticket_status_id' => $newStatus->id]);
+
             $ticket->updates()->create([
                 'user_id' => $user->id,
                 'comment' => $comment,
@@ -42,6 +36,7 @@ class TicketActionService
                 'new_status_id' => $newStatus->id,
             ]);
 
+            // Apply tags from NEW status
             foreach ($newStatus->behaviors as $behavior) {
                 $tagId = $behavior->pivot->tag_id;
                 $tag = $tagId ? Tag::find($tagId) : null;
@@ -50,10 +45,18 @@ class TicketActionService
                 }
             }
 
+            // Remove tags from OLD status (if safe to do so)
+            foreach ($oldStatus->behaviors as $behavior) {
+                $tagId = $behavior->pivot->tag_id;
+                $tag = $tagId ? Tag::find($tagId) : null;
+                if ($behavior->name === 'applies_machine_tag' && $tag) {
+                    $this->_removeTagIfSafe($ticket->machine, $tag->slug, $oldStatus->id, $ticket);
+                }
+            }
+
             $this->_areOpenTicketsRemaining($ticket);
-            // ACTION: The performance optimization is here.
-            // We only call the expensive resolver if the status change is significant.
-            if ($this->_changeRequiresDowntimeReevaluation(null, $oldStatus, $newStatus)) {
+
+            if ($this->_changeRequiresDowntimeReevaluation($ticket, $oldStatus, $newStatus)) {
                 $this->downtimeService->resolveDowntime($ticket->machine);
             }
         });
@@ -194,5 +197,26 @@ class TicketActionService
 
         // Step 2: Always ask the resolver to check the downtime state.
         $this->downtimeService->resolveDowntime($machine);
+    }
+    /**
+     * Remove a tag from the machine only if no other active ticket has that status.
+     */
+    private function _removeTagIfSafe(Machine $machine, string $tagSlug, int $oldStatusId, Ticket $currentTicket): void
+    {
+        // Check if any OTHER active ticket on this machine has the same old status
+        $otherTicketsWithSameStatus = Ticket::where('machine_id', $machine->id)
+            ->where('id', '!=', $currentTicket->id)
+            ->where('ticket_status_id', $oldStatusId)
+            ->whereDoesntHave(
+                'status.behaviors',
+                fn($q) =>
+                $q->whereIn('name', ['is_ticket_closing_status', 'is_ticket_discard_status'])
+            )
+            ->exists();
+
+        // Only remove if no other ticket has that status
+        if (!$otherTicketsWithSameStatus) {
+            $this->tagManager->removeTag($machine, $tagSlug, $currentTicket);
+        }
     }
 }

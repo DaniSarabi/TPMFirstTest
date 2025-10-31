@@ -1,15 +1,16 @@
 import { LucideIcon } from 'lucide-react';
 import type { Config } from 'ziggy-js';
+import { GlobalUserType } from './user';
 
 export interface Auth {
   user: User;
 }
 
 export interface EmailContact {
-    id: number;
-    name: string;
-    email: string;
-    department: string;
+  id: number;
+  name: string;
+  email: string;
+  department: string;
 }
 
 export interface BreadcrumbItem {
@@ -53,9 +54,10 @@ export interface User {
 }
 
 export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
-    auth: {
-        user: User;
-    };
+  auth: {
+    user: GlobalUserType;
+    permissions: string[];
+  };
 };
 
 // Define the shape of a single pagination link

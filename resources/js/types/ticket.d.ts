@@ -37,16 +37,27 @@ export interface TicketUpdate {
   user: GlobalUserType;
   old_status: TicketStatus | null;
   new_status: TicketStatus | null;
-  action: 'applied' | 'removed' | 'escalated' | 'downgraded' | null;
+  action: 'applied' | 'removed' | 'escalated' | 'downgraded' | 'attached' | 'detached' | null;
   loggable_id: number | null;
   loggable_type: string | null;
-  loggable: Tag | null; // For now, we know it can be a Tag
+  loggable: Tag | TicketAttachment | null; // For now, we know it can be a Tag
   photos: {
     id: number;
     photo_url: string;
   }[];
 }
 
+export interface TicketAttachment {
+  id: number;
+  uuid: string; // Para las URLs de descarga/borrado
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  description: string | null;
+  created_at: string;
+  uploaded_by: number; // ID del usuario (para la lógica de borrado)
+  uploader: GlobalUserType; // Objeto del usuario (para mostrar el nombre)
+}
 // The main, consolidated Ticket interface
 export interface Ticket {
   id: number;
@@ -61,4 +72,5 @@ export interface Ticket {
   status: TicketStatus;
   inspection_item: InspectionReportItem | null;
   updates: TicketUpdate[];
+  attachments: TicketAttachment[]; // <-- AÑADIDO
 }

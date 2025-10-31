@@ -65,12 +65,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(NotificationPreference::class);
     }
-     /**
+    /**
      * Get the tickets created by the user.
      *
      */
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class, 'created_by');
+    }
+    /**
+     * Obtiene todos los adjuntos subidos por este usuario.
+     * Nota: especificamos la llave foránea 'uploaded_by'
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TicketAttachment::class, 'uploaded_by');
     }
 }

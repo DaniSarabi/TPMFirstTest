@@ -46,6 +46,13 @@ class Ticket extends Model
         );
     }
     /**
+     * Obtiene todos los adjuntos para este ticket.
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TicketAttachment::class)->latest();
+    }
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>

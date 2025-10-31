@@ -51,6 +51,7 @@ class PermissionSeeder extends Seeder
             'tickets.view',
             'tickets.status',
             'tickets.escalate',
+            'tickets.delete-attachments',
 
             // * Email permissions
             'email-contacts.admin',

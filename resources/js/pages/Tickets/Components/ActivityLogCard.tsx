@@ -1,18 +1,37 @@
-import DynamicLucideIcon from '@/components/dynamicIconHelper';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getContrastColor } from '@/lib/tpm-helpers';
 import { Ticket, TicketUpdate } from '@/types/ticket';
-import { AlertTriangle, GitCommitVertical, Mail, Megaphone, MessageSquare, TagIcon, Terminal } from 'lucide-react';
+import {
+  AlertTriangle,
+  FileUp, // <-- Añadido
+  FileX, // <-- Añadido
+  GitCommitVertical,
+  Mail,
+  Megaphone,
+  MessageSquare,
+  Terminal,
+} from 'lucide-react';
 
 interface ActivityLogCardProps {
   ticket: Ticket;
 }
+
 // A helper component to render the correct icon for each activity type
 const ActivityIcon = ({ update }: { update: TicketUpdate }) => {
-  if (update.loggable_type?.endsWith('Tag')) {
-    return <TagIcon className="h-4 w-4 text-white" />;
+  // --- COMENTADO POR REQUERIMIENTO ---
+  // if (update.loggable_type?.endsWith('Tag')) {
+  //   return <TagIcon className="h-4 w-4 text-white" />;
+  // }
+
+  // --- NUEVOS EVENTOS DE ADJUNTOS ---
+  if (update.action === 'attached') {
+    return <FileUp className="h-4 w-4 text-white" />;
   }
+  if (update.action === 'detached') {
+    return <FileX className="h-4 w-4 text-white" />;
+  }
+  // --- FIN ---
+
   if (update.comment?.startsWith('Ping:')) {
     return <AlertTriangle className="h-4 w-4 text-white" />;
   }
@@ -32,24 +51,29 @@ const ActivityIcon = ({ update }: { update: TicketUpdate }) => {
 };
 
 export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
-  // Filter for system-generated events (status changes, pings, etc.)
+  // Filter for system-generated events
   const activities = ticket.updates.filter(
     (update) =>
       update.old_status ||
       update.new_status ||
-      update.loggable ||
+      // update.loggable, // <-- Se quita, ahora filtramos por acciones específicas
       update.comment?.startsWith('Ping:') ||
       update.comment?.startsWith('System:') ||
-      update.comment?.startsWith('Sent a part request')||
-      update.action == 'escalated',
+      update.comment?.startsWith('Sent a part request') ||
+      update.action == 'escalated' ||
+      update.action == 'downgraded' || // <-- Añadido para consistencia
+      // --- NUEVOS EVENTOS ---
+      update.action == 'attached' ||
+      update.action == 'detached',
   );
-  console.log('Actividades', activities);
+
   return (
-    <Card className="transition-500 shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-1">
+    <Card className="shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-1 lg:flex lg:h-full lg:flex-col lg:overflow-hidden lg:border-0 lg:shadow-none lg:drop-shadow-none">
+      {' '}
       <CardHeader>
         <CardTitle>Activity Log</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-y-auto p-5">
         {activities.length > 0 ? (
           <ol className="relative border-s-2 border-secondary/20">
             {activities
@@ -67,8 +91,8 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                     </time>
                   </div>
                   <div className="mt-1 rounded-md bg-muted/50 p-2 text-sm text-muted-foreground">
-                    {/* Case 1: A tag was applied or removed */}
-                    {update.loggable && update.loggable_type?.endsWith('Tag') && (
+                    {/* --- Case 1: A tag was applied or removed (COMENTADO POR REQUERIMIENTO) --- */}
+                    {/* {update.loggable && update.loggable_type?.endsWith('Tag') && (
                       <>
                         System {update.action} tag:{' '}
                         <Badge
@@ -82,7 +106,7 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                           <span className="capitalize">{update.loggable.name}</span>
                         </Badge>
                       </>
-                    )}
+                    )} */}
 
                     {/* Case 2: Ticket was created */}
                     {!update.loggable && !update.old_status && update.new_status && (
@@ -108,13 +132,15 @@ export function ActivityLogCard({ ticket }: ActivityLogCardProps) {
                       </>
                     )}
 
-                    {/* Case 4: Other comments (Pings, Part Requests, etc.) */}
+                    {/* --- NUEVO: Case 4: Archivos adjuntos --- */}
+                    {/* El 'comment' ya viene formateado desde el backend */}
+                    {(update.action === 'attached' || update.action === 'detached') && <p>{update.comment}</p>}
+
+                    {/* Case 5: Other comments (Pings, Part Requests, etc.) */}
                     {!update.loggable && update.comment?.startsWith('Ping:') && 'Pinged this ticket: Issue was reported again.'}
                     {!update.loggable && update.comment?.startsWith('Sent a part request') && <p>{update.comment}</p>}
-                    { update.action == 'escalated' && <p>Escalated the ticket to High Priority.</p>}
-                    { update.action == 'downgraded' && <p>Downgraded the ticket to Medium Priority.</p>}
-                    
-                    
+                    {update.action == 'escalated' && <p>Escalated the ticket to High Priority.</p>}
+                    {update.action == 'downgraded' && <p>Downgraded the ticket to Medium Priority.</p>}
                   </div>
                 </li>
               ))}

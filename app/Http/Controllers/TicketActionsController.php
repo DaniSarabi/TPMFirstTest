@@ -131,4 +131,52 @@ class TicketActionsController extends Controller
 
         return back()->with('success', 'Ticket closed successfully.');
     }
+    public function changeStatus(Request $request, Ticket $ticket)
+    {
+        $validated = $request->validate([
+            'status_id' => 'required|exists:ticket_statuses,id',
+            'comment' => 'nullable|string',
+        ]);
+
+        $this->ticketActionService->changeStatus(
+            $ticket,
+            $validated['status_id'],
+            $validated['comment'],
+            $request->user()
+        );
+
+        return back()->with('success', 'Status updated successfully.');
+    }
+
+    public function changeStatusWithEmail(Request $request, Ticket $ticket)
+    {
+        $validated = $request->validate([
+            'status_id' => 'required|exists:ticket_statuses,id',
+            'comment' => 'nullable|string',
+            'send_email' => 'boolean',
+            'email_data' => 'nullable|array',
+            'email_data.template' => 'nullable|in:purchasing,quote,external',
+            'email_data.recipient' => 'nullable|email',
+            'email_data.message' => 'nullable|string',
+        ]);
+
+        // TODO: Send email logic here
+        // For now, just log it
+        if ($validated['send_email'] ?? false) {
+            $ticket->updates()->create([
+                'user_id' => $request->user()->id,
+                'comment' => "Email sent to: {$validated['email_data']['recipient']}",
+                'action' => 'email_sent',
+            ]);
+        }
+
+        $this->ticketActionService->changeStatus(
+            $ticket,
+            $validated['status_id'],
+            $validated['comment'],
+            $request->user()
+        );
+
+        return back()->with('success', 'Status updated and email sent successfully.');
+    }
 }

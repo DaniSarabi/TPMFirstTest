@@ -121,6 +121,7 @@ class TicketController extends Controller
             'inspectionItem:id,image_url,inspection_report_id,inspection_point_id',
             'inspectionItem.point' => fn($q) => $q->withTrashed()->select('id', 'name', 'description', 'subsystem_id'),
             'inspectionItem.point.subsystem' => fn($q) => $q->withTrashed()->select('id', 'name'),
+            'attachments.uploader', // <-- AÑADE ESTA LÍNEA
             'updates' => function ($query) {
                 $query->with([
                     'user', // Load the full user object for each update
@@ -195,9 +196,10 @@ class TicketController extends Controller
 
         $timeOpen = $ticket->created_at->diffForHumans(null, true);
 
-        $availableStatuses = TicketStatus::whereDoesntHave('behaviors', function ($query) {
-            $query->where('name', 'is_ticket_closing_status');
-        })->get();
+        $availableStatuses = TicketStatus::with('behaviors')
+            ->whereDoesntHave('behaviors', function ($query) {
+                $query->where('name', 'is_ticket_closing_status');
+            })->get();
 
 
         return Inertia::render('Tickets/Show', [

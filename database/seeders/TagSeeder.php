@@ -46,7 +46,7 @@ class TagSeeder extends Seeder
                 'name' => 'Maintenance Due',
                 'slug' => 'maintenance-due',
                 'description' => 'Preventive maintenance is scheduled and approaching its due date.',
-                'color' => '#a855f7', // Purple
+                'color' => '#a845f7', // Purple
                 'icon' => 'CalendarClock'
             ],
             [
@@ -56,12 +56,43 @@ class TagSeeder extends Seeder
                 'color' => '#be123c', // Dark Red
                 'icon' => 'CalendarX'
             ],
+
+
+            
             [
-                'name' => 'Perfoming Maintenance',
-                'slug' => 'in-preventive-maintenance',
-                'description' => 'Machine is currently stopped for a scheduled preventive maintenance task.',
-                'color' => '#3b82f6', // A distinct blue color
-                'icon' => 'Wrench'
+                'name' => 'Diagnostic',
+                'slug' => 'diagnostic',
+                'description' => 'The issue is actively being analyzed or diagnosed.',
+                'color' => '#0ea5e9', // Sky 500
+                'icon' => 'ClipboardSearch'
+            ],
+            [
+                'name' => 'Awaiting Quote',
+                'slug' => 'awaiting-quote',
+                'description' => 'Waiting for a price quotation from a supplier.',
+                'color' => '#f59e0b', // Amber 500
+                'icon' => 'Receipt'
+            ],
+            [
+                'name' => 'Awaiting Purchase',
+                'slug' => 'awaiting-purchase',
+                'description' => 'Waiting for the purchasing department to approve or make the payment.',
+                'color' => '#f97316', // Orange 500
+                'icon' => 'Landmark'
+            ],
+            [
+                'name' => 'Awaiting Delivery',
+                'slug' => 'awaiting-delivery',
+                'description' => 'Parts have been ordered and are in transit.',
+                'color' => '#ca8a04', // Yellow 600
+                'icon' => 'Truck'
+            ],
+            [
+                'name' => 'External Vendor',
+                'slug' => 'external-vendor',
+                'description' => 'Waiting for an external contractor or vendor to perform service.',
+                'color' => '#6b7280', // Gray 500
+                'icon' => 'HardHat'
             ],
         ];
 

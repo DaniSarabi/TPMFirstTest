@@ -28,7 +28,7 @@ use App\Http\Controllers\Settings\EscalationLevelController;
 use App\Http\Controllers\AssetGroupController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DashboardController;
-
+use App\Http\Controllers\TicketAttachmentController;
 
 
 Route::get('/', function () {
@@ -110,26 +110,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // * ***************************** Tickets module Routes *****************************
 
+    Route::patch('tickets/{ticket}/change-status', [TicketActionsController::class, 'changeStatus'])
+        ->name('tickets.change-status');
 
-    
+    Route::patch('tickets/{ticket}/change-status-with-email', [TicketActionsController::class, 'changeStatusWithEmail'])
+        ->name('tickets.change-status-with-email');
+
     Route::patch('/tickets/{ticket}/start-work', [TicketActionsController::class, 'startWork'])->name('tickets.start-work')->middleware('permission:tickets.perform');
     Route::patch('/tickets/{ticket}/resume-work', [TicketActionsController::class, 'resumeWork'])->name('tickets.resume-work')->middleware('permission:tickets.perform');
     Route::patch('/tickets/{ticket}/close', [TicketActionsController::class, 'close'])->name('tickets.close')->middleware('permission:tickets.close');
     Route::patch('/tickets/{ticket}/escalate', [TicketActionsController::class, 'escalate'])->name('tickets.escalate')->middleware('permission:tickets.escalate');
     Route::patch('/tickets/{ticket}/downgrade', [TicketActionsController::class, 'downgrade'])->name('tickets.downgrade')->middleware('permission:tickets.discard');
     Route::patch('/tickets/{ticket}/discard', [TicketActionsController::class, 'discard'])->name('tickets.discard')->middleware('permission:tickets.discard');
-    
+
     Route::get('/tickets/create-standalone', [TicketController::class, 'createStandalone'])
-    ->name('tickets.create.standalone')
-    ->middleware('permission:inspections.perform'); // Reutilizamos el permiso
-    
+        ->name('tickets.create.standalone')
+        ->middleware('permission:inspections.perform'); // Reutilizamos el permiso
+
     Route::post('/tickets/standalone', [TicketController::class, 'storeStandalone'])
-    ->name('tickets.store.standalone')
-    ->middleware('permission:inspections.perform');
-    
+        ->name('tickets.store.standalone')
+        ->middleware('permission:inspections.perform');
+
     Route::resource('tickets', TicketController::class)->except(['create', 'store', 'edit'])->middleware('permission:tickets.view');
     // This route will handle downloading the ticket PDF
     Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPDF'])->name('tickets.pdf')->middleware('permission:tickets.view');
+
+
+    // ? ------------------------------------ Ticket Attachments ------------------------------------
+
+    // Para subir: Protegido por 'tickets.perform' (o el permiso que uses para "trabajar" en un ticket)
+    Route::post('/tickets/{ticket}/attachments', [TicketAttachmentController::class, 'store'])
+        ->name('tickets.attachments.store')
+        ->middleware('permission:tickets.perform');
+
+    // Para descargar: Protegido por 'tickets.view' (permiso general para ver tickets)
+    Route::get('/attachments/{attachment}/download', [TicketAttachmentController::class, 'download'])
+        ->name('attachments.download')
+        ->middleware('permission:tickets.view');
+
+    // Para borrar: Sin middleware de permiso aquí. 
+    // La lógica de "Propietario O Rol" vivirá en el controlador.
+    Route::delete('/attachments/{attachment}', [TicketAttachmentController::class, 'destroy'])
+        ->name('attachments.destroy');
 
     // ? ------------------------------------ Ticket Update ------------------------------------
 

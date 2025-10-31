@@ -116,15 +116,36 @@ class DowntimeService
     private function _determineCategory(Model $owner): string
     {
         if ($owner instanceof Ticket) {
-            $isAwaitingParts = $owner->status->behaviors->contains(
-                fn($b) =>
-                in_array($b->name, ['awaits_critical_parts', 'awaits_non_critical_parts'])
-            );
-            return $isAwaitingParts ? 'Awaiting Parts' : 'Corrective';
+            $behaviors = $owner->status->behaviors->pluck('name');
+
+            // Check machine tags to determine specific waiting category
+            $machine = $owner->machine;
+            $machineTags = $machine->tags->pluck('slug');
+
+            if ($behaviors->contains('is_stand_by_status')) {
+                // Determine category based on applied tag
+                if ($machineTags->contains('awaiting-quote')) return 'Awaiting Quote';
+                if ($machineTags->contains('awaiting-purchase')) return 'Awaiting Purchase';
+                if ($machineTags->contains('external-vendor')) return 'Awaiting External Vendor';
+                if ($machineTags->contains('awaiting-parts')) return 'Awaiting Parts';
+            }
+
+            // Legacy support for old awaiting parts behaviors
+            if (
+                $behaviors->contains('awaits_critical_parts') ||
+                $behaviors->contains('awaits_non_critical_parts')
+            ) {
+                return 'Awaiting Parts';
+            }
+
+            // All other active states (including diagnostic) = Corrective
+            return 'Corrective';
         }
+
         if ($owner instanceof ScheduledMaintenance) {
             return 'Preventive';
         }
+
         return 'Other';
     }
 

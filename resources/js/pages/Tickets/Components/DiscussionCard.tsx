@@ -50,6 +50,8 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
         !update.comment.startsWith('Ping:') &&
         !update.comment.startsWith('System') &&
         !update.comment.startsWith('Sent a part request') &&
+        !update.comment.startsWith('Attached') &&
+        !update.comment.startsWith('Detached') &&
         update.id !== createdEvent?.id
       ) {
         items.push(update);
@@ -79,7 +81,8 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
   };
 
   return (
-    <Card className="transition-500 overflow-y-auto shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-1">
+    <Card className="shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-1 lg:flex lg:h-full lg:flex-col lg:overflow-hidden lg:border-0 lg:shadow-none lg:drop-shadow-none">
+      {' '}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <>
@@ -88,9 +91,11 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
           </>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-1 flex-col space-y-4 overflow-hidden p-4 pt-0">
+        {' '}
         {/* List of comments */}
-        <div className="max-h-60 space-y-4 overflow-y-auto pr-2">
+        <div className="max-h-94 space-y-4 overflow-y-auto pr-2 lg:max-h-none lg:flex-1">
+          {' '}
           {discussionItems.length > 0 ? (
             discussionItems.map((item) => (
               <div key={item.id} className="flex items-start gap-3 pt-1.5 pl-1.5">
@@ -112,6 +117,7 @@ export function DiscussionCard({ ticket }: DiscussionCardProps) {
         </div>
         {/* Form to add a new comment */}
         <form onSubmit={submitComment} className="space-y-2 border-t-2 border-primary pt-4">
+          {' '}
           <>
             <Input
               className="ring-1 hover:ring-primary"

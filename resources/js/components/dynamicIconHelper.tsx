@@ -1,4 +1,4 @@
-import { Box, CalendarClock, CalendarX, HelpCircle, ListChecks, PowerOff, RotateCw, ShieldCheck, Ticket, Wrench } from 'lucide-react';
+import { Box, CalendarClock, CalendarX, HardHat, HelpCircle, Landmark, ListChecks, PowerOff, Receipt, RotateCw, ScanSearch, ShieldCheck, Ticket, Truck, Wrench } from 'lucide-react';
 import React from 'react';
 
 // This component uses a map of specifically imported icons for better
@@ -21,6 +21,11 @@ const iconMap: { [key: string]: React.ElementType } = {
   ListChecks,
   RotateCw,
   ShieldCheck,
+  ScanSearch,
+  Receipt,
+  Landmark,
+  Truck,
+  HardHat,
 };
 
 const DynamicLucideIcon: React.FC<DynamicLucideIconProps> = ({ name, className }) => {
@@ -34,7 +39,7 @@ const DynamicLucideIcon: React.FC<DynamicLucideIconProps> = ({ name, className }
     return <HelpCircle className={className} />;
   }
 
-  return <LucideIcon className={className} />;
+  return <LucideIcon className={className } />;
 };
 
 export default DynamicLucideIcon;

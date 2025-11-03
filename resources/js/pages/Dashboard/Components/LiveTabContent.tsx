@@ -5,9 +5,9 @@ import { ScheduledMaintenance } from '@/types/maintenance';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { DowntimeClockWidget } from './DowntimeClock';
+import { CombinedMetricsWidget } from "./KPI'SWidget";
 import { MonthlyMaintenanceTracker } from './MonthlyMaintenanceTracker';
 import { PerformanceTrendsData, PerformanceTrendsWidget } from './PerformanceTrendWidget';
-import { CombinedMetricsWidget } from './KPI\'SWidget';
 
 interface Snapshot {
   date: string;
@@ -32,6 +32,12 @@ interface DowntimeLog {
   category: 'Corrective' | 'Preventive' | 'Awaiting Parts' | 'Other';
   start_time: string;
   end_time: string | null;
+}
+interface WeekGlanceData {
+  ticketsOpened: { current: number; previous: number };
+  ticketsClosed: { current: number; previous: number };
+  closureRate: { current: number; previous: number };
+  awaitingParts: number;
 }
 
 // Define the props that this component receives from the main Dashboard page
@@ -63,11 +69,13 @@ const LiveTabContent = ({ machines, scheduledMaintenances, todayDowntimeLogs }: 
       .finally(() => setIsLoadingTrends(false));
   }, []);
 
-  const [weekGlanceData, setWeekGlanceData] = useState({
+  const [weekGlanceData, setWeekGlanceData] = useState<WeekGlanceData>({
     ticketsOpened: { current: 0, previous: 0 },
     ticketsClosed: { current: 0, previous: 0 },
+    closureRate: { current: 0, previous: 0 },
     awaitingParts: 0,
   });
+
   const [isLoadingWeekGlance, setIsLoadingWeekGlance] = useState(true);
 
   useEffect(() => {
@@ -77,6 +85,7 @@ const LiveTabContent = ({ machines, scheduledMaintenances, todayDowntimeLogs }: 
       .then((response) => setWeekGlanceData(response.data))
       .finally(() => setIsLoadingWeekGlance(false));
   }, []);
+
   return (
     <div className="grid h-full grid-cols-5 grid-rows-[auto_auto_auto_auto] gap-4">
       {/* --- Area 1 --- */}
@@ -85,7 +94,7 @@ const LiveTabContent = ({ machines, scheduledMaintenances, todayDowntimeLogs }: 
       <div className="col-span-4 row-span-1">
         <CombinedMetricsWidget
           ticketsOpened={weekGlanceData.ticketsOpened}
-          ticketsClosed={weekGlanceData.ticketsClosed}
+          closureRate={weekGlanceData.ticketsClosed}
           awaitingParts={weekGlanceData.awaitingParts}
           currentSnapshot={trendData.current}
           previousSnapshot={trendData.previous}
@@ -100,34 +109,35 @@ const LiveTabContent = ({ machines, scheduledMaintenances, todayDowntimeLogs }: 
 
       {/* --- Performance Trends --- */}
       <div className="col-span-2 col-start-1 row-span-2 row-start-2">
-        <PerformanceTrendsWidget
+        {/* <PerformanceTrendsWidget
           isLoading={isLoadingTrends}
           trendsData={showCriticalOnly ? trendsData.critical : trendsData.all}
           showCriticalOnly={showCriticalOnly}
           setShowCriticalOnly={setShowCriticalOnly}
-        />
+        /> */}
       </div>
 
       {/* --- Monthly Maintenance Tracker --- */}
       <div className="col-span-2 col-start-3 row-span-1 row-start-2">
-        <MonthlyMaintenanceTracker machines={machines} scheduledMaintenances={scheduledMaintenances} />
+      
+        {/* <MonthlyMaintenanceTracker machines={machines} scheduledMaintenances={scheduledMaintenances} /> */}
       </div>
 
       {/* --- Widget Block 1 (3 cells) --- */}
-      <div className="relative col-span-3 col-start-3 row-span-1 row-start-3 rounded-xl border border-dashed">
+      {/* <div className="relative col-span-3 col-start-3 row-span-1 row-start-3 rounded-xl border border-dashed">
         <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10" />
         <div className="p-4">
           <CardTitle>Future Widget Area 1</CardTitle>
         </div>
-      </div>
+      </div> */}
 
       {/* --- Widget Block 2 (5 cells) --- */}
-      <div className="relative col-span-5 col-start-1 row-span-1 row-start-4 rounded-xl border border-dashed">
+      {/* <div className="relative col-span-5 col-start-1 row-span-1 row-start-4 rounded-xl border border-dashed">
         <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10" />
         <div className="p-4">
           <CardTitle>Future Widget Area 2</CardTitle>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -7,15 +7,26 @@ import { motion } from 'framer-motion';
 import { HelpCircle, Pin, PinOff } from 'lucide-react';
 import * as React from 'react';
 
+type DowntimeCategory =
+  | 'Corrective'
+  | 'Awaiting Parts'
+  | 'Preventive'
+  | 'Other'
+  | 'Awaiting Quote'
+  | 'Awaiting Purchase'
+  | 'Awaiting Delivery'
+  | 'Awaiting External Vendor';
+
+// --- FIX: Replaced non-breaking spaces with regular spaces ---
 interface DowntimeLog {
   id: number;
   machine_id: number;
-  category: 'Corrective' | 'Preventive' | 'Awaiting Parts' | 'Other';
+  category: DowntimeCategory; // Usar el nuevo tipo
   start_time: string;
   end_time: string | null;
 }
 
-type ArcCategory = DowntimeLog['category'] | 'Operational';
+type ArcCategory = DowntimeCategory | 'Operational';
 
 interface DowntimeClockWidgetProps {
   machines: Machine[];
@@ -66,16 +77,31 @@ const formatDuration = (totalMinutes: number): string => {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
-const COLORS = {
-  Corrective: '#a4193d',
-  Preventive: '#4b648d',
-  'Awaiting Parts': '#eab308',
-  Other: '#6b7280',
-  Operational: '#8fa464',
+const COLORS: Record<ArcCategory, string> = {
+  Operational: '#8fa464', // Verde (Operacional)
+  Corrective: '#a4193d', // Rojo (Falla)
+  Preventive: '#4b648d', // Azul (Planeado)
+  // --- Grupo de "Awaiting" (Amarillos/Naranjas) ---
+  'Awaiting Parts': '#eab308', // Amarillo
+  'Awaiting Quote': '#f59e0b', // Ámbar
+  'Awaiting Purchase': '#f97316', // Naranja
+  'Awaiting Delivery': '#ea580c', // Naranja Oscuro
+  'Awaiting External Vendor': '#d97706', // Ámbar Oscuro
+  // --- Otros ---
+  Other: '#6b7280', // Gris
 };
 
-const CATEGORY_ORDER: ArcCategory[] = ['Operational', 'Corrective', 'Preventive', 'Awaiting Parts', 'Other'];
-
+const CATEGORY_ORDER: ArcCategory[] = [
+  'Operational',
+  'Corrective',
+  'Preventive',
+  'Awaiting Parts',
+  'Awaiting Quote',
+  'Awaiting Purchase',
+  'Awaiting Delivery',
+  'Awaiting External Vendor',
+  'Other',
+];
 export function DowntimeClockWidget({ machines, downtimeLogs }: DowntimeClockWidgetProps) {
   const [isPinned, setIsPinned] = React.useState(false);
   const [carouselIndex, setCarouselIndex] = React.useState(0);
@@ -167,7 +193,7 @@ export function DowntimeClockWidget({ machines, downtimeLogs }: DowntimeClockWid
   const currentMachine = machines[carouselIndex];
 
   return (
-    <Card className="flex h-full flex-col border-0 bg-background p-1 shadow-none gap-1">
+    <Card className="flex h-full flex-col gap-1 border-0 bg-card p-1 shadow-none">
       <CardHeader className="space-y-0 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -247,7 +273,7 @@ export function DowntimeClockWidget({ machines, downtimeLogs }: DowntimeClockWid
                       />
                       <path
                         d={describeArc(120, 120, hoveredArcIndex === i ? 90 : 85, adjustedStartAngle, adjustedEndAngle)}
-                        stroke={COLORS[arc.category as keyof typeof COLORS]}
+                        stroke={COLORS[arc.category]}
                         strokeWidth="22"
                         fill="none"
                         style={{ pointerEvents: 'none', transition: 'all 0.2s ease-out' }}
@@ -272,12 +298,15 @@ export function DowntimeClockWidget({ machines, downtimeLogs }: DowntimeClockWid
         <div className="grid w-full grid-cols-2 gap-2 text-xs">
           {CATEGORY_ORDER.map((category) => {
             const duration = timelineData.downtimeTotals[category] || 0;
+            // No mostramos categorías con 0 duración, excepto 'Operational'
+            if (duration === 0 && category !== 'Operational') return null;
+
             const elapsedMinutes = differenceInMinutes(new Date(), timelineData.startOfToday);
             const percentage = elapsedMinutes > 0 ? ((duration / elapsedMinutes) * 100).toFixed(1) : '0.0';
 
             return (
-              <div key={category} className="flex items-center gap-1.5">
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[category as keyof typeof COLORS] }} />
+              <div key={category} className="flex items-start gap-1.5">
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[category] }} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-1">
                     <span className="truncate text-xs font-medium">{category}</span>

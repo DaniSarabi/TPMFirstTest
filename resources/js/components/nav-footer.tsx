@@ -23,6 +23,7 @@ export function NavFooter({
                             {/* --- Wrap the button with the Inertia Link component --- */}
                             <Link href={item.href} prefetch>
                                 <SidebarMenuButton
+                                className='hover:cursor-pointer'
                                     // Add the isActive prop to highlight the current page
                                     isActive={url.startsWith(item.href)}
                                     

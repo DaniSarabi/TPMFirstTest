@@ -223,15 +223,14 @@ class DashboardController extends Controller
         $now = now();
         $startOfThisWeek = $now->copy()->startOfWeek();
         $endOfThisWeek = $now->copy()->endOfWeek();
-
         $startOfLastWeek = $now->copy()->subWeek()->startOfWeek();
         $endOfLastWeek = $now->copy()->subWeek()->endOfWeek();
 
-        // Tickets Opened
+        // Tickets Opened (Esta lógica se queda igual)
         $ticketsOpenedThisWeek = Ticket::whereBetween('created_at', [$startOfThisWeek, $endOfThisWeek])->count();
         $ticketsOpenedLastWeek = Ticket::whereBetween('created_at', [$startOfLastWeek, $endOfLastWeek])->count();
 
-        // Tickets Closed (with closing status behavior)
+        // Tickets Closed (Esta lógica se queda igual)
         $ticketsClosedThisWeek = Ticket::whereHas('updates', function ($query) use ($startOfThisWeek, $endOfThisWeek) {
             $query->whereBetween('created_at', [$startOfThisWeek, $endOfThisWeek])
                 ->whereHas('newStatus.behaviors', fn($b) => $b->where('name', 'is_ticket_closing_status'));
@@ -242,21 +241,44 @@ class DashboardController extends Controller
                 ->whereHas('newStatus.behaviors', fn($b) => $b->where('name', 'is_ticket_closing_status'));
         })->distinct()->count();
 
-        // Awaiting Parts (current status)
-        $awaitingPartsCount = Ticket::whereHas('status.behaviors', function ($query) {
-            $query->whereIn('name', ['awaits_critical_parts', 'awaits_non_critical_parts']);
-        })->count();
+        // --- 3. ¡NUEVA LÓGICA DE TASA DE CIERRE! ---
+        // Para que la métrica sea justa, calculamos la tasa de cierre (burn-down rate)
+        // (Tickets Cerrados / Tickets Creados)
+        $rateThisWeek = ($ticketsOpenedThisWeek > 0)
+            ? ($ticketsClosedThisWeek / $ticketsOpenedThisWeek) * 100
+            : ($ticketsClosedThisWeek > 0 ? 100 : 0); // Si no se abrieron, pero se cerraron, es 100%
+
+        $rateLastWeek = ($ticketsOpenedLastWeek > 0)
+            ? ($ticketsClosedLastWeek / $ticketsOpenedLastWeek) * 100
+            : ($ticketsClosedLastWeek > 0 ? 100 : 0);
+
+        // Awaiting Parts (Esta lógica se queda igual)
+        $standByBehaviorName = 'is_stand_by_status';
+
+        // Cuenta los tickets que (whereHas) tienen un 'status'
+        // que a su vez (whereHas) tiene un 'behavior'
+        // con ese nombre específico.
+        $standByTicketCount = Ticket::whereHas('status', function ($query) use ($standByBehaviorName) {
+            $query->whereHas('behaviors', function ($subQuery) use ($standByBehaviorName) {
+                $subQuery->where('name', $standByBehaviorName);
+            });
+        })->count();;
 
         return response()->json([
             'ticketsOpened' => [
                 'current' => $ticketsOpenedThisWeek,
                 'previous' => $ticketsOpenedLastWeek,
             ],
+            // 4. DEVOLVEMOS LOS DATOS ANTIGUOS Y LOS NUEVOS
             'ticketsClosed' => [
                 'current' => $ticketsClosedThisWeek,
                 'previous' => $ticketsClosedLastWeek,
             ],
-            'awaitingParts' => $awaitingPartsCount,
+            'closureRate' => [
+                'current' => $rateThisWeek,
+                'previous' => $rateLastWeek,
+            ],
+            'awaitingParts' => $standByTicketCount,
         ]);
     }
 }

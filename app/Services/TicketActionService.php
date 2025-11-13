@@ -9,6 +9,9 @@ use App\Models\Machine;
 use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Events\TicketStatusChanged;
+use App\Events\TicketEscalated;
+use App\Events\TicketDowngraded;
 
 class TicketActionService
 {
@@ -29,12 +32,15 @@ class TicketActionService
             // Update ticket status
             $ticket->update(['ticket_status_id' => $newStatus->id]);
 
-            $ticket->updates()->create([
+            $update = $ticket->updates()->create([
                 'user_id' => $user->id,
                 'comment' => $comment,
                 'old_status_id' => $oldStatus->id,
                 'new_status_id' => $newStatus->id,
             ]);
+
+            event(new TicketStatusChanged($update));
+
 
             // Apply tags from NEW status
             foreach ($newStatus->behaviors as $behavior) {
@@ -78,6 +84,7 @@ class TicketActionService
                 'comment' => $comment ?? 'Ticket priority escalated to High.',
                 'action' => 'escalated',
             ]);
+            event(new TicketEscalated($ticket));
 
             // Escalating always affects downtime, so we call the resolver directly.
             $this->downtimeService->resolveDowntime($ticket->machine);
@@ -100,6 +107,8 @@ class TicketActionService
                 'comment' => $comment,
                 'action' => 'downgraded',
             ]);
+
+            event(new TicketDowngraded($ticket));
 
             // Downgrading always affects downtime, so we call the resolver directly.
             $this->downtimeService->resolveDowntime($ticket->machine);
@@ -149,6 +158,9 @@ class TicketActionService
 
             // 3. Update the ticket's main status.
             $ticket->update(['ticket_status_id' => $closingStatus->id]);
+
+
+            event(new TicketStatusChanged($update));
 
             // Closing a ticket always affects downtime, so we call the resolver directly.
             $this->downtimeService->resolveDowntime($ticket->machine);

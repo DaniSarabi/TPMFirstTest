@@ -10,6 +10,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\NotificationPreference;
 
+
 /**
  * --- ACTION: Add this docblock to help your code editor ---
  * This tells static analysis tools like Intelephense about the methods
@@ -31,6 +32,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'teams_user_id',
         'password',
         'avatar_url',
         'avatar_color',
@@ -80,5 +82,16 @@ class User extends Authenticatable
     public function attachments(): HasMany
     {
         return $this->hasMany(TicketAttachment::class, 'uploaded_by');
+    }
+    /**
+     * --- ¡AÑADIR ESTA FUNCIÓN! ---
+     * Le dice al canal de notificaciones de Teams
+     * qué ID debe usar para enviarle un mensaje 1-a-1 a este usuario.
+     *
+     * @return string|null
+     */
+    public function routeNotificationForMicrosoftTeams()
+    {
+        return $this->teams_user_id;
     }
 }

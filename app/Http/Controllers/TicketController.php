@@ -109,7 +109,7 @@ class TicketController extends Controller
      */
     public function show(Ticket $ticket)
     {
-        Log::info('Ticket image_url BEFORE load:', ['image_url' => $ticket->image_url]);
+        // Log::info('Ticket image_url BEFORE load:', ['image_url' => $ticket->image_url]);
 
         $ticket->refresh();
 
@@ -135,7 +135,7 @@ class TicketController extends Controller
             },
         ]);
 
-        Log::info('Ticket image_url AFTER load:', ['image_url' => $ticket->image_url]);
+        // Log::info('Ticket image_url AFTER load:', ['image_url' => $ticket->image_url]);
 
         $ticket->is_machine_deleted = $ticket->machine?->trashed();
 

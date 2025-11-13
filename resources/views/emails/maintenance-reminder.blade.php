@@ -54,7 +54,7 @@
         }
 
         .footer {
-            text-align: center;
+            text-align: left;
             font-size: 0.9em;
             color: #777;
             margin-top: 20px;

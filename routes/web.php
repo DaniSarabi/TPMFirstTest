@@ -30,6 +30,13 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TicketAttachmentController;
 
+use App\Models\Ticket;
+use App\Models\User;
+use App\Notifications\NewTicketNotification;
+use Illuminate\Support\Facades\App;
+use Illuminate\Mail\Markdown;
+
+
 
 Route::get('/', function () {
     return Inertia::render('login');
@@ -331,3 +338,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
+
+if (App::environment('local')) {
+    Route::get('/debug/email/new-ticket', function () {
+        $ticket = Ticket::with(['creator', 'machine'])->latest()->first();
+
+        if (!$ticket) {
+            $ticket = Ticket::factory()->make([
+                'id' => 123,
+                'priority' => 2,
+                'title' => 'Fuga de aceite (Prueba)',
+                'description' => 'Este es un correo de prueba para el template.',
+            ]);
+        }
+
+        $user =  User::factory()->make(['name' => 'Daniel Sarabia']);
+
+        $notification = new NewTicketNotification($ticket);
+        $mailMessage = $notification->toMail($user);
+
+        // ✅ This is the key: use Laravel's Markdown renderer
+        $markdown = new Markdown(view(), config('mail.markdown'));
+
+        return $markdown->render($mailMessage->markdown, $mailMessage->data());
+    });
+}
+

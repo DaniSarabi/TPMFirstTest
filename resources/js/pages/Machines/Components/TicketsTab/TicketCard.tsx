@@ -42,7 +42,7 @@ export function TicketCard({ ticket }: { ticket: EnrichedTicket }) {
   return (
     <Link
       href={route('tickets.show', ticket.id)}
-      className="group block h-full rounded-lg  bg-card text-card-foreground shadow-lg transition-all hover:border-primary hover:shadow-lg hover:bg-accent hover:drop-shadow-lg"
+      className="group block h-full max-h-[250px] rounded-lg  bg-card text-card-foreground shadow-lg transition-all hover:border-primary hover:shadow-lg hover:bg-accent hover:drop-shadow-lg"
     >
       <div className="flex h-full">
         {/* Columna de la Imagen */}

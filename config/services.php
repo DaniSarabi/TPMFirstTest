@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'microsoft_graph' => [
+        'client_id'     => env('MS_GRAPH_CLIENT_ID'),
+        'client_secret' => env('MS_GRAPH_CLIENT_SECRET'),
+        'tenant_id'     => env('MS_GRAPH_TENANT_ID'),
+        'site_id'       => env('MS_GRAPH_SITE_ID'), // El ID de tu sitio de SharePoint
+        'list_id'       => env('MS_GRAPH_LIST_ID'), // El ID de tu lista 'NOGTPM Notifications'
+    ],
 ];

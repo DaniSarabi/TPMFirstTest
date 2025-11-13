@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Mail\OverdueMaintenanceNotification;
 use App\Events\MaintenanceReminderSent;
+use App\Events\MaintenanceBecameOverdue;
 use App\Models\EscalationPolicy;
 use Illuminate\Support\Facades\DB;
 use App\Models\Subsystem;
@@ -61,6 +62,7 @@ class CheckMaintenanceStatus extends Command
                 Log::warning("TPM Scheduler: Skipping maintenance #{$maintenance->id} because its schedulable item has been deleted.");
                 continue;
             }
+            // --- 2. ¡LÓGICA REFACTORIZADA! ---
             $this->handleReminders($maintenance);
             $this->handleUpcomingTags($maintenance);
             $this->handleOverdueStatusAndTags($maintenance);
@@ -72,6 +74,7 @@ class CheckMaintenanceStatus extends Command
         Log::info('TPM Scheduler: Finished maintenance status check.');
     }
 
+
     /**
      * Handles sending one-time email reminders.
      */
@@ -80,7 +83,7 @@ class CheckMaintenanceStatus extends Command
         Log::info("TPM Scheduler: [Reminder Check] Processing maintenance #{$maintenance->id} ('{$maintenance->title}').");
 
         if ($maintenance->reminder_sent_at) {
-            Log::info("TPM Scheduler: [Reminder Check] Skipping #{$maintenance->id}: Reminder already sent on {$maintenance->reminder_sent_at}.");
+            Log::info("TPM Scheduler: [Reminder Check] Skipping #{$maintenance->id}: Reminder already sent.");
             return;
         }
         if (!$maintenance->reminder_days_before) {
@@ -92,44 +95,14 @@ class CheckMaintenanceStatus extends Command
         Log::info("TPM Scheduler: [Reminder Check] #{$maintenance->id}: Reminder date is {$reminderDate->toDateString()}. Today is " . Carbon::today()->toDateString() . ".");
 
         if (Carbon::today()->gte($reminderDate)) {
-            Log::info("TPM Scheduler: [Reminder Check] #{$maintenance->id}: Reminder date has been reached. Searching for subscribers...");
+            Log::info("TPM Scheduler: [Reminder Check] #{$maintenance->id}: Reminder date reached. Firing event.");
 
-            $machine = $maintenance->schedulable_type === 'App\\Models\\Machine'
-                ? $maintenance->schedulable
-                : $maintenance->schedulable->machine;
-
-            if (!$machine) {
-                Log::error("TPM Scheduler: [Reminder Check] Could not determine machine for maintenance #{$maintenance->id}.");
-                return;
-            }
-
-            // Log the query that will be run
-            $query = User::whereHas('notificationPreferences', function ($query) use ($machine) {
-                $query->where('notification_type', 'maintenance.reminder')
-                    ->where(function ($q) use ($machine) {
-                        $q->whereNull('preferable_id')
-                            ->orWhere(function ($q2) use ($machine) {
-                                $q2->where('preferable_id', $machine->id)
-                                    ->where('preferable_type', 'App\\Models\\Machine');
-                            });
-                    });
-            });
-            Log::info("TPM Scheduler: [Reminder Check] Finding users with query: " . $query->toSql());
-
-            $usersToNotify = $query->get();
-
-            Log::info("TPM Scheduler: [Reminder Check] Found {$usersToNotify->count()} users to notify for machine #{$machine->id}.");
-
-            if ($usersToNotify->isNotEmpty()) {
-                $this->line(" - Sending reminders for '{$maintenance->title}'.");
-                foreach ($usersToNotify as $user) {
-                    Log::info("TPM Scheduler: [Reminder Check] Sending email to {$user->email} for maintenance #{$maintenance->id}.");
-                    Mail::to($user->email)->send(new MaintenanceReminderNotification($maintenance));
-                }
-            }
-
+            // --- 3. ¡LÓGICA LIMPIA! ---
+            // Solo actualizamos el flag y disparamos el evento.
+            // El "Cartero" (NotifyUsersAboutMaintenanceReminder) hará el resto.
             $maintenance->update(['reminder_sent_at' => now()]);
             event(new MaintenanceReminderSent($maintenance));
+
             Log::info("TPM Scheduler: [Reminder Check] Marked maintenance #{$maintenance->id} as reminder sent.");
         } else {
             Log::info("TPM Scheduler: [Reminder Check] #{$maintenance->id}: Reminder date has not been reached yet.");
@@ -152,7 +125,7 @@ class CheckMaintenanceStatus extends Command
     }
 
     /**
-     * Handles marking tasks as overdue, applying tags, and sending escalation emails.
+     * Handles marking tasks as overdue, applying tags, and firing the overdue event.
      */
     private function handleOverdueStatusAndTags(ScheduledMaintenance $maintenance)
     {
@@ -162,15 +135,28 @@ class CheckMaintenanceStatus extends Command
             : $maintenance->schedulable->machine;
 
         if (Carbon::today()->gt($dueDate)) {
-            if ($maintenance->status !== 'overdue') {
-                $maintenance->update(['status' => 'overdue']);
+
+            $wasAlreadyOverdue = $maintenance->status === 'overdue' || $maintenance->status === 'in_progress_overdue';
+
+            if (!$wasAlreadyOverdue) {
+                // 4. Actualizamos el estatus (ej. 'pending' -> 'overdue')
+                $newStatus = $maintenance->status === 'in_progress' ? 'in_progress_overdue' : 'overdue';
+                $maintenance->update(['status' => $newStatus]);
                 $this->line(" - Task '{$maintenance->title}' marked as Overdue.");
+
+                // --- 5. ¡LÓGICA NUEVA! ---
+                // Disparamos el evento solo la PRIMERA VEZ que se marca como vencido.
+                Log::info("TPM Scheduler: [Overdue Check] #{$maintenance->id} is now overdue. Firing event.");
+                event(new MaintenanceBecameOverdue($maintenance));
             }
 
             $this->tagManager->removeTag($machine, 'maintenance-due', $maintenance);
             $this->tagManager->applyTag($machine, 'maintenance-overdue', $maintenance);
 
-            $this->sendEscalationEmails($maintenance, $dueDate);
+            // La lógica de escalación por email ahora se manejará
+            // dentro del listener (NotifyUsersAboutMaintenanceOverdue),
+            // pero la dejaremos aquí por ahora para no romper la EscalationPolicy.
+            //$this->sendEscalationEmails($maintenance, $dueDate);
         }
     }
 

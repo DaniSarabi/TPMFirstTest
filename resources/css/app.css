@@ -269,14 +269,30 @@ body {
 }
 
 .custom-event-wrapper {
-    @apply relative h-full w-full overflow-hidden p-1 text-xs font-semibold leading-tight;
+  @apply relative h-full w-full overflow-hidden p-1 text-xs leading-tight font-semibold;
 }
 
 .custom-event-title {
-    /* Add some padding at the bottom to make space for the status bar */
-    @apply pb-1;
+  /* Add some padding at the bottom to make space for the status bar */
+  @apply pb-1;
 }
 
 .custom-event-status-bar {
-    @apply absolute bottom-0 left-0 h-2 w-full;
+  @apply absolute bottom-0 left-0 h-2 w-full;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 15s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

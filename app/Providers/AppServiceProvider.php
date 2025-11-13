@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use App\Events\MaintenanceReminderSent;
 use App\Listeners\SendNewTicketEmailNotification;
+use App\Listeners\NotifyUsersAboutNewTicket;
+use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,47 +34,46 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+  
+        // // * Tickets events
+        // Event::listen(
+        //     TicketCreated::class,
+        //     NotifyUsersAboutNewTicket::class
+        // );
+        // Event::listen(
+        //     TicketStatusChanged::class,
+        //     //  SendInAppNotificationListener::class
+        // );
+        // Event::listen(
+        //     TicketCommentAdded::class,
+        //     // SendInAppNotificationListener::class
+        // );
 
-        // * Tickets events
-        Event::listen(
-            TicketCreated::class,
-            SendInAppNotificationListener::class,
-            //  SendNewTicketEmailNotification::class
-        );
-        Event::listen(
-            TicketStatusChanged::class,
-            SendInAppNotificationListener::class
-        );
-        Event::listen(
-            TicketCommentAdded::class,
-            SendInAppNotificationListener::class
-        );
+        // // * User and Roles events
+        // Event::listen(
+        //     UserCreated::class,
+        //     // SendInAppNotificationListener::class
+        // );
+        // Event::listen(
+        //     RoleEdit::class,
+        //     // SendInAppNotificationListener::class
+        // );
 
-        // * User and Roles events
-        Event::listen(
-            UserCreated::class,
-            SendInAppNotificationListener::class
-        );
-        Event::listen(
-            RoleEdit::class,
-            SendInAppNotificationListener::class
-        );
-
-        //* Inspections events
-        Event::listen(
-            InspectionCompleted::class,
-            SendInAppNotificationListener::class
-        );
+        // //* Inspections events
+        // Event::listen(
+        //     InspectionCompleted::class,
+        //     // SendInAppNotificationListener::class
+        // );
 
 
-        Event::listen(
-            MachineCreated::class,
-            SendInAppNotificationListener::class
-        );
-        // This tells Laravel to trigger our listener whenever a reminder is sent.
-        Event::listen(
-            MaintenanceReminderSent::class,
-            SendInAppNotificationListener::class
-        );
+        // Event::listen(
+        //     MachineCreated::class,
+        //     // SendInAppNotificationListener::class
+        // );
+        // // This tells Laravel to trigger our listener whenever a reminder is sent.
+        // Event::listen(
+        //     MaintenanceReminderSent::class,
+        //     // SendInAppNotificationListener::class
+        // );
     }
 }

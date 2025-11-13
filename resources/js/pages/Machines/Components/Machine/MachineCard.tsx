@@ -54,20 +54,24 @@ export function MachineCard({ machine }: MachineCardProps) {
             </Badge>
 
             {machine.tags && machine.tags.length > 0 && (
-              <div className="absolute top-8 left-0 z-10 mt-3 ml-3 flex flex-wrap gap-2 select-none">
-                {machine.tags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    className="text-xs"
-                    style={{
-                      backgroundColor: tag.color,
-                      color: getContrastColor(tag.color),
-                    }}
-                  >
-                    <DynamicLucideIcon name={tag.icon} className="mr-1 stroke-3" />
-                    {tag.name}
-                  </Badge>
-                ))}
+              <div className="absolute top-8 left-0 z-10 mt-3 ml-3 w-[90%] overflow-hidden rounded-lg  px-2 py-1">
+                <div className={`flex gap-2 whitespace-nowrap ${machine.tags.length > 3 ? 'animate-marquee' : ''}`}>
+                  {/* Duplicate tags for seamless scroll only if needed */}
+                  {(machine.tags.length > 3 ? [...machine.tags, ...machine.tags] : machine.tags).map((tag, index) => (
+                    <Badge
+                      key={`${tag.id}-${index}`}
+                      className="text-xs"
+                      style={{
+                        backgroundColor: tag.color,
+                        color: getContrastColor(tag.color),
+                        flexShrink: 0,
+                      }}
+                    >
+                      <DynamicLucideIcon name={tag.icon} className="mr-1 stroke-3" />
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
             {/* Stats Overlay Section */}
@@ -77,7 +81,7 @@ export function MachineCard({ machine }: MachineCardProps) {
                   <Wrench className="mr-2 h-5 w-5" />
                   {machine.subsystems?.length ?? 0}
                 </p>
-              <p className="flex items-center font-medium">
+                <p className="flex items-center font-medium">
                   <ListChecks className="mr-2 h-5 w-5" />
                   {totalInspectionPoints}
                 </p>

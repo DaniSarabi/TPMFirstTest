@@ -25,11 +25,10 @@ use App\Services\DowntimeService;
 use App\Models\Tag;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Log;
 
 class InspectionController extends Controller
 {
-
-
     public function __construct(protected TicketActionService $ticketActionService, protected TagManagerService $tagManager, protected DowntimeService $downtimeService) {}
     //
     /**
@@ -129,9 +128,9 @@ class InspectionController extends Controller
             'machine' => fn($query) => $query->withTrashed(),
             'items' => function ($query) {
                 $query->with([
-                    'point' => fn($q) => $q->withTrashed()->select('id', 'name', 'description', 'subsystem_id','deleted_at'),
+                    'point' => fn($q) => $q->withTrashed()->select('id', 'name', 'description', 'subsystem_id', 'deleted_at'),
                     'status',
-                    'point.subsystem' => fn($q) => $q->withTrashed()->select('id', 'name','deleted_at'), // ← AGREGADO withTrashed()
+                    'point.subsystem' => fn($q) => $q->withTrashed()->select('id', 'name', 'deleted_at'), // ← AGREGADO withTrashed()
                     'ticket:id,inspection_report_item_id', // Load the ticket ID
                 ]);
             },
@@ -383,6 +382,7 @@ class InspectionController extends Controller
                                 'comment' => 'Ticket created from inspection report #' . $inspectionReport->id,
                                 'new_status_id' => $openTicketStatus->id,
                             ]);
+                            Log::info('🔥 Dispatching TicketCreated event manually for ticket #' . $ticket->id);
                             event(new TicketCreated($ticket));
                         }
                     }

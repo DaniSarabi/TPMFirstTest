@@ -22,6 +22,7 @@ export interface InspectionReportItem {
     name: string;
     description: string | null;
     subsystem: Subsystem;
+    deleted_at: string | null;
   };
   inspection_report_id: number;
 }

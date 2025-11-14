@@ -11,23 +11,18 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'; // 1. Importar Tooltip
 import { useCan } from '@/lib/useCan';
+import { cn } from '@/lib/utils'; // Importar cn
 import { PageProps } from '@/types';
 import { Ticket } from '@/types/ticket';
-import { router, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react'; // 2. Importar useForm
 import { Download, File, FileText, FileUp, Image, Mail, Trash2 } from 'lucide-react';
-// --- NUEVAS IMPORTACIONES ---
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AttachmentUploadPopover } from './AttachmentUploadPopover'; // <-- Importa el nuevo Dialog
+import * as React from 'react';
+import { AttachmentUploadPopover } from './AttachmentUploadPopover';
 
-// --- (Los helpers getFileIcon y formatBytes se quedan igual) ---
-// ... (copia y pega tus helpers getFileIcon y formatBytes aquí) ...
-
-interface AttachmentListProps {
-  ticket: Ticket;
-}
-
-// --- Helper para íconos ---
+// --- (Helpers getFileIcon y formatBytes se quedan igual) ---
 const getFileIcon = (fileType: string) => {
   if (fileType.startsWith('image/')) return <Image className="h-5 w-5 text-blue-500" />;
   if (fileType === 'application/pdf') return <FileText className="h-5 w-5 text-red-500" />;
@@ -35,7 +30,6 @@ const getFileIcon = (fileType: string) => {
   return <File className="h-5 w-5 text-gray-500" />;
 };
 
-// --- Helper para tamaño ---
 const formatBytes = (bytes: number, decimals = 2) => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -44,38 +38,113 @@ const formatBytes = (bytes: number, decimals = 2) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
+// --- Fin de Helpers ---
+
+interface AttachmentListProps {
+  ticket: Ticket;
+}
 
 export function AttachmentList({ ticket }: AttachmentListProps) {
   const { auth } = usePage<PageProps>().props;
   const canDeleteGlobal = useCan('tickets.delete-attachments');
 
+  // --- 3. ¡LA LÓGICA AHORA VIVE AQUÍ! ---
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false); // Estado para el drag-and-drop
+  const { data, setData, post, processing, errors, reset, progress } = useForm({
+    file: null as File | null,
+    description: '',
+  });
+
+  // Handler para cuando el Popover se abre/cierra
+  const handlePopoverOpenChange = (open: boolean) => {
+    setIsPopoverOpen(open);
+    if (!open && !processing) {
+      // No resetees si se está subiendo
+      reset('file', 'description');
+    }
+  };
+
+  // --- 4. HANDLERS PARA DRAG-AND-DROP ---
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); // ¡Obligatorio!
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    // Solo permitimos un archivo a la vez, como pediste
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      setData('file', file);
+      setIsPopoverOpen(true); // Abrimos el popover para que ponga la descripción
+    }
+  };
+  // --- FIN DE HANDLERS ---
+
   return (
-    <div className="space-y-4">
+    // 5. El div principal ahora es la "Drop Zone"
+    <div
+      className={cn(
+        'relative space-y-4 rounded-lg border-0 p-4 transition-all',
+        isDragging && 'bg-primary/5 outline-2 outline-primary outline-dashed', // Estilo "nativo"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Overlay visual cuando se está arrastrando */}
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-primary/20 backdrop-blur-sm">
+          <div className="flex flex-col items-center rounded-lg bg-primary p-4 text-primary-foreground">
+            <FileUp className="h-12 w-12" />
+            <span className="font-semibold">Drop file here</span>
+          </div>
+        </div>
+      )}
+
       {/* --- HEADER: Título y Botón de Subida --- */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Attachments</h3>
-        <AttachmentUploadPopover ticketId={ticket.id} />
+        {/* 6. Pasamos toda la lógica como props al Popover "tonto" */}
+        <AttachmentUploadPopover
+          ticketId={ticket.id}
+          isOpen={isPopoverOpen}
+          onOpenChange={handlePopoverOpenChange}
+          data={data}
+          setData={setData}
+          post={post}
+          processing={processing}
+          errors={errors}
+          reset={reset}
+          progress={progress}
+        />
       </div>
 
       {/* --- Estado Vacío --- */}
       {(!ticket.attachments || ticket.attachments.length === 0) && (
-        <>
-          <div className="flex flex-col items-center justify-center">
-            <FileUp className="h-12 w-12" />
-            <span>No Attachments Yet</span>
-            <p className="text-xs">Upload quotes, emails, or photos related to this ticket.</p>
-          </div>
-        </>
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-8 text-muted-foreground">
+          <FileUp className="h-12 w-12" />
+          <span className="mt-2 font-semibold">No Attachments Yet</span>
+          <p className="text-sm">Drag & drop a file here or use the upload button.</p>
+        </div>
       )}
 
-      {/* --- NUEVA TABLA DE ARCHIVOS --- */}
+      {/* --- TABLA DE ARCHIVOS --- */}
       {ticket.attachments && ticket.attachments.length > 0 && (
         <div className="relative max-h-96 overflow-y-auto rounded-md border-0">
           <Table>
-            <TableHeader className="sticky top-0 z-10">
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead className="w-[50px]">Type</TableHead>
-                <TableHead className="">File</TableHead>
+                <TableHead className="max-w-[200px]">File</TableHead>
                 <TableHead className="hidden md:table-cell">Uploader</TableHead>
                 <TableHead className="hidden md:table-cell">Size</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -89,7 +158,21 @@ export function AttachmentList({ ticket }: AttachmentListProps) {
                     <TableCell>{getFileIcon(attachment.file_type)}</TableCell>
                     <TableCell>
                       <div className="font-medium">{attachment.file_name}</div>
-                      <div className="text-sm text-muted-foreground">{attachment.description || 'No description'}</div>
+                      {/* --- 7. ¡EL TRUNCADO DE TEXTO CON TOOLTIP! --- */}
+                      {attachment.description ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="line-clamp-2 cursor-help text-sm text-muted-foreground">{attachment.description}</p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">{attachment.description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <p className="text-sm text-muted-foreground/50 italic">No description</p>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{attachment.uploader.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{formatBytes(attachment.file_size)}</TableCell>
@@ -109,7 +192,6 @@ export function AttachmentList({ ticket }: AttachmentListProps) {
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
-                              {/* ... (Tu modal de confirmación de borrado se queda igual) ... */}
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>

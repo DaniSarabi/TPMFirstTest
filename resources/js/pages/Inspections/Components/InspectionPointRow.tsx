@@ -88,7 +88,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
               <StatusIcon status={selectedStatus} />
               <div>
                 <p className="font-medium">{point.name}</p>
-                <p className="line-clamp-2 text-xs text-muted-foreground/60 italic">{point.description || 'Sin descripción.'}</p>
+                <p className="line-clamp-2 text-xs text-muted-foreground/60 italic">{point.description || 'Without description.'}</p>
               </div>
             </div>
 
@@ -104,7 +104,7 @@ export function InspectionPointRow({ point, statuses, result, errors, onResultCh
         </PopoverTrigger>
         <PopoverContent className="w-80 border-0 p-2">
           <div className="space-y-1">
-            <p className="p-2 text-sm font-semibold">Seleccionar un estado</p>
+            <p className="p-2 text-sm font-semibold">Select a status:</p>
             {statuses.map((status) => (
               <button
                 key={status.id}

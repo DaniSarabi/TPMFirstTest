@@ -17,6 +17,11 @@ export interface Subsystem {
   name: string;
   inspection_points: InspectionPoint[];
   is_deleted: boolean;
+  deleted_at: string | null;
+}
+
+// Corresponds to the `ScheduledMaintenance` model
+export interface ScheduledMaintenance {
 }
 
 

@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Broadcasting\SharePointNotificationChannel;
+use App\Helpers\NotificationHelper; 
 
 
 class TicketClosedNotification extends Notification implements ShouldQueue
@@ -71,7 +72,7 @@ class TicketClosedNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
 
         return (new MailMessage)
             ->subject("Ticket Resolved: #{$this->ticket->id} - {$this->ticket->title}")
@@ -91,7 +92,7 @@ class TicketClosedNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => "The ticket (#{$this->ticket->id}) for {$this->ticket->machine->name} has been resolved.",
-            'url' => route('tickets.show', $this->ticket->id),
+            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id),
             'ticket_id' => $this->ticket->id,
         ];
     }
@@ -176,7 +177,7 @@ class TicketClosedNotification extends Notification implements ShouldQueue
                         [
                             'type' => 'Action.OpenUrl',
                             'title' => 'View Ticket Details',
-                            'url' => route('tickets.show', $this->ticket->id)
+                            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id)
                         ]
                     ]
                 ],

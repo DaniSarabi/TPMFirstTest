@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class InspectionFailedNotification extends Notification implements ShouldQueue
 {
@@ -49,7 +50,7 @@ class InspectionFailedNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('inspections.show', $this->report->id);
+        $url =  NotificationHelper::route('inspections.show', $this->report->id);
         $duration = $this->report->completed_at->diffForHumans($this->report->created_at, true);
 
         return (new MailMessage)
@@ -71,7 +72,7 @@ class InspectionFailedNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => "Inspection for {$this->report->machine->name} completed with reported faults.",
-            'url' => route('inspections.show', $this->report->id),
+            'url' =>  NotificationHelper::route('inspections.show', $this->report->id),
         ];
     }
 
@@ -153,7 +154,7 @@ class InspectionFailedNotification extends Notification implements ShouldQueue
                         [
                             'type' => 'Action.OpenUrl',
                             'title' => 'View Full Report',
-                            'url' => route('inspections.show', $this->report->id)
+                            'url' =>  NotificationHelper::route('inspections.show', $this->report->id)
                         ]
                     ]
                 ],

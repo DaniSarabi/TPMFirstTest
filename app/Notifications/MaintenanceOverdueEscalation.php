@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class MaintenanceOverdueEscalation extends Notification implements ShouldQueue
 {
@@ -41,7 +42,7 @@ class MaintenanceOverdueEscalation extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('maintenance-calendar.index');
+        $url =  NotificationHelper::route('maintenance-calendar.index');
 
         return (new MailMessage)
             ->subject("🔥 ESCALATION: Maintenance Overdue for {$this->daysOverdue} days")
@@ -135,7 +136,7 @@ class MaintenanceOverdueEscalation extends Notification implements ShouldQueue
                         [
                             'type' => 'Action.OpenUrl',
                             'title' => 'View Maintenance Calendar',
-                            'url' => route('maintenance-calendar.index')
+                            'url' =>  NotificationHelper::route('maintenance-calendar.index')
                         ]
                     ]
                 ],

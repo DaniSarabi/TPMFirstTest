@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\NotificationPreference;
+use App\Models\LockedNotification;
 
 
 /**
@@ -93,5 +94,12 @@ class User extends Authenticatable
     public function routeNotificationForMicrosoftTeams()
     {
         return $this->teams_user_id;
+    }
+    /**
+     * Define la relación con las preferencias "bloqueadas" por un admin.
+     */
+    public function lockedPreferences(): HasMany
+    {
+        return $this->hasMany(LockedNotification::class);
     }
 }

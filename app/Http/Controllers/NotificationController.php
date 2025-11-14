@@ -16,7 +16,7 @@ class NotificationController extends Controller
         $user = $request->user();
 
         // Fetch the 10 latest notifications for the user
-        $notifications = $user->notifications()->latest()->take(10)->get();
+        $notifications = $user->notifications()->latest()->take(15)->get();
 
         // We can also get a count of unread notifications
         $unreadCount = $user->unreadNotifications()->count();

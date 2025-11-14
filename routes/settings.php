@@ -30,16 +30,15 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('admin/notifications')->middleware('permission:notifications.admin')->name('admin.notifications.')->group(function () {
 
-        // La página principal del panel de admin
         Route::get('/', [UserNotificationsController::class, 'index'])
-            ->name('settings.notifications.manage');
+            ->name('manage.index');
 
-        // API: Ruta para OBTENER las preferencias de un usuario específico
-        Route::get('/users/{user}', [UserNotificationsController::class, 'getUserPreferences'])
-            ->name('users.preferences');
+        // 2. LA PÁGINA DE EDICIÓN (El formulario)
+        Route::get('/users/{user}', [UserNotificationsController::class, 'edit'])
+            ->name('manage.edit');
 
-        // API: Ruta para GUARDAR las preferencias de un usuario específico
+        // 3. LA LÓGICA DE GUARDADO (Esta se queda igual)
         Route::patch('/users/{user}', [UserNotificationsController::class, 'updateUserPreferences'])
-            ->name('users.preferences.update');
+            ->name('manage.update');
     });
 });

@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notification;
 use App\Models\User;
 // 1. Importamos el "Canal" de Teams/SharePoint que crearemos en el Paso 4
 use App\Broadcasting\SharePointNotificationChannel;
+use App\Helpers\NotificationHelper; 
 
 class NewTicketNotification extends Notification implements ShouldQueue
 {
@@ -80,7 +81,7 @@ class NewTicketNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
         $priorityText = $this->ticket->priority == 2 ? 'Critical' : 'Warning';
         $color = $this->ticket->priority == 2 ? 'error' : 'primary'; // 'error' (rojo), 'primary' (azul), 'success' (verde)
 
@@ -116,7 +117,7 @@ class NewTicketNotification extends Notification implements ShouldQueue
         // Esto es lo que se guardará en la columna 'data' de la tabla 'notifications'
         return [
             'message' => "Nuevo ticket (#{$this->ticket->id}) creado para {$this->ticket->machine->name}.",
-            'url' => route('tickets.show', $this->ticket->id),
+            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id),
             'ticket_id' => $this->ticket->id,
         ];
     }
@@ -130,7 +131,7 @@ class NewTicketNotification extends Notification implements ShouldQueue
      */
     public function toTeamsViaSharePoint($notifiable): array
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
         $priorityText = $this->ticket->priority == 2 ? 'Critical' : 'Warning';
         $headerStyle = $this->ticket->priority == 2 ? 'attention' : 'emphasis'; // Red or Gray
         $headerText = $this->ticket->priority == 2 ? '🔥 New Critical Ticket' : '🎟️ New Ticket Created';

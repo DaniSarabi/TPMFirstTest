@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class TicketEscalatedNotification extends Notification implements ShouldQueue
 {
@@ -48,7 +49,7 @@ class TicketEscalatedNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
 
         return (new MailMessage)
             ->subject("🔥 TICKET ESCALATED TO CRITICAL PRIORITY: #{$this->ticket->id} - {$this->ticket->title}")
@@ -66,7 +67,7 @@ class TicketEscalatedNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => "🔥 Ticket (#{$this->ticket->id}) for {$this->ticket->machine->name} has been escalated to CRITICAL.",
-            'url' => route('tickets.show', $this->ticket->id),
+            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id),
             'ticket_id' => $this->ticket->id,
         ];
     }
@@ -156,7 +157,7 @@ class TicketEscalatedNotification extends Notification implements ShouldQueue
                         [
                             'type' => 'Action.OpenUrl',
                             'title' => 'View Ticket Details Immediately',
-                            'url' => route('tickets.show', $this->ticket->id)
+                            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id)
                         ]
                     ]
                 ],

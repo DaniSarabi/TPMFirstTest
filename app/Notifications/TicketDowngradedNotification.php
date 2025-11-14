@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class TicketDowngradedNotification extends Notification implements ShouldQueue
 {
@@ -48,7 +49,7 @@ class TicketDowngradedNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
 
         return (new MailMessage)
             ->subject("Ticket Priority Downgraded: #{$this->ticket->id} - {$this->ticket->title}")
@@ -66,7 +67,7 @@ class TicketDowngradedNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => "Ticket (#{$this->ticket->id}) for {$this->ticket->machine->name} has been downgraded to 'Warning'.",
-            'url' => route('tickets.show', $this->ticket->id),
+            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id),
             'ticket_id' => $this->ticket->id,
         ];
     }
@@ -79,7 +80,7 @@ class TicketDowngradedNotification extends Notification implements ShouldQueue
         $ticket = $this->ticket;
         $machine = $ticket->machine->name ?? 'Unknown Machine';
         $issue = $ticket->title ?? 'No title';
-        $url = route('tickets.show', $ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $ticket->id);
 
         $title = "⬇️ Ticket Downgraded — #{$ticket->id}";
 

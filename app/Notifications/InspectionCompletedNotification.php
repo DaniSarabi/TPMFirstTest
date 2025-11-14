@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class InspectionCompletedNotification extends Notification implements ShouldQueue
 {
@@ -50,7 +51,7 @@ class InspectionCompletedNotification extends Notification implements ShouldQueu
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('inspections.show', $this->report->id);
+        $url = NotificationHelper::route('inspections.show', $this->report->id);
         $duration = $this->report->completed_at->diffForHumans($this->report->created_at, true); // Calculamos duración
 
         return (new MailMessage)
@@ -72,7 +73,7 @@ class InspectionCompletedNotification extends Notification implements ShouldQueu
     {
         return [
             'message' => "Inspection completed for {$this->report->machine->name} (No issues found).",
-            'url' => route('inspections.show', $this->report->id),
+            'url' => NotificationHelper::route('inspections.show', $this->report->id),
         ];
     }
 
@@ -154,12 +155,12 @@ class InspectionCompletedNotification extends Notification implements ShouldQueu
                         [
                             'type' => 'Action.OpenUrl',
                             'title' => 'View Full Report',
-                            'url' => route('inspections.show', $this->report->id)
+                            'url' => NotificationHelper::route('inspections.show', $this->report->id)
                         ]
                     ]
                 ],
                 // 5. FOOTER
-              [
+                [
                     'type' => 'TextBlock',
                     'text' => "This is an automated notification from the TPM APP. If you have any questions, contact your system administrator.",
                     'wrap' => true,

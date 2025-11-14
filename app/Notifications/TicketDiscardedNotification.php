@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class TicketDiscardedNotification extends Notification implements ShouldQueue
 {
@@ -67,7 +68,7 @@ class TicketDiscardedNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
 
         return (new MailMessage)
             ->subject("Ticket Discarded: #{$this->ticket->id} - {$this->ticket->title}")
@@ -87,7 +88,7 @@ class TicketDiscardedNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => "Ticket (#{$this->ticket->id}) for {$this->ticket->machine->name} has been discarded.",
-            'url' => route('tickets.show', $this->ticket->id),
+            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id),
             'ticket_id' => $this->ticket->id,
         ];
     }
@@ -102,7 +103,7 @@ class TicketDiscardedNotification extends Notification implements ShouldQueue
         $machine = $ticket->machine->name;
         $issue = $ticket->title;
         $discardedBy = $ticket->updated_by ? $ticket->updated_by->name ?? 'System' : 'System';
-        $url = route('tickets.show', $ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $ticket->id);
 
         $cardPayload = [
             'type' => 'AdaptiveCard',

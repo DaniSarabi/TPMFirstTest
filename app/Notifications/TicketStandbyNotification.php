@@ -4,11 +4,12 @@ namespace App\Notifications;
 
 use App\Models\Ticket;
 use App\Models\User;
-use App\Broadcasting\SharePointNotificationChannel; // Asegúrate que el namespace sea el correcto
+use App\Broadcasting\SharePointNotificationChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Helpers\NotificationHelper; 
 
 class TicketStandbyNotification extends Notification implements ShouldQueue
 {
@@ -69,7 +70,7 @@ class TicketStandbyNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = route('tickets.show', $this->ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $this->ticket->id);
 
         return (new MailMessage)
             ->subject("Ticket On Hold: #{$this->ticket->id} - {$this->ticket->title}")
@@ -89,7 +90,7 @@ class TicketStandbyNotification extends Notification implements ShouldQueue
     {
         return [
             'message' => "Ticket (#{$this->ticket->id}) for {$this->ticket->machine->name} is now on hold (Status: {$this->statusName}).", // 6. Usamos el nombre real
-            'url' => route('tickets.show', $this->ticket->id),
+            'url' =>  NotificationHelper::route('tickets.show', $this->ticket->id),
             'ticket_id' => $this->ticket->id,
         ];
     }
@@ -103,7 +104,7 @@ class TicketStandbyNotification extends Notification implements ShouldQueue
         $machine = $ticket->machine->name ?? 'Unknown Machine';
         $issue = $ticket->title ?? 'No title';
         $status = $this->statusName ?? 'On Hold';
-        $url = route('tickets.show', $ticket->id);
+        $url =  NotificationHelper::route('tickets.show', $ticket->id);
         $title = "⏸️ Ticket On Hold — #{$ticket->id}";
 
         $cardPayload = [

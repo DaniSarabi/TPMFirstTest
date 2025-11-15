@@ -156,8 +156,8 @@ export function AttachmentList({ ticket }: AttachmentListProps) {
                 return (
                   <TableRow key={attachment.uuid}>
                     <TableCell>{getFileIcon(attachment.file_type)}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{attachment.file_name}</div>
+                    <TableCell className="max-w-[250px]">
+                      <div className="line-clamp-2 font-medium break-all">{attachment.file_name}</div>
                       {/* --- 7. ¡EL TRUNCADO DE TEXTO CON TOOLTIP! --- */}
                       {attachment.description ? (
                         <TooltipProvider>

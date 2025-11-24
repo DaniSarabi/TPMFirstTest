@@ -109,12 +109,12 @@ const LiveTabContent = ({ machines, scheduledMaintenances, todayDowntimeLogs }: 
 
       {/* --- Performance Trends --- */}
       <div className="col-span-2 col-start-1 row-span-2 row-start-2">
-        {/* <PerformanceTrendsWidget
-          isLoading={isLoadingTrends}
-          trendsData={showCriticalOnly ? trendsData.critical : trendsData.all}
-          showCriticalOnly={showCriticalOnly}
-          setShowCriticalOnly={setShowCriticalOnly}
-        /> */}
+          <PerformanceTrendsWidget
+            isLoading={isLoadingTrends}
+            trendsData={showCriticalOnly ? trendsData.critical : trendsData.all}
+            showCriticalOnly={showCriticalOnly}
+            setShowCriticalOnly={setShowCriticalOnly}
+          />
       </div>
 
       {/* --- Monthly Maintenance Tracker --- */}

@@ -69,5 +69,10 @@ return [
             'maintenance.overdue.email'  => 'Email: When a scheduled maintenance becomes overdue.',
             'maintenance.overdue.teams'  => 'Teams: Post in a channel when maintenance becomes overdue.',
         ],
+        'AI & Coaching' => [
+            'technician.coaching.in_app' => 'In-App: Receive feedback about the documentation about the tickets I close.',
+            'technician.coaching.email'  => 'Email: Receive feedback about the documentation about the tickets I close.',
+            'technician.coaching.teams'  => 'Teams: Receive feedback about the documentation about the tickets I close.',
+        ],
     ],
 ];

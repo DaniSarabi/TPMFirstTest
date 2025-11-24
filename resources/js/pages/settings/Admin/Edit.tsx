@@ -31,7 +31,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Edit User', href: '#', isCurrent: true },
 ];
 
-const machineEventCategories = ['Tickets', 'Inspections', 'Maintenance'];
+const machineEventCategories = ['Tickets', 'Inspections', 'Maintenance','AI & Coaching'];
 const systemEventCategories = ['System'];
 
 export default function EditUserNotifications({
@@ -191,7 +191,6 @@ export default function EditUserNotifications({
 
           <form onSubmit={submit}>
             <div className="space-y-8">
-              {/* --- ¡AQUÍ ESTÁ EL ESPEJO! (Pero con candados) --- */}
               <Card className="border-0 drop-shadow-lg">
                 <CardHeader>
                   <CardTitle>Event Notifications</CardTitle>

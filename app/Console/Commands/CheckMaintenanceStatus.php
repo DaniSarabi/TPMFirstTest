@@ -161,35 +161,6 @@ class CheckMaintenanceStatus extends Command
     }
 
     /**
-     * This method contains your original, preserved logic for sending escalation emails.
-     */
-    private function sendEscalationEmails(ScheduledMaintenance $maintenance, Carbon $dueDate)
-    {
-        $policy = EscalationPolicy::where('name', 'Overdue Maintenance')->where('is_active', true)->first();
-        if (!$policy) {
-            $this->warn(' - "Overdue Maintenance" policy not found or is inactive for escalation emails.');
-            return;
-        }
-
-        $daysOverdue = $dueDate->diffInDays(Carbon::today());
-
-        $levelToSend = $policy->levels()
-            ->where('days_after', '<=', $daysOverdue)
-            ->reorder('level', 'desc')
-            ->first();
-
-        if ($levelToSend) {
-            $contacts = $levelToSend->emailContacts;
-            if ($contacts->isNotEmpty()) {
-                $this->line("   - Escalating '{$maintenance->title}'. Notifying Level {$levelToSend->level}.");
-                foreach ($contacts as $contact) {
-                    Mail::to($contact->email)->send(new OverdueMaintenanceNotification($maintenance));
-                }
-            }
-        }
-    }
-
-    /**
      * Calculates and logs the daily maintenance completion progress for the current month.
      */
     private function logMaintenanceProgressSnapshot()

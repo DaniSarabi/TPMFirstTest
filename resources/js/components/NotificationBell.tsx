@@ -85,26 +85,30 @@ export function NotificationBell() {
             notifications.map((notification) => (
               <React.Fragment key={notification.id}>
                 <DropdownMenuItem
-                  
                   asChild
                   className={cn(
                     // Apply a primary background color if the notification is unread
-                    !notification.read_at && 'bg-accent',
+                    !notification.read_at && 'bg-muted/50',
                     !notification.read_at && 'text-accent-foreground',
-                    'mt-2 mb-2 p-2',
+                    'mt-2 mb-2 p-2 hover:cursor-pointer',
                   )}
                 >
                   <Link href={notification.data.url} className="w-full" onClick={() => handleMarkAsRead(notification.id)}>
-                    <div className="flex flex-col w-full">
+                      {!notification.read_at && (
+                        <Badge variant="destructive" className="h-5 shrink-0 px-1.5 text-[10px] duration-300 animate-in fade-in zoom-in">
+                          New
+                        </Badge>
+                      )}
+                    <div className="flex w-full flex-col">
                       <p className="text-sm font-medium whitespace-normal">{notification.data.message}</p>
-                      <div className='justify-between flex w-full'>
-                        <p className="text-xs ">{new Date(notification.created_at).toLocaleDateString()}</p>
-                        <p className="text-xs ">{new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <div className="flex w-full justify-between">
+                        <p className="text-xs">{new Date(notification.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs">{new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
                   </Link>
                 </DropdownMenuItem>
-                <Separator className="border-1 border-primary" />
+                {/* <Separator className="border-1 border-primary" /> */}
               </React.Fragment>
             ))
           ) : (

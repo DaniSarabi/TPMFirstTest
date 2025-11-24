@@ -1,5 +1,4 @@
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, CheckCircle2, Clock, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import * as React from 'react';
 
@@ -252,20 +251,6 @@ interface CombinedMetricsProps {
 }
 
 /**
- * Muestra el esqueleto de carga para las 4 tarjetas.
- */
-function LoadingSkeleton() {
-  return (
-    <div className="flex gap-4">
-      <Skeleton className="h-56 flex-1 rounded-xl" />
-      <Skeleton className="h-56 flex-1 rounded-xl" />
-      <Skeleton className="h-56 flex-1 rounded-xl" />
-      <Skeleton className="h-56 flex-1 rounded-xl" />
-    </div>
-  );
-}
-
-/**
  * Widget principal que combina todas las métricas de KPI.
  */
 export function CombinedMetricsWidget({
@@ -276,10 +261,6 @@ export function CombinedMetricsWidget({
   previousSnapshot,
   isLoading,
 }: CombinedMetricsProps) {
-  if (isLoading) {
-    return <LoadingSkeleton />;
-  }
-
   const openTrend = calculateTrend(ticketsOpened.current, ticketsOpened.previous, false);
   const rateTrend = calculateTrend(closureRate.current, closureRate.previous, true);
 

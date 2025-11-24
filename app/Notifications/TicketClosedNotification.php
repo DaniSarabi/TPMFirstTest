@@ -170,6 +170,7 @@ class TicketClosedNotification extends Notification implements ShouldQueue
                         ['title' => 'Reported By:', 'value' => $this->ticket->creator->name],
                     ]
                 ],
+                
                 // 4. BOTÓN
                 [
                     'type' => 'ActionSet',

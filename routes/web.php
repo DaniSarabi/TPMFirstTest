@@ -35,7 +35,7 @@ use App\Models\User;
 use App\Notifications\NewTicketNotification;
 use Illuminate\Support\Facades\App;
 use Illuminate\Mail\Markdown;
-
+use App\Http\Controllers\AiInsightController;
 
 
 Route::get('/', function () {
@@ -52,6 +52,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('dashboard.progress-trend');
     Route::get('/dashboard/this-week-glance', [DashboardController::class, 'getThisWeekGlance'])
         ->name('dashboard.this-week-glance');
+
+
+    // * ***************************** AI Insight Routes *****************************
+
+    Route::patch('/ai-insights/{insight}/status', [AiInsightController::class, 'updateStatus'])->name('ai-insights.status');
+
     // * ***************************** Assets Routes *****************************
 
 
@@ -363,4 +369,3 @@ if (App::environment('local')) {
         return $markdown->render($mailMessage->markdown, $mailMessage->data());
     });
 }
-

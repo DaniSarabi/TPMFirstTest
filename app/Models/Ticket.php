@@ -25,11 +25,14 @@ class Ticket extends Model
         'machine_id',
         'title',
         'description',
-        'image_url', // <-- ¡Importante! El campo que añadimos
+        'image_url',
         'created_by',
         'ticket_status_id',
         'priority',
+        'ai_analysis_json',
+        'ai_processed_at',
     ];
+
     /**
      * Get the full URL for the ticket image.
      */
@@ -61,6 +64,10 @@ class Ticket extends Model
         // This ensures created_at and updated_at are always Carbon objects
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        // Esto convierte automáticamente el JSON de la BD a un array de PHP
+        'ai_analysis_json' => 'array',
+        // Esto convierte el timestamp a una instancia de Carbon
+        'ai_processed_at' => 'datetime',
     ];
 
     /**
@@ -108,5 +115,12 @@ class Ticket extends Model
     public function downtimeLogs(): MorphMany
     {
         return $this->morphMany(DowntimeLog::class, 'downtimeable');
+    }
+    /**
+     * Obtiene los insights generados por la IA para este ticket.
+     */
+    public function aiInsights(): HasMany
+    {
+        return $this->hasMany(AiInsight::class);
     }
 }

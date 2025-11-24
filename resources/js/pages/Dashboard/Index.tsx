@@ -1,11 +1,14 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Machine } from '@/types/machine';
-import { ScheduledMaintenance } from '@/types/maintenance';
 import { Head } from '@inertiajs/react';
-import AnalyticsTabContent from './Components/AnalyticsTabContent';
-import LiveTabContent from './Components/LiveTabContent';
+import { CalendarRange, CheckCircle2, Clock, Inbox } from 'lucide-react';
+import { AiFeedWidget } from './Components/AiFeedWidget';
+import { DowntimeDistributionWidget } from './Components/DowntimeDistributionWidget';
+import { FailureParetoWidget } from './Components/FailureParetoWidget';
+import { FleetTimelineWidget } from './Components/FleetTimelineWidget';
+import { AlertContent, KpiCard, MetricContent, ProgressContent } from './Components/KpiCard';
+import { ReliabilityTrendWidget } from './Components/ReliabilityTrendWidget';
+import { PartsTrackerWidget } from './Components/PartsTrackerWidget';
 
 interface DowntimeLog {
   id: number;
@@ -21,37 +24,91 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 interface DashboardProps {
-  machines: Machine[];
-  scheduledMaintenances: ScheduledMaintenance[];
-  todayDowntimeLogs: DowntimeLog[]; // Add this
+  metrics: {
+    incomingTickets: { current: number; previous: number };
+    resolvedTickets: { current: number; previous: number };
+    activeBacklog: number;
+    pmProgress: { current: any; previous: any };
+  };
+  machineTimelines: any;
+  downtimePareto: any;
+
+  aiInsights: any;
+  resolutionTrend: any;
+  failurePareto: any;
+  partsTracker: any;
 }
 
-export default function Dashboard({ machines, scheduledMaintenances, todayDowntimeLogs }: DashboardProps) {
+export default function Dashboard({ metrics, machineTimelines, downtimePareto, aiInsights, resolutionTrend, failurePareto,partsTracker }: DashboardProps) {
+  console.log(resolutionTrend);
+
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Dashboard" />
-      <div className=" rounded-b-2xl flex h-full flex-1 flex-col gap-4 p-4">
-        <Tabs defaultValue="live_status" className="w-full">
-          {/* Las "píldoras" para seleccionar la vista */}
-          {/* <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="live_status">Live Status</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics & Trends</TabsTrigger>
-          </TabsList> */}
+      <div className="space-y-6 p-4">
+        {/* Fila 1 */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            title="New Tickets"
+            icon={<Inbox className="h-7 w-7" />}
+            iconColorClass="text-blue-600 bg-blue-50"
+            className="bg-primary text-primary-foreground"
+          >
+            <MetricContent current={metrics.incomingTickets.current} previous={metrics.incomingTickets.previous} invertTrend={true} />
+          </KpiCard>
 
-          {/* Contenido de la Pestaña 1: Live Status */}
-          <TabsContent value="live_status" className="mt-0">
-            <LiveTabContent
-              machines={machines}
-              scheduledMaintenances={scheduledMaintenances}
-              todayDowntimeLogs={todayDowntimeLogs} // Pass it down
-            />
-          </TabsContent>
+          {/* CARD 2: Resolved Tickets */}
+          <KpiCard
+            title="Resolved Tickets"
+            icon={<CheckCircle2 className="h-7 w-7" />}
+            iconColorClass="text-emerald-600 bg-emerald-100"
+            className="bg-[#014a93] text-primary-foreground"
+          >
+            <MetricContent current={metrics.resolvedTickets.current} previous={metrics.resolvedTickets.previous} invertTrend={false} />
+          </KpiCard>
 
-          {/* Contenido de la Pestaña 2: Analytics & Trends */}
-          <TabsContent value="analytics" className="mt-0">
-            <AnalyticsTabContent />
-          </TabsContent>
-        </Tabs>
+          {/* CARD 3: Active Backlog (Shake Animation) */}
+          <KpiCard
+            title="Pending / Backlog"
+            icon={<Clock className="h-7 w-7" />}
+            iconColorClass="text-amber-600 bg-amber-100"
+            shouldAlert={metrics.activeBacklog > 0}
+          >
+            <AlertContent value={metrics.activeBacklog} label="Need attention" />
+          </KpiCard>
+
+          {/* CARD 4: PM Progress */}
+          <KpiCard title="Preventive Maintenance" icon={<CalendarRange className="h-7 w-7" />} iconColorClass="text-indigo-600 bg-indigo-50">
+            <ProgressContent current={metrics.pmProgress.current} previous={metrics.pmProgress.previous} />
+          </KpiCard>
+        </div>
+        {/* Fila 2 */}
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+          {/* WIDGET 1: Fleet Timeline (Ocupa 2 columnas) */}
+          <div className="h-[400px] lg:col-span-2">
+            {/* Altura fija para permitir scroll interno */}
+            <FleetTimelineWidget machines={machineTimelines} />
+          </div>
+          <div className="h-[400px] lg:col-span-1">
+            <DowntimeDistributionWidget data={downtimePareto} />
+          </div>
+          <div className="h-[400px] lg:col-span-2">
+            <AiFeedWidget insights={aiInsights} className="border shadow-lg shadow-indigo-800 drop-shadow-lg" />
+          </div>
+        </div>
+        {/* --- FILA 3:  --- */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="w-full">
+            <ReliabilityTrendWidget data={resolutionTrend} className="h-full border bg-background shadow-sm drop-shadow-lg dark:border-zinc-800" />
+          </div>
+
+          <div className="">
+            <FailureParetoWidget data={failurePareto} className="h-full border bg-background shadow-sm drop-shadow-lg" />
+          </div>
+          <div className="">
+            <PartsTrackerWidget data={partsTracker} className="h-full border bg-background shadow-sm drop-shadow-lg" />
+          </div>
+        </div>
       </div>
     </AppLayout>
   );

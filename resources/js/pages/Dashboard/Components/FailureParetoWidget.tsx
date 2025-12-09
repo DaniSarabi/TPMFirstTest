@@ -27,7 +27,7 @@ interface FailureParetoWidgetProps {
 }
 
 export function FailureParetoWidget({ data, className }: FailureParetoWidgetProps) {
-  const [mode, setMode] = useState<'ai' | 'tech'>('ai');
+  const [mode, setMode] = useState<'ai' | 'tech'>('tech');
   // Estado para el rango de tiempo (Default 1M)
   const [timeRange, setTimeRange] = useState<'1M' | '6M' | 'YTD'>('6M');
 

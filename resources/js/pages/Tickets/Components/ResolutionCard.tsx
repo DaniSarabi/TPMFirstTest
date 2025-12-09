@@ -39,7 +39,7 @@ export function ResolutionCard({ ticket }: ResolutionCardProps) {
   return (
     <Card className="overflow-hidden border-0 text-accent-foreground shadow-lg drop-shadow-lg transition-transform ease-in-out hover:-translate-y-1">
       <CardHeader>
-        <CardTitle className="text-2xl">Detalles de la Resolución</CardTitle>
+        <CardTitle className="text-2xl">Details of the Resolution</CardTitle>
         <CardDescription>
           Resuelto por {closingUpdate.user.name} el{' '}
           {new Date(closingUpdate.created_at).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -48,11 +48,11 @@ export function ResolutionCard({ ticket }: ResolutionCardProps) {
       <CardContent className="space-y-4">
         {/* ACTION: Se agrupan los detalles en una cuadrícula para mejor layout */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <InfoRow icon={FileText} label="Categoría de Causa Raíz" value={closingUpdate.category} />
-          <InfoRow icon={Package} label="Partes Utilizadas" value={closingUpdate.parts_used} />
+          <InfoRow icon={FileText} label="Category" value={closingUpdate.category} />
+          <InfoRow icon={Package} label="Parts used" value={closingUpdate.parts_used} />
         </div>
         {/* La "Acción Tomada" ocupa todo el ancho para textos largos */}
-        <InfoRow icon={Wrench} label="Acción Tomada" value={closingUpdate.action_taken} />
+        <InfoRow icon={Wrench} label="Action Taken" value={closingUpdate.action_taken} />
 
         {/* Sección de la galería de fotos */}
         {closingUpdate.photos && closingUpdate.photos.length > 0 && (

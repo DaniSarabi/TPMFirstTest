@@ -21,7 +21,7 @@ interface PartsTrackerWidgetProps {
 }
 
 export function PartsTrackerWidget({ data, className }: PartsTrackerWidgetProps) {
-  const [timeRange, setTimeRange] = useState<'1M' | '6M' | 'YTD'>('1M');
+  const [timeRange, setTimeRange] = useState<'1M' | '6M' | 'YTD'>('6M');
 
   // Selección segura de datos
   const currentData = data?.[timeRange] || [];

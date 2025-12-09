@@ -14,6 +14,7 @@ import * as React from 'react';
 const TICKET_CATEGORIES = [
   'ELECTRICO',
   'NEUMATICO',
+  'FUGAS',
   'MEDIDAS FUERA DE SPEC',
   'AJUSTES DE SET UP',
   'MAL CORTE',

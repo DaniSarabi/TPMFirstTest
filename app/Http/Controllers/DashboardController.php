@@ -307,6 +307,149 @@ class DashboardController extends Controller
             'YTD' => $getPartsData(now()->startOfYear())
         ];
         // ---------------------------------------------------------
+        // Analizamos tickets de los últimos 90 días para tener una muestra sólida
+        $ticketsForBottleneck = Ticket::with(['updates' => function ($q) {
+            // FIX: Usamos el nombre real de la columna: 'new_status_id'
+            $q->whereNotNull('new_status_id')->orderBy('created_at', 'asc');
+        }, 'status']) // Traemos el status actual también
+            ->where('created_at', '>=', now()->subDays(90))
+            ->get();
+
+        // Mapa para acumular: [ 'Open' => [horas, horas...], 'Diagnosis' => [...] ]
+        $statusDurations = [];
+
+        foreach ($ticketsForBottleneck as $ticket) {
+            $previousTime = $ticket->created_at;
+            // Asumimos que el ticket nace en el status con ID 1 ('Open' o 'New')
+            $currentStatusName = 'Open';
+
+            foreach ($ticket->updates as $update) {
+                // FIX: Usamos la propiedad correcta del modelo
+                if ($update->new_status_id) {
+                    $endTime = $update->created_at;
+                    $hours = $previousTime->diffInMinutes($endTime) / 60;
+
+                    // Guardamos la duración para el estatus ANTERIOR
+                    if (!isset($statusDurations[$currentStatusName])) {
+                        $statusDurations[$currentStatusName] = [];
+                    }
+                    $statusDurations[$currentStatusName][] = $hours;
+
+                    // Preparamos para el siguiente ciclo. 
+                    // Cargamos el nombre del status si está disponible en la relación, si no, placeholder
+                    $currentStatusName = $update->newStatus ? $update->newStatus->name : 'Unknown';
+                    $previousTime = $endTime;
+                }
+            }
+
+            // El último tramo (desde el último cambio hasta "ahora" o hasta que se cerró)
+            // Solo si el ticket NO está cerrado, contamos hasta 'ahora'.
+
+            // Verificamos si el estado actual es "Cerrado"
+            // Verificamos si el estado actual es "Cerrado" o "Descartado"
+            $isFinalStatus = $ticket->status && $ticket->status->behaviors->contains(function ($behavior) {
+                return in_array($behavior->name, ['is_ticket_closing_status', 'is_ticket_discard_status']);
+            });
+
+            if (!$isFinalStatus) {
+                $hours = $previousTime->diffInMinutes(now()) / 60;
+                if (!isset($statusDurations[$currentStatusName])) {
+                    $statusDurations[$currentStatusName] = [];
+                }
+                $statusDurations[$currentStatusName][] = $hours;
+            }
+        }
+
+        // Promediamos los resultados
+        $avgStatusDuration = collect($statusDurations)->map(function ($times, $statusName) {
+            $avg = count($times) > 0 ? array_sum($times) / count($times) : 0;
+            return [
+                'status' => $statusName,
+                'avg_hours' => round($avg, 1),
+                'ticket_count' => count($times) // Cuántos tickets pasaron por aquí
+            ];
+        })->sortByDesc('avg_hours')->values()->all();
+        // ---------------------------------------------------------
+        // DATA PARA WIDGET: TICKET AGING BUCKETS (NUEVO)
+        // ---------------------------------------------------------
+
+        // Buscamos tickets ACTIVOS (ni cerrados ni descartados)
+        $activeTickets = Ticket::whereDoesntHave('status.behaviors', function ($q) {
+            $q->whereIn('name', ['is_ticket_closing_status', 'is_ticket_discard_status']);
+        })->select('id', 'created_at')->get();
+
+        $ticketAging = [
+            'under_24h' => 0,
+            '1_3_days' => 0,
+            '3_7_days' => 0,
+            'over_7_days' => 0,
+        ];
+
+        foreach ($activeTickets as $ticket) {
+            $hours = $ticket->created_at->diffInHours(now());
+
+            if ($hours < 24) {
+                $ticketAging['under_24h']++;
+            } elseif ($hours < 72) { // 3 días * 24h
+                $ticketAging['1_3_days']++;
+            } elseif ($hours < 168) { // 7 días * 24h
+                $ticketAging['3_7_days']++;
+            } else {
+                $ticketAging['over_7_days']++;
+            }
+        }
+
+
+        // ---------------------------------------------------------
+        // DATA PARA WIDGET: INSPECTION COMPLIANCE (HEATMAP)
+        // ---------------------------------------------------------
+
+        // Rango: Últimos 14 días para que quepa bien en el widget
+        $daysRange = collect(range(59, 0))->map(fn($i) => now()->subDays($i));
+        $complianceStartDate = now()->subDays(59)->startOfDay();
+
+        $inspectionCompliance = Machine::orderBy('name')
+            ->get()
+            ->map(function ($machine) use ($daysRange, $complianceStartDate) {
+
+                // Optimizacion: Traemos solo los reportes de esta máquina en el rango
+                $machineReports = \App\Models\InspectionReport::where('machine_id', $machine->id)
+                    ->where('created_at', '>=', $complianceStartDate)
+                    ->pluck('created_at')
+                    ->map(fn($date) => $date->format('Y-m-d'))
+                    ->flip();
+
+                $isNewMachine = false;
+                if ($machine->status === 'New' || $machine->status === 'Nuevo') {
+                    $isNewMachine = true;
+                }
+
+                $history = $daysRange->map(function ($date) use ($machineReports, $isNewMachine) {
+                    $dateStr = $date->format('Y-m-d');
+
+                    // Lógica de Estado
+                    if ($isNewMachine) {
+                        $status = 'na'; // Gris
+                    } elseif ($machineReports->has($dateStr)) {
+                        $status = 'completed'; // Verde
+                    } else {
+                        $status = 'missed'; // Rojo
+                    }
+
+                    return [
+                        'date' => $date->format('d M'), // Ej: "24 Nov"
+                        'weekday' => $date->format('D'), // Ej: "Mon"
+                        'full_date' => $date->format('Y-m-d'),
+                        'status' => $status
+                    ];
+                });
+
+                return [
+                    'id' => $machine->id,
+                    'name' => $machine->name,
+                    'history' => $history
+                ];
+            });
 
         return Inertia::render('Dashboard/Index', [
             'machineTimelines' => $machineTimelines,
@@ -332,8 +475,10 @@ class DashboardController extends Controller
                 'monthly' => $monthlyTrend
             ],
             'failurePareto' => $paretoData,
-            'partsTracker' => $partsTrackerData
-
+            'partsTracker' => $partsTrackerData,
+            'statusDurations' => $avgStatusDuration,
+            'ticketAging' => $ticketAging,
+            'inspectionCompliance' => $inspectionCompliance
         ]);
     }
 

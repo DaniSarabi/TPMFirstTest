@@ -20,18 +20,5 @@ createInertiaApp({
   },
 });
 
-// This will set light / dark mode on load...
 initializeTheme();
 
-// if ('serviceWorker' in navigator) {
-//   window.addEventListener('load', () => {
-//     navigator.serviceWorker
-//       .register('/tpm-project/public/sw.js')
-//       .then((registration) => {
-//         console.log('Service Worker registered with scope:', registration.scope);
-//       })
-//       .catch((error) => {
-//         console.error('Service Worker registration failed:', error);
-//       });
-//   });
-// }

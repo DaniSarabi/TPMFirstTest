@@ -74,13 +74,12 @@ export function AiFeedWidget({ insights, className }: AiFeedWidgetProps) {
 
   return (
     <div className={cn('group relative h-full w-full rounded-xl', className)}>
-
       <div className="absolute -inset-[5px] rounded-xl bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-50 blur-sm transition-all duration-1000 group-hover:via-indigo-500/60 group-hover:opacity-100" />
 
       <div className="absolute -inset-[1px] overflow-hidden rounded-xl">
         <div
           className="absolute inset-[-100%] animate-spin bg-[conic-gradient(from_90deg_at_50%_50%,#0000_0%,#6366f1_50%,#0000_100%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-          style={{ animationDuration: '3s' }} 
+          style={{ animationDuration: '3s' }}
         />
       </div>
 
@@ -92,7 +91,7 @@ export function AiFeedWidget({ insights, className }: AiFeedWidgetProps) {
             <div className="flex items-center gap-2">
               {/* Icono con efecto de pulso suave */}
               <div className="relative p-1">
-                <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-500 opacity-20 blur "></div>
+                <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-500 opacity-20 blur"></div>
                 <Sparkles className="relative z-10 h-4 w-4 text-indigo-500" />
               </div>
               <CardTitle className="bg-gradient-to-r from-zinc-800 to-zinc-500 bg-clip-text text-base font-bold text-zinc-700 dark:from-zinc-100 dark:to-zinc-400 dark:text-zinc-200">
@@ -188,7 +187,7 @@ export function AiFeedWidget({ insights, className }: AiFeedWidgetProps) {
                             )}
                             {item.ticket && (
                               <Link
-                                href={`/tickets/${item.ticket.id}`}
+                                href={route('tickets.show', item.ticket.id)}
                                 className="flex items-center gap-1 text-[9px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400"
                               >
                                 <FileText className="h-3 w-3" />#{item.ticket.id}

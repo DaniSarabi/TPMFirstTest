@@ -68,12 +68,17 @@ class AnalyzeTicketCommand extends Command
 
                     CONTEXTO DE LA MÁQUINA: Utiliza el campo 'MACHINE_INFO.FUNCTION_DESCRIPTION' para entender la criticidad y función del equipo. Si la falla afecta la función principal descrita, considera dar un 'MACHINE_HEALTH_TIP'.
                     OBJETIVOS:
-                    1. Normaliza las partes usadas (Ej: "manguerita" -> "Manguera Neumática").
-                    2. Detecta si la categoría del técnico coincide con la realidad.
+                    1.**Normalización de Partes (CRÍTICO):** - Consulta la lista 'EXISTING_PARTS_DB'.
+                        - Si la parte mencionada por el técnico es sinónimo o similar a una existente en esa lista, **USA EL NOMBRE DE LA LISTA** para mantener el inventario limpio.
+                        - Solo crea un nombre nuevo si la parte es genuinamente nueva. Usa formato: "Nombre Genérico + Especificación" (Ej: "Rodamiento 6204").
+                    2. **Categorización Estandarizada (ai_subcategory_1):**
+                        - Consulta la lista 'EXISTING_CATEGORIES_DB'.
+                        - Trata de clasificar la falla dentro de una de las categorías existentes en esa lista si tiene sentido técnico. (Ej: Si existe "Falla de Sensor" y el problema es "Sensor roto", usa "Falla de Sensor").
+                        - Si NINGUNA categoría existente describe bien el problema, crea una nueva que sea breve y descriptiva (Sentence case).
                     3. Genera 'strategic_insights_list' para poblar el dashboard:
-                    - Usa 'COACHING_OPPORTUNITY' si el reporte es vago o tiene mala calidad, como mejorar la calidad de la documentacion.
-                    - Usa 'MACHINE_HEALTH_TIP' si detectas un patrón de desgaste útil para prevenir fallas.
-                    - Usa 'RECURRENCE_ALERT' si el historial muestra que esta falla se repite mucho o que se va a repetir en cuanto tiempo aproximadamente, si la causa raiz no esta siendo erradicada.
+                        - Usa 'COACHING_OPPORTUNITY' si el reporte es vago o tiene mala calidad, como mejorar la calidad de la documentacion.
+                        - Usa 'MACHINE_HEALTH_TIP' si detectas un patrón de desgaste útil para prevenir fallas.
+                        - Usa 'RECURRENCE_ALERT' si el historial muestra que esta falla se repite mucho o que se va a repetir en cuanto tiempo aproximadamente, si la causa raiz no esta siendo erradicada.
                     
                     REGLAS CRÍTICAS DE RECURRENCIA:
                     1. **Comparación Estricta:** Solo marca 'is_recurrent' = true si la falla del TICKET ACTUAL es físicamente similar a alguna del historial, no te lo tomes a la.
@@ -130,6 +135,10 @@ class AnalyzeTicketCommand extends Command
         // Consolidar adjuntos y comentarios (Tu lógica)
         $attachmentsLog = $ticket->attachments->map(fn($a) => "File: {$a->file_name} ({$a->description})")->implode('; ');
 
+
+        $existingParts = $this->getExistingPartsCatalog();
+        $existingCategories = $this->getExistingCategoriesCatalog();
+
         return [
             'CURRENT_TICKET' => [
                 'ID' => $ticket->id,
@@ -147,7 +156,10 @@ class AnalyzeTicketCommand extends Command
                 'CATEGORY_RAW' => $resolution->category ?? 'N/A',
                 'ATTACHMENTS' => $attachmentsLog ?: 'Sin adjuntos.',
             ],
-            'HISTORY_FOR_COMPARISON' => $prevHistory
+            'HISTORY_FOR_COMPARISON' => $prevHistory,
+            'EXISTING_PARTS_DB' => $existingParts,
+            'EXISTING_CATEGORIES_DB' => $existingCategories 
+
         ];
     }
 
@@ -183,6 +195,41 @@ class AnalyzeTicketCommand extends Command
         foreach ($tickets as $ticket) {
             $this->processSingleTicket($ticket);
         }
+    }
+    /**
+     * Obtiene un catálogo de partes ya usadas en el sistema para consistencia.
+     */
+    private function getExistingPartsCatalog(): array
+    {
+        // Tomamos los últimos 300 tickets analizados para tener una muestra representativa
+        // pero sin enviar un JSON de 5MB a la API.
+        return Ticket::whereNotNull('ai_analysis_json')
+            ->latest()
+            ->take(300)
+            ->get()
+            ->flatMap(function ($ticket) {
+                return $ticket->ai_analysis_json['standardized_parts'] ?? [];
+            })
+            ->unique() // Eliminar duplicados
+            ->sort()
+            ->values()
+            ->all();
+    }
+    /**
+     * Obtiene un catálogo de categorías (ai_subcategory_1) ya usadas para evitar duplicados.
+     */
+    private function getExistingCategoriesCatalog(): array
+    {
+        return Ticket::whereNotNull('ai_analysis_json')
+            ->latest()
+            ->take(300)
+            ->get()
+            ->map(fn($t) => $t->ai_analysis_json['ai_subcategory_1'] ?? null)
+            ->filter() // Quitar nulos
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 
     private function processSingleTicket(Ticket $ticket)

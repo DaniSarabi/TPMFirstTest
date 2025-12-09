@@ -7,8 +7,11 @@ import { DowntimeDistributionWidget } from './Components/DowntimeDistributionWid
 import { FailureParetoWidget } from './Components/FailureParetoWidget';
 import { FleetTimelineWidget } from './Components/FleetTimelineWidget';
 import { AlertContent, KpiCard, MetricContent, ProgressContent } from './Components/KpiCard';
-import { ReliabilityTrendWidget } from './Components/ReliabilityTrendWidget';
 import { PartsTrackerWidget } from './Components/PartsTrackerWidget';
+import { ReliabilityTrendWidget } from './Components/ReliabilityTrendWidget';
+import { TicketAgingWidget } from './Components/TicketAgingWidget';
+import { InspectionComplianceWidget } from './Components/TicketComplianceWidget';
+import { TicketStatusDurationWidget } from './Components/TicketStatusDurationWidget';
 
 interface DowntimeLog {
   id: number;
@@ -37,9 +40,23 @@ interface DashboardProps {
   resolutionTrend: any;
   failurePareto: any;
   partsTracker: any;
+  statusDurations: any;
+  ticketAging: any;
+  inspectionCompliance: any;
 }
 
-export default function Dashboard({ metrics, machineTimelines, downtimePareto, aiInsights, resolutionTrend, failurePareto,partsTracker }: DashboardProps) {
+export default function Dashboard({
+  metrics,
+  machineTimelines,
+  downtimePareto,
+  aiInsights,
+  resolutionTrend,
+  failurePareto,
+  partsTracker,
+  statusDurations,
+  ticketAging,
+  inspectionCompliance,
+}: DashboardProps) {
   console.log(resolutionTrend);
 
   return (
@@ -108,6 +125,25 @@ export default function Dashboard({ metrics, machineTimelines, downtimePareto, a
           <div className="">
             <PartsTrackerWidget data={partsTracker} className="h-full border bg-background shadow-sm drop-shadow-lg" />
           </div>
+        </div>
+        {/* FILA 4 */}
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="w-full lg:col-span-2">
+            <TicketStatusDurationWidget
+              data={statusDurations}
+              className="h-full gap-4 border bg-background shadow-sm drop-shadow-lg dark:border-zinc-800"
+            />
+          </div>
+          <div className="w-full lg:col-span-2">
+            <TicketAgingWidget data={ticketAging} className="h-full gap-0 border bg-background shadow-sm drop-shadow-lg dark:border-zinc-800" />
+          </div>
+          {/* <div className="w-full rounded-xl border-2 lg:col-span-3">
+            <InspectionComplianceWidget
+              data={inspectionCompliance}
+              className="h-full gap-0 border bg-background shadow-sm drop-shadow-lg dark:border-zinc-800"
+            />
+          </div> */}
+
         </div>
       </div>
     </AppLayout>

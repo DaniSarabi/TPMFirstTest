@@ -26,6 +26,7 @@ use App\Models\Tag;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Log;
+use Carbon\CarbonPeriod;
 
 class InspectionController extends Controller
 {
@@ -465,5 +466,81 @@ class InspectionController extends Controller
         ]);
 
         return $pdf->download('inspection-report-' . $inspectionReport->id . '.pdf');
+    }
+    /**
+     * Generate and download a Trend Matrix PDF for a specific machine.
+     */
+    public function exportTrendPdf(Request $request)
+    {
+        // 1. Validate the incoming request
+        $validated = $request->validate([
+            'machine_id' => 'required|exists:machines,id',
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $machineId = $validated['machine_id'];
+        $startDate = Carbon::parse($validated['start_date'])->startOfDay();
+        $endDate   = Carbon::parse($validated['end_date'])->endOfDay();
+
+        // 2. The Y-Axis: Get the Machine Blueprint (All points)
+        // We do this so even if a point wasn't inspected, it still shows up as a row.
+        $machine = Machine::with(['subsystems.inspectionPoints'])->findOrFail($machineId);
+
+        // 3. The X-Axis: Generate an array of all dates in the range
+        // CarbonPeriod is amazing for this. It generates an iterable list of days.
+        $period = CarbonPeriod::create($startDate, $endDate);
+        $dates = [];
+        foreach ($period as $date) {
+            // ACTION: Only add Monday - Friday
+            if ($date->isWeekday()) {
+                $dates[] = $date->format('Y-m-d');
+            }
+        }
+        // 4. Fetch the Data (Eager Loading to prevent N+1 Query Hell)
+        $reports = InspectionReport::with(['items.status'])
+            ->where('machine_id', $machineId)
+            ->whereBetween('completed_at', [$startDate, $endDate])
+            ->orderBy('completed_at', 'asc')
+            ->get();
+
+        // 5. Build the O(1) Lookup Table
+        // Structure: $lookup[point_id][date_string] = Status Model
+        $lookup = [];
+        foreach ($reports as $report) {
+            $dateString = $report->completed_at->format('Y-m-d');
+            foreach ($report->items as $item) {
+                // If there are multiple inspections on the same day, 
+                // this will safely overwrite and keep the latest one.
+                $lookup[$item->inspection_point_id][$dateString] = $item->status;
+            }
+        }
+
+        // 6. Build the Final Matrix for Blade
+        $matrix = [];
+        foreach ($machine->subsystems as $subsystem) {
+            foreach ($subsystem->inspectionPoints as $point) {
+                foreach ($dates as $date) {
+                    // O(1) fast lookup!
+                    $status = $lookup[$point->id][$date] ?? null;
+
+                    $matrix[$subsystem->name][$point->name][$date] = $status;
+                }
+            }
+        }
+
+        // 7. Chunk the dates (e.g., 7 days per page to fit on PDF)
+        $dateChunks = array_chunk($dates, 5);
+
+        // 8. Generate PDF
+        $pdf = Pdf::loadView('pdf.inspection-trend', [
+            'machine'    => $machine,
+            'startDate'  => $startDate,
+            'endDate'    => $endDate,
+            'dateChunks' => $dateChunks,
+            'matrix'     => $matrix,
+        ])->setPaper('letter', 'portrait'); // Landscape is better for grids
+
+        return $pdf->download('inspection-trend-' . $machine->name . '.pdf');
     }
 }

@@ -13,6 +13,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { TaskSettingsPopover } from '../Components/TaskSettingsPopover';
 
 interface Props {
+  // 1. ADD THIS: We must accept the string ID (e.g., "task-1")
+  id?: string | number; 
   task: MaintenanceTemplateTask;
   activeDragType: string | null;
   isOverlay?: boolean;
@@ -21,6 +23,9 @@ interface Props {
   onOptionChange: (taskId: number, option: string, value: any) => void;
   onDescriptionChange: (taskId: number, newDescription: string) => void;
 }
+
+// ... (Keep EditableLabel, EditableParagraph, BulletedList exactly as they are) ...
+// (I am omitting them here to save space, do not delete them!)
 
 const EditableLabel = ({ task, onLabelChange }: { task: MaintenanceTemplateTask; onLabelChange: Props['onLabelChange'] }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -157,6 +162,7 @@ const BulletedList = ({ task, onOptionChange }: { task: MaintenanceTemplateTask;
 };
 
 export const SortableTaskItem = React.memo(function SortableTaskItem({
+  id, // 2. RECEIVE THIS
   task,
   activeDragType,
   isOverlay,
@@ -166,8 +172,10 @@ export const SortableTaskItem = React.memo(function SortableTaskItem({
   onDescriptionChange,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: task.id,
-    data: { type: 'canvas-item', task },
+    // 3. USE IT HERE (If 'id' string exists, use it. Otherwise fallback to number)
+    id: id || task.id, 
+    // 4. IMPORTANT: Update data to match what the hook expects (dndType)
+    data: { dndType: 'task', task }, 
   });
 
   const style = {
@@ -240,7 +248,6 @@ export const SortableTaskItem = React.memo(function SortableTaskItem({
     <div
       ref={setNodeRef}
       style={style}
-      // ENHANCEMENT: La opacidad no se aplica al overlay para mejor visibilidad
       className={cn('group flex items-center rounded-lg bg-white p-3 transition-colors hover:bg-muted/50', {
         'opacity-50': isDragging && !isOverlay,
         'pointer-events-none': activeDragType === 'toolbox-item',

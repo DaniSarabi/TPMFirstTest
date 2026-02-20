@@ -14,7 +14,10 @@ import { Role } from '../Roles/Columns';
 import { InspectionCard } from './InspectionCard';
 import { InspectionFilters } from './InspectionFilters';
 // --- Type Definitions for this page ---
+import { Button } from '@/components/ui/button';
 import { Report } from '@/types/report';
+import { FileDown } from 'lucide-react';
+import { ExportTrendModal } from './Components/ExportTrendModal';
 
 interface IndexPageProps {
   reports: Paginated<Report>;
@@ -34,6 +37,8 @@ export default function Index({ reports, filters, users, roles, allMachines }: I
   );
   const [includeDeleted, setIncludeDeleted] = React.useState(filters.include_deleted || false);
   const [selectedRole, setSelectedRole] = React.useState<string | null>(filters.role || null);
+
+  const [isExportModalOpen, setIsExportModalOpen] = React.useState(false);
 
   const isInitialMount = React.useRef(true);
   const can = useCan('inspections.administration');
@@ -128,12 +133,17 @@ export default function Index({ reports, filters, users, roles, allMachines }: I
               onRoleChange={setSelectedRole}
             />
           </ListToolbar>
+          <Button variant="outline" onClick={() => setIsExportModalOpen(true)} className="gap-2">
+            <FileDown className="h-4 w-4" />
+            Export Trend Report
+          </Button>{' '}
         </div>
 
         <CardGrid items={reports.data} renderCard={(report) => <InspectionCard report={report} />} />
 
         <Pagination paginated={reports} />
       </div>
+      <ExportTrendModal isOpen={isExportModalOpen} onOpenChange={setIsExportModalOpen} machines={allMachines} />
     </AppLayout>
   );
 }

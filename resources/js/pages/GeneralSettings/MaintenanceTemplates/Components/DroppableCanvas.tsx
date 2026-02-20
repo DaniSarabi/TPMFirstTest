@@ -8,18 +8,19 @@ import { Save } from 'lucide-react';
 import { SortableSectionItem } from './SortableSectionItem';
 import { SortableTaskItem } from './SortableTaskItem';
 
-// Interfaz de Props actualizada para incluir el item activo
 interface Props {
   template: MaintenanceTemplate;
   layoutItems: LayoutItem[];
   isDirty: boolean;
   isSaving: boolean;
-  activeDragItem: LayoutItem | null; // AÑADIDO: para saber qué se está arrastrando
+  activeDragItem: any | null;
   onSave: () => void;
   onTaskChange: (taskId: number, updatedProperties: Partial<MaintenanceTemplateTask>) => void;
   onDeleteTask: (taskId: number) => void;
   onSectionChange: (sectionId: number, updatedProperties: Partial<MaintenanceTemplateSection>) => void;
   onDeleteSection: (sectionId: number) => void;
+  // NEW: Add the move handler from the hook
+  onMoveSection: (sectionId: number, direction: 'up' | 'down') => void;
 }
 
 export function DroppableCanvas({
@@ -27,16 +28,16 @@ export function DroppableCanvas({
   layoutItems,
   isDirty,
   isSaving,
-  activeDragItem, // AÑADIDO
+  activeDragItem,
   onSave,
   onTaskChange,
   onDeleteTask,
   onSectionChange,
   onDeleteSection,
+  onMoveSection, // Receive the handler
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: 'root-droppable-area' });
 
-  // Obtenemos el tipo del elemento que se está arrastrando
   const activeDragType = activeDragItem?.dndType;
 
   return (
@@ -60,9 +61,8 @@ export function DroppableCanvas({
           'border-muted-foreground/20': !isOver,
         })}
       >
-        <SortableContext items={layoutItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={layoutItems.map((item) => item.id as string)} strategy={verticalListSortingStrategy}>
           <div className="space-y-4">
-            {/* AÑADIDO: Mensaje para el estado vacío */}
             {layoutItems.length === 0 ? (
               <div className="flex h-full min-h-[300px] items-center justify-center">
                 <p className="p-12 text-center text-sm text-muted-foreground">
@@ -70,26 +70,36 @@ export function DroppableCanvas({
                 </p>
               </div>
             ) : (
-              layoutItems.map((item) => {
+              layoutItems.map((item, index) => {
                 if (item.dndType === 'section') {
+                  // Count how many sections we have to calculate isLast correctly
+                  const sectionCount = layoutItems.filter((i) => i.dndType === 'section').length;
+                  const currentSectionIndex = layoutItems.filter((i) => i.dndType === 'section').findIndex((s) => s.id === item.id);
+
                   return (
                     <SortableSectionItem
-                      key={item.id}
+                      key={item.id} // key="section-1"
+                      id={item.id as string}
                       section={item.data}
                       activeDragType={activeDragType}
                       onSectionChange={onSectionChange}
                       onDeleteSection={onDeleteSection}
                       onTaskChange={onTaskChange}
                       onDeleteTask={onDeleteTask}
+                      // NEW: Wiring up the arrows
+                      onMoveUp={() => onMoveSection(item.data.id, 'up')}
+                      onMoveDown={() => onMoveSection(item.data.id, 'down')}
+                      isFirst={currentSectionIndex === 0}
+                      isLast={currentSectionIndex === sectionCount - 1}
                     />
                   );
                 }
                 return (
                   <SortableTaskItem
-                    key={item.id}
+                    key={item.id} // key="task-1"
+                    id={item.id as string}
                     task={item.data}
                     activeDragType={activeDragType}
-                    // CAMBIADO: Adaptamos los handlers específicos al genérico onTaskChange
                     onLabelChange={(taskId, label) => onTaskChange(taskId, { label })}
                     onDescriptionChange={(taskId, description) => onTaskChange(taskId, { description })}
                     onOptionChange={(taskId, optionKey, value) => onTaskChange(taskId, { options: { [optionKey]: value } })}

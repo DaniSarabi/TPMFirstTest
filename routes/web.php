@@ -175,6 +175,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // * ***************************** Inspections module Routes *****************************
 
+    Route::get('/inspections/export-trend', [InspectionController::class, 'exportTrendPdf'])->name('inspections.export-trend');
+
     // This route will display the "Start Inspection" page
     Route::get('/inspections/start', [InspectionController::class, 'create'])->name('inspections.start')->middleware('permission:inspections.perform');
 

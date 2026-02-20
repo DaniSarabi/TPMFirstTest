@@ -1,11 +1,17 @@
 import { MaintenanceTemplate } from '@/types/maintenance';
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { 
+  DndContext, 
+  DragOverlay, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  closestCorners 
+} from '@dnd-kit/core';
 import { useState } from 'react';
 
-// Importa nuestro custom hook y los componentes
+// Import our custom hook and components
 import { useTemplateLayout } from '@/hooks/useTemplateLayout';
 import { DroppableCanvas } from './DroppableCanvas';
-import { SortableSectionItem } from './SortableSectionItem';
 import { SortableTaskItem } from './SortableTaskItem';
 import { TaskToolbox } from './TaskToolbox';
 import { ToolboxDragOverlayItem } from './ToolboxDragOverlayItem';
@@ -15,24 +21,22 @@ interface Props {
 }
 
 export function TemplateBuilder({ template }: Props) {
-  // AÑADIDO: El estado de 'isDirty' ahora vive en este componente padre.
   const [isDirty, setIsDirty] = useState(false);
-
   
   const {
     layoutItems,
     isSaving,
-    activeDragItem, // Usamos el del hook
-    handleDragStart, // Usamos el del hook
+    activeDragItem, 
+    handleDragStart, 
+    handleDragOver,
     handleDragEnd,
     handleSave,
     handleTaskChange,
     handleDeleteTask,
     handleSectionChange,
     handleDeleteSection,
-  } = useTemplateLayout(template, setIsDirty); // Pasamos el setter al hook
-
-  // CORREGIDO: Se elimina el estado local de 'activeDragItem' para evitar duplicidad.
+    handleMoveSection, // IMPORT THIS
+  } = useTemplateLayout(template, setIsDirty); 
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -41,14 +45,18 @@ export function TemplateBuilder({ template }: Props) {
   );
 
   return (
-    // CORREGIDO: Pasamos los handlers del hook al DndContext
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext 
+      sensors={sensors} 
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart} 
+      onDragOver={handleDragOver} 
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex flex-col gap-4">
         <div className="col-span-3">
           <TaskToolbox />
         </div>
         <div className="col-span-9">
-          {/* CORREGIDO: Pasamos todas las props necesarias al Canvas */}
           <DroppableCanvas
             template={template}
             layoutItems={layoutItems}
@@ -60,15 +68,37 @@ export function TemplateBuilder({ template }: Props) {
             onDeleteTask={handleDeleteTask}
             onSectionChange={handleSectionChange}
             onDeleteSection={handleDeleteSection}
+            onMoveSection={handleMoveSection} // PASS THIS
           />
         </div>
       </div>
 
-      {/* El DragOverlay ahora usa 'activeDragItem' del hook */}
       <DragOverlay>
-        {activeDragItem?.type === 'toolbox-item' && <ToolboxDragOverlayItem task={activeDragItem.task} />}
-        {activeDragItem?.type === 'canvas-item' && <SortableTaskItem task={activeDragItem.task} isOverlay />}
-        {activeDragItem?.type === 'section-item' && <SortableSectionItem section={activeDragItem.section} isOverlay />}
+        {/* Toolbox Item Preview */}
+        {activeDragItem?.type === 'toolbox-item' && (
+            <ToolboxDragOverlayItem task={activeDragItem.task} />
+        )}
+
+        {/* Canvas Task Preview */}
+        {activeDragItem?.type === 'canvas-item' && (
+            <SortableTaskItem 
+                // We pass the ID and Data
+                id={activeDragItem.task.id}
+                task={activeDragItem.task}
+                activeDragType={activeDragItem.type ?? null} // Fix undefined error
+                isOverlay
+                
+                // PASS DUMMY HANDLERS:
+                // These are required by the component props, but 
+                // since this is just a visual ghost, they don't need to do anything.
+                onLabelChange={() => {}}
+                onDescriptionChange={() => {}}
+                onOptionChange={() => {}}
+                onDelete={() => {}}
+            />
+        )}
+
+        {/* Note: We REMOVED the Section Overlay because sections are no longer draggable */}
       </DragOverlay>
     </DndContext>
   );
